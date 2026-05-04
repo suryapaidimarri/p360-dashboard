@@ -1,6 +1,6 @@
 # P360 Dashboard — Deployment Guide
 
-## Stack 
+## Stack
 - Next.js 14 (App Router)
 - Supabase (Auth + Database)
 - Tailwind CSS
