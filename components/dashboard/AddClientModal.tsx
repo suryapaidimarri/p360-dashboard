@@ -1,99 +1,78 @@
 'use client'
 import { useState } from 'react'
-import { X, Loader2, ChevronDown } from 'lucide-react'
+import { X, ChevronDown, Loader2 } from 'lucide-react'
 import { Client } from '@/types'
 
-const COLORS = ['#6366f1','#8b5cf6','#0ea5e9','#f59e0b','#10b981','#ec4899','#f97316','#a855f7']
+const COLORS = ['#20BB71','#48B5EA','#F9B62A','#F64674','#F53619','#3FDB90','#5BD1F2','#FDC550']
 
-interface Props {
-  onClose: () => void
-  onAdd: (client: Client) => void
-}
-
-export default function AddClientModal({ onClose, onAdd }: Props) {
+export default function AddClientModal({ onClose, onAdd }: { onClose:()=>void; onAdd:(c:Client)=>void }) {
   const [name, setName] = useState('')
   const [domain, setDomain] = useState('')
+  const [color, setColor] = useState(COLORS[0])
+  const [adv, setAdv] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [showAdvanced, setShowAdvanced] = useState(false)
-  const [selectedColor, setSelectedColor] = useState(COLORS[0])
 
   async function handleAdd() {
     if (!name.trim()) return
     setLoading(true)
-    await new Promise(r => setTimeout(r, 600))
-    const newClient: Client = {
-      id: Date.now().toString(),
-      name: name.trim(),
-      domain: domain.trim(),
-      logo_url: domain ? `https://logo.clearbit.com/${domain}` : null,
-      color: selectedColor,
-      status: 'active',
-      agency_id: '1',
-      platforms: [],
-      created_at: new Date().toISOString(),
-    }
+    await new Promise(r => setTimeout(r, 500))
+    onAdd({ id:Date.now().toString(), name:name.trim(), domain:domain.trim(), logo_url:null, color, status:'active', agency_id:'1', platforms:[], created_at:new Date().toISOString() })
     setLoading(false)
-    onAdd(newClient)
+  }
+
+  const S = {
+    overlay: { position:'fixed' as const, inset:0, background:'rgba(0,0,0,0.4)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:50, padding:16 },
+    box: { background:'#FFFFFF', border:'1px solid #E6E6E6', borderRadius:2, width:'100%', maxWidth:400, overflow:'hidden' },
+    stripe: { height:3, background:'#20BB71' },
+    body: { padding:28 },
+    hd: { display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:4 },
+    title: { fontSize:16, fontWeight:400, color:'#111111', fontFamily:"'DM Sans',sans-serif", letterSpacing:'-0.2px' },
+    sub: { fontFamily:"'Barlow',sans-serif", fontSize:9, color:'#6B6B6B', textTransform:'uppercase' as const, letterSpacing:'0.08em', marginBottom:24 },
+    close: { width:28, height:28, borderRadius:2, border:'1px solid #E6E6E6', background:'#FAFAFA', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' },
+    label: { display:'block', fontFamily:"'Barlow',sans-serif", fontSize:9, fontWeight:600, color:'#6B6B6B', textTransform:'uppercase' as const, letterSpacing:'0.1em', marginBottom:6 },
+    input: { width:'100%', background:'#FAFAFA', border:'1px solid #E6E6E6', borderRadius:2, padding:'9px 12px', color:'#111111', fontSize:13, outline:'none', fontFamily:"'DM Sans',sans-serif", boxSizing:'border-box' as const },
+    advBtn: { display:'flex', alignItems:'center', gap:6, fontFamily:"'Barlow',sans-serif", fontSize:9, color:'#6B6B6B', cursor:'pointer', background:'none', border:'none', textTransform:'uppercase' as const, letterSpacing:'0.08em', marginBottom:20, padding:0 },
+    foot: { display:'flex', gap:8 },
+    cancel: { flex:1, background:'#FAFAFA', border:'1px solid #E6E6E6', borderRadius:2, padding:'9px', fontFamily:"'Barlow',sans-serif", fontSize:9, fontWeight:600, color:'#6B6B6B', cursor:'pointer', textTransform:'uppercase' as const, letterSpacing:'0.08em' },
+    add: { flex:2, background:'#20BB71', border:'none', borderRadius:2, padding:'9px', fontFamily:"'Barlow',sans-serif", fontSize:9, fontWeight:700, color:'#111111', cursor:'pointer', textTransform:'uppercase' as const, letterSpacing:'0.08em', display:'flex', alignItems:'center', justifyContent:'center', gap:6 },
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-[#0e1120] border border-white/10 rounded-2xl w-full max-w-md overflow-hidden animate-scaleIn" onClick={e => e.stopPropagation()}>
-        {/* Accent stripe */}
-        <div className="h-0.5 bg-accent" />
-
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-1">
-            <h2 className="text-sm font-semibold text-text-primary">Add new client</h2>
-            <button onClick={onClose} className="w-7 h-7 rounded-lg flex items-center justify-center text-text-hint hover:bg-white/[0.06] hover:text-text-secondary transition-all">
-              <X size={14} />
-            </button>
+    <div style={S.overlay} onClick={onClose}>
+      <div style={S.box} onClick={e => e.stopPropagation()}>
+        <div style={S.stripe} />
+        <div style={S.body}>
+          <div style={S.hd}>
+            <h2 style={S.title}>Add new client</h2>
+            <button style={S.close} onClick={onClose}><X size={12} color="#6B6B6B" /></button>
           </div>
-          <p className="text-xs text-text-hint mb-6">Logo and brand details are fetched automatically from the domain.</p>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-[10px] font-medium text-text-hint uppercase tracking-wider mb-2">Client Name</label>
-              <input value={name} onChange={e => setName(e.target.value)}
-                placeholder="e.g. Acme Corporation"
-                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm text-text-primary placeholder-text-hint outline-none focus:border-accent/50 focus:bg-accent/[0.03] transition-all" />
-            </div>
-            <div>
-              <label className="block text-[10px] font-medium text-text-hint uppercase tracking-wider mb-2">Website / Domain</label>
-              <input value={domain} onChange={e => setDomain(e.target.value)}
-                placeholder="e.g. acmecorp.com"
-                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm text-text-primary placeholder-text-hint outline-none focus:border-accent/50 focus:bg-accent/[0.03] transition-all" />
-            </div>
-
-            {/* Advanced */}
-            <button onClick={() => setShowAdvanced(!showAdvanced)}
-              className="flex items-center gap-1.5 text-xs text-text-hint hover:text-text-secondary transition-all">
-              <ChevronDown size={12} className={`transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
-              Advanced settings
-            </button>
-
-            {showAdvanced && (
-              <div className="animate-fadeIn">
-                <label className="block text-[10px] font-medium text-text-hint uppercase tracking-wider mb-2">Brand Color</label>
-                <div className="flex gap-2">
-                  {COLORS.map(c => (
-                    <button key={c} onClick={() => setSelectedColor(c)}
-                      className="w-6 h-6 rounded-md transition-all"
-                      style={{ background: c, outline: selectedColor === c ? `2px solid white` : 'none', outlineOffset: '2px' }} />
-                  ))}
-                </div>
+          <p style={S.sub}>Logo fetched automatically from domain</p>
+          <div style={{ marginBottom:14 }}>
+            <label style={S.label}>Client name</label>
+            <input value={name} onChange={e=>setName(e.target.value)} placeholder="e.g. Acme Corporation" style={S.input} />
+          </div>
+          <div style={{ marginBottom:16 }}>
+            <label style={S.label}>Website / Domain</label>
+            <input value={domain} onChange={e=>setDomain(e.target.value)} placeholder="e.g. acmecorp.com" style={S.input} />
+          </div>
+          <button style={S.advBtn} onClick={()=>setAdv(!adv)}>
+            <ChevronDown size={11} style={{ transform: adv?'rotate(180deg)':'none', transition:'transform 0.15s' }} />
+            Advanced settings
+          </button>
+          {adv && (
+            <div style={{ marginBottom:20 }}>
+              <label style={S.label}>Brand color</label>
+              <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                {COLORS.map(c => (
+                  <button key={c} onClick={()=>setColor(c)} style={{ width:22, height:22, borderRadius:2, background:c, border: color===c ? '2px solid #111' : '2px solid transparent', cursor:'pointer' }} />
+                ))}
               </div>
-            )}
-          </div>
-
-          <div className="flex gap-2 mt-7">
-            <button onClick={onClose}
-              className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg py-2.5 text-xs text-text-secondary hover:text-text-primary transition-all">
-              Cancel
-            </button>
-            <button onClick={handleAdd} disabled={!name.trim() || loading}
-              className="flex-[2] bg-accent hover:bg-accent-hover disabled:opacity-50 text-white font-medium text-xs rounded-lg py-2.5 flex items-center justify-center gap-2 transition-all">
-              {loading ? <><Loader2 size={13} className="animate-spin" /> Adding…</> : 'Add Client'}
+            </div>
+          )}
+          <div style={S.foot}>
+            <button style={S.cancel} onClick={onClose}>Cancel</button>
+            <button style={{ ...S.add, opacity: !name.trim()||loading ? 0.6 : 1 }} onClick={handleAdd} disabled={!name.trim()||loading}>
+              {loading ? <><Loader2 size={11} style={{ animation:'spin 1s linear infinite' }} /> Adding...</> : 'Add client'}
             </button>
           </div>
         </div>

@@ -2,21 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
-* { box-sizing: border-box; }
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Barlow:wght@400;500;600;700&display=swap');
+
+:root {
+  --alloy-black: #000000;
+  --alloy-ink: #111111;
+  --alloy-white: #FFFFFF;
+  --alloy-paper: #FAFAFA;
+  --alloy-line: #E6E6E6;
+  --alloy-mute: #6B6B6B;
+  --alloy-green-1: #20BB71;
+  --alloy-green-2: #3FDB90;
+  --alloy-green-3: #6FF5B5;
+  --alloy-green-4: #C2FFE2;
+  --alloy-blue-1: #48B5EA;
+  --alloy-blue-4: #E1F7FF;
+  --alloy-yellow-1: #F9B62A;
+  --alloy-yellow-4: #FFEECA;
+  --alloy-red-1: #F53619;
+  --alloy-red-2: #F64674;
+  --alloy-red-4: #FFCFDC;
+  --font-display: 'DM Sans', system-ui, sans-serif;
+  --font-body: 'DM Sans', system-ui, sans-serif;
+  --font-label: 'Barlow', 'DM Sans', system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  background: #05070d;
-  color: #f0f2ff;
-  margin: 0;
-  padding: 0;
+  font-family: var(--font-body);
+  background: var(--alloy-paper);
+  color: var(--alloy-ink);
 }
 
-::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 4px; }
-
-.card-surface {
-  background: #0c0f1a;
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 12px;
-}
+::-webkit-scrollbar-thumb { background: var(--alloy-line); border-radius: 0; }
