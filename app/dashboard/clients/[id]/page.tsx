@@ -56,6 +56,21 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [widgets, setWidgets] = useState<Widget[]>(INIT_WIDGETS)
   const [editTab, setEditTab] = useState<'General'|'Data'|'Display'>('General')
   const [openMenu, setOpenMenu] = useState<string|null>(null)
+  const [activeRightPanel, setActiveRightPanel] = useState<string|null>(null)
+  const [integrationSearch, setIntegrationSearch] = useState('')
+
+  const INTEGRATIONS = [
+    {name:'Bing Webmaster Tools',connected:true},{name:'Facebook Ads',connected:true},
+    {name:'Google Ads',connected:true},{name:'Google Analytics 4',connected:true},
+    {name:'Google Lighthouse',connected:true},{name:'Google Search Console',connected:true},
+    {name:'Google Sheets',connected:true},{name:'HubSpot',connected:false},
+    {name:'Semrush - Backlinks',connected:true},{name:'ActiveCampaign',connected:false},
+    {name:'AdRoll',connected:false},{name:'Adform',connected:false},
+    {name:'Ahrefs',connected:false},{name:'Amazon Ads',connected:false},
+    {name:'Amazon Redshift',connected:false},{name:'Avanser',connected:false},
+    {name:'Backlink Manager',connected:false},{name:'BigCommerce',connected:false},
+    {name:'Brevo',connected:false},{name:'BrightLocal',connected:false},
+  ]
 
   function startEdit(w: Widget) {
     setEditingWidget({...w})
@@ -442,15 +457,148 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
               </div>
             </div>
           ) : (
-            <div style={{ width:72, minWidth:72, borderLeft:'1px solid #e5e5e5', background:'#fff', display:'flex', flexDirection:'column', alignItems:'center', padding:'12px 0', gap:2 }}>
-              {RIGHT_PANEL_ITEMS.map(item => (
-                <button key={item.label} style={{ width:60, padding:'10px 4px', display:'flex', flexDirection:'column', alignItems:'center', gap:5, background:'none', border:'none', cursor:'pointer', borderRadius:6, transition:'background 0.1s' }}
-                  onMouseEnter={e=>(e.currentTarget as HTMLButtonElement).style.background='#f5f5f5'}
-                  onMouseLeave={e=>(e.currentTarget as HTMLButtonElement).style.background='none'}>
-                  <span style={{ fontSize:18, lineHeight:1 }}>{item.icon}</span>
-                  <span style={{ fontSize:9, color:'#666', textAlign:'center', lineHeight:1.3, whiteSpace:'pre-line' }}>{item.label}</span>
-                </button>
-              ))}
+            <div style={{ display:'flex', borderLeft:'1px solid #e5e5e5' }}>
+              {/* Panel content */}
+              {activeRightPanel && (
+                <div style={{ width:320, borderRight:'1px solid #e5e5e5', background:'#fff', display:'flex', flexDirection:'column', overflow:'hidden' }}>
+                  {activeRightPanel === 'build' && (
+                    <div style={{ flex:1, overflowY:'auto', padding:20 }}>
+                      <div style={{ display:'flex', alignItems:'flex-start', gap:12, padding:'16px 0', borderBottom:'1px solid #f0f0f0' }}>
+                        <div style={{ width:36, height:36, borderRadius:8, background:'#f0f0f0', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:16 }}>⊞</div>
+                        <div>
+                          <p style={{ fontSize:15, fontWeight:700, color:'#1a1a1a', marginBottom:4 }}>Summarize your data with AI</p>
+                          <p style={{ fontSize:13, color:'#666', lineHeight:1.5 }}>Transform your data into clear, meaningful insights your clients will actually understand</p>
+                        </div>
+                      </div>
+                      <div style={{ display:'flex', alignItems:'flex-start', gap:12, padding:'16px 0', borderBottom:'1px solid #f0f0f0', cursor:'pointer' }}>
+                        <div style={{ width:36, height:36, borderRadius:8, background:'#f0f0f0', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:16 }}>📊</div>
+                        <div style={{ flex:1 }}>
+                          <p style={{ fontSize:15, fontWeight:700, color:'#1a1a1a', marginBottom:4 }}>Build metrics with AI</p>
+                          <p style={{ fontSize:13, color:'#666', lineHeight:1.5 }}>Use natural prompts to find the right widgets and instantly add the metrics that matter most</p>
+                        </div>
+                        <span style={{ color:'#999', fontSize:16, marginTop:2 }}>›</span>
+                      </div>
+                    </div>
+                  )}
+                  {activeRightPanel === 'integrations' && (
+                    <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
+                      <div style={{ padding:12, borderBottom:'1px solid #f0f0f0' }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:8, background:'#f5f5f5', border:'1px solid #e5e5e5', borderRadius:6, padding:'8px 12px', marginBottom:8 }}>
+                          <span style={{ color:'#999', fontSize:14 }}>🔍</span>
+                          <input value={integrationSearch} onChange={e=>setIntegrationSearch(e.target.value)} placeholder="Search"
+                            style={{ background:'transparent', border:'none', outline:'none', fontSize:13, color:'#333', width:'100%' }}/>
+                        </div>
+                        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', background:'#fff', border:'1px solid #e5e5e5', borderRadius:6, padding:'8px 12px', cursor:'pointer' }}>
+                          <span style={{ fontSize:13, color:'#1a1a1a', fontWeight:500 }}>All Integrations</span>
+                          <span style={{ color:'#999' }}>⇅</span>
+                        </div>
+                      </div>
+                      <div style={{ flex:1, overflowY:'auto' }}>
+                        {INTEGRATIONS.filter(i=>i.name.toLowerCase().includes(integrationSearch.toLowerCase())).map(i=>(
+                          <div key={i.name} style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px', borderBottom:'1px solid #f5f5f5', cursor:'pointer' }}
+                            onMouseEnter={e=>(e.currentTarget as HTMLDivElement).style.background='#f9f9f9'}
+                            onMouseLeave={e=>(e.currentTarget as HTMLDivElement).style.background='transparent'}>
+                            <div style={{ width:28, height:28, borderRadius:'50%', background: i.connected?'#e3f2fd':'#f0f0f0', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:700, color: i.connected?'#1565c0':'#999', flexShrink:0 }}>{i.name[0]}</div>
+                            <span style={{ flex:1, fontSize:13, color: i.connected?'#1a1a1a':'#999', fontWeight: i.connected?500:400 }}>{i.name}</span>
+                            {!i.connected && <span style={{ fontSize:12, color:'#48b5ea', fontWeight:600, textDecoration:'underline', marginRight:4 }}>Connect</span>}
+                            <span style={{ color:'#ccc' }}>›</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {activeRightPanel === 'content' && (
+                    <div style={{ flex:1, overflowY:'auto', padding:20 }}>
+                      {[
+                        {icon:'Aa',title:'Title',desc:'Add page titles to structure your report, and include them in your table of contents'},
+                        {icon:'Aa',title:'Textbox',desc:"Create custom text alongside your data to guide the story you're telling"},
+                        {icon:'≡',title:'Table of Contents',desc:'Build your titles and headings so clients can easily scan and navigate your report'},
+                        {icon:'#',title:'Stat',desc:'Spotlight key numbers to make your data instantly stand out'},
+                      ].map(item=>(
+                        <div key={item.title} style={{ display:'flex', alignItems:'flex-start', gap:12, padding:'16px 0', borderBottom:'1px solid #f0f0f0', cursor:'pointer' }}>
+                          <div style={{ width:32, height:32, borderRadius:6, background:'#f0f0f0', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:14, fontWeight:700, color:'#333' }}>{item.icon}</div>
+                          <div>
+                            <p style={{ fontSize:14, fontWeight:700, color:'#1a1a1a', marginBottom:4 }}>{item.title}</p>
+                            <p style={{ fontSize:12, color:'#666', lineHeight:1.5 }}>{item.desc}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {activeRightPanel === 'media' && (
+                    <div style={{ flex:1, overflowY:'auto', padding:20 }}>
+                      {[
+                        {icon:'🖼',title:'Image',desc:'Add images, graphics, or logos to bring personality and context to your report'},
+                        {icon:'</>',title:'Embed',desc:'Pull in live content from YouTube, Google Sheets, and more to enrich your data story'},
+                      ].map(item=>(
+                        <div key={item.title} style={{ display:'flex', alignItems:'flex-start', gap:12, padding:'16px 0', borderBottom:'1px solid #f0f0f0', cursor:'pointer' }}>
+                          <div style={{ width:32, height:32, borderRadius:6, background:'#f0f0f0', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:14, fontWeight:700, color:'#333' }}>{item.icon}</div>
+                          <div>
+                            <p style={{ fontSize:14, fontWeight:700, color:'#1a1a1a', marginBottom:4 }}>{item.title}</p>
+                            <p style={{ fontSize:12, color:'#666', lineHeight:1.5 }}>{item.desc}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {activeRightPanel === 'metrics' && (
+                    <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
+                      <div style={{ padding:12, borderBottom:'1px solid #f0f0f0' }}>
+                        <button style={{ width:'100%', background:'#48b5ea', border:'none', borderRadius:6, padding:'10px', fontSize:13, fontWeight:600, color:'#fff', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+                          <Plus size={14}/> Add Custom Metric
+                        </button>
+                      </div>
+                      <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:24, textAlign:'center', color:'#999' }}>
+                        <div style={{ width:80, height:80, borderRadius:'50%', background:'#f0f0f0', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:12, fontSize:32 }}>✏️</div>
+                        <p style={{ fontSize:13, color:'#555', lineHeight:1.6 }}>You haven't created any custom metrics yet<br/>Click the button above to add a custom metric</p>
+                      </div>
+                    </div>
+                  )}
+                  {activeRightPanel === 'benchmarks' && (
+                    <div style={{ flex:1, overflowY:'auto', padding:20 }}>
+                      <div style={{ display:'flex', alignItems:'flex-start', gap:12, padding:'16px 0', borderBottom:'1px solid #f0f0f0', cursor:'pointer' }}>
+                        <div style={{ width:32, height:32, borderRadius:6, background:'#f0f0f0', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:16 }}>⚖️</div>
+                        <div>
+                          <p style={{ fontSize:14, fontWeight:700, color:'#1a1a1a', marginBottom:4 }}>Benchmark</p>
+                          <p style={{ fontSize:12, color:'#666', lineHeight:1.5 }}>Visualize your client's performance against others</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {activeRightPanel === 'goals' && (
+                    <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
+                      <div style={{ padding:12, borderBottom:'1px solid #f0f0f0' }}>
+                        <button style={{ width:'100%', background:'#48b5ea', border:'none', borderRadius:6, padding:'10px', fontSize:13, fontWeight:600, color:'#fff', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+                          <Plus size={14}/> Add Goal
+                        </button>
+                      </div>
+                      <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:24, textAlign:'center' }}>
+                        <div style={{ width:80, height:80, borderRadius:'50%', background:'#f0f0f0', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:12, fontSize:32 }}>🚩</div>
+                        <p style={{ fontSize:13, color:'#555', lineHeight:1.6 }}>You haven't created any goals yet<br/>Click the button above to add a goal</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              {/* Icon strip */}
+              <div style={{ width:80, minWidth:80, background:'#fff', display:'flex', flexDirection:'column', alignItems:'center', padding:'12px 0', gap:2 }}>
+                {[
+                  {id:'build',icon:'✦',label:'Build with AI'},
+                  {id:'integrations',icon:'📊',label:'Integrations\nMetrics'},
+                  {id:'content',icon:'Aa',label:'Content\nBlocks'},
+                  {id:'media',icon:'🖼',label:'Media'},
+                  {id:'metrics',icon:'⊕',label:'Custom\nMetrics'},
+                  {id:'benchmarks',icon:'⚖',label:'Benchmarks'},
+                  {id:'goals',icon:'◎',label:'Goals'},
+                ].map(item => (
+                  <button key={item.id}
+                    onClick={()=>setActiveRightPanel(activeRightPanel===item.id ? null : item.id)}
+                    style={{ width:68, padding:'10px 4px', display:'flex', flexDirection:'column', alignItems:'center', gap:5, border:'none', cursor:'pointer', borderRadius:8, transition:'background 0.1s', background: activeRightPanel===item.id?'#f0f0f0':'none' }}>
+                    <span style={{ fontSize:18, lineHeight:1 }}>{item.icon}</span>
+                    <span style={{ fontSize:9, color: activeRightPanel===item.id?'#333':'#666', textAlign:'center', lineHeight:1.3, whiteSpace:'pre-line', fontWeight: activeRightPanel===item.id?600:400 }}>{item.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           )
         )}
