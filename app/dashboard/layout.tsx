@@ -97,7 +97,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               {group.label && (
                 <p style={{ ...label9, color:'#999', padding:'8px 16px 4px', display:'block' }}>{group.label}</p>
               )}
-              {group.items.map(({ href, icon:Icon, label, badge }) => (
+              {group.items.map(({ href, icon:Icon, label, badge }: { href:string; icon:any; label:string; badge?:string }) => (
                 <Link key={href} href={href} style={{
                   display:'flex', alignItems:'center', gap:10, padding:'8px 16px', cursor:'pointer',
                   background: on(href) ? '#C2FFE2' : 'transparent',
