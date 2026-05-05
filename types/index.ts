@@ -8,6 +8,7 @@ export interface Client {
   group?: string
   group_count?: number
   created_at: string
+  color?: string
 }
 
 export interface Dashboard {
