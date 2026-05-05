@@ -1,95 +1,212 @@
 'use client'
 import { useState } from 'react'
-import { Plus } from 'lucide-react'
-import AddClientModal from '@/components/dashboard/AddClientModal'
-import ClientCard from '@/components/dashboard/ClientCard'
+import { Plus, Search, LayoutGrid, List, Sparkles, MoreHorizontal, Copy, Trash2, X, FolderOpen } from 'lucide-react'
+import Link from 'next/link'
 import { Client } from '@/types'
 
-const DEMO: Client[] = [
-  { id:'1', name:'Acme Corp', domain:'acmecorp.com', logo_url:null, color:'#20BB71', status:'active', agency_id:'1', platforms:['GA4','Ads','GSC'], created_at:'' },
-  { id:'2', name:'BrightMed', domain:'brightmed.com', logo_url:null, color:'#48B5EA', status:'active', agency_id:'1', platforms:['GSC','Semrush'], created_at:'' },
-  { id:'3', name:'CloudBase', domain:'cloudbase.io', logo_url:null, color:'#F9B62A', status:'active', agency_id:'1', platforms:['LinkedIn','Ads'], created_at:'' },
-  { id:'4', name:'DeltaRetail', domain:'deltaretail.com', logo_url:null, color:'#F64674', status:'review', agency_id:'1', platforms:['FB Ads','StackAdapt'], created_at:'' },
-  { id:'5', name:'EcoFinance', domain:'ecofinance.com', logo_url:null, color:'#20BB71', status:'active', agency_id:'1', platforms:['GA4','YouTube'], created_at:'' },
-  { id:'6', name:'FreshBrand', domain:'freshbrand.co', logo_url:null, color:'#F53619', status:'active', agency_id:'1', platforms:['Bing','Meta'], created_at:'' },
-  { id:'7', name:'GrowthLab', domain:'growthlab.io', logo_url:null, color:'#48B5EA', status:'active', agency_id:'1', platforms:['GA4','GSC'], created_at:'' },
-  { id:'8', name:'HorizonAI', domain:'horizonai.com', logo_url:null, color:'#F9B62A', status:'paused', agency_id:'1', platforms:['Ads','LinkedIn'], created_at:'' },
+const DEMO_CLIENTS: Client[] = [
+  { id:'group1', name:'Lumistella', domain:'', logo_url:null, status:'active', agency_id:'1', group:'group', group_count:5, created_at:'' },
+  { id:'1', name:'Alloy (internal)', domain:'alloy.com', logo_url:'https://logo.clearbit.com/alloy.com', status:'active', agency_id:'1', created_at:'' },
+  { id:'2', name:'Atlanta Beltline', domain:'beltline.org', logo_url:'https://logo.clearbit.com/beltline.org', status:'active', agency_id:'1', created_at:'' },
+  { id:'3', name:'Collaborating Docs', domain:'collaboratingdocs.com', logo_url:'https://logo.clearbit.com/collaboratingdocs.com', status:'active', agency_id:'1', created_at:'' },
+  { id:'4', name:'DEMO: Grainwise Gr...', domain:'grainwise.com', logo_url:'https://logo.clearbit.com/grainwise.com', status:'active', agency_id:'1', created_at:'' },
+  { id:'5', name:'Georgia Aquarium', domain:'georgiaaquarium.org', logo_url:'https://logo.clearbit.com/georgiaaquarium.org', status:'active', agency_id:'1', created_at:'' },
+  { id:'6', name:'GFVGA', domain:'gfvga.org', logo_url:'https://logo.clearbit.com/gfvga.org', status:'active', agency_id:'1', created_at:'' },
+  { id:'7', name:'HHAeXchange', domain:'hhaexchange.com', logo_url:'https://logo.clearbit.com/hhaexchange.com', status:'active', agency_id:'1', created_at:'' },
+  { id:'8', name:'IOU Financial', domain:'ioufinancial.com', logo_url:'https://logo.clearbit.com/ioufinancial.com', status:'active', agency_id:'1', created_at:'' },
+  { id:'9', name:'Latapult', domain:'latapult.com', logo_url:'https://logo.clearbit.com/latapult.com', status:'active', agency_id:'1', created_at:'' },
+  { id:'10', name:'Litmos', domain:'litmos.com', logo_url:'https://logo.clearbit.com/litmos.com', status:'active', agency_id:'1', created_at:'' },
+  { id:'11', name:'NCH', domain:'nchmd.org', logo_url:'https://logo.clearbit.com/nchmd.org', status:'active', agency_id:'1', created_at:'' },
+  { id:'12', name:'S&T Bank', domain:'stbank.com', logo_url:'https://logo.clearbit.com/stbank.com', status:'active', agency_id:'1', created_at:'' },
+  { id:'13', name:'TPX', domain:'tpx.com', logo_url:'https://logo.clearbit.com/tpx.com', status:'active', agency_id:'1', created_at:'' },
 ]
 
-const FILTERS = ['all','active','review','paused'] as const
-const KPIS = [
-  { label:'Total Sessions', value:'2.4M', change:'+18.2%', w:'72%', c:'#20BB71' },
-  { label:'Conversions', value:'94.1K', change:'+11.4%', w:'55%', c:'#48B5EA' },
-  { label:'Avg Engagement', value:'62.4%', change:'+4.2%', w:'62%', c:'#F9B62A' },
-  { label:'Active Sources', value:'247', change:'+8 new', w:'40%', c:'#20BB71' },
-]
+function ClientLogo({ client }: { client: Client }) {
+  const [imgError, setImgError] = useState(false)
+  if (client.group) {
+    return (
+      <div style={{ width:80, height:80, borderRadius:'50%', background:'#f0f0f0', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 12px' }}>
+        <FolderOpen size={32} style={{ color:'#999' }} />
+      </div>
+    )
+  }
+  if (client.logo_url && !imgError) {
+    return <img src={client.logo_url} alt={client.name} onError={()=>setImgError(true)}
+      style={{ width:80, height:80, objectFit:'contain', margin:'0 auto 12px', display:'block' }} />
+  }
+  return (
+    <div style={{ width:80, height:80, borderRadius:8, background:'#e0e0e0', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 12px', fontSize:22, fontWeight:700, color:'#666' }}>
+      {client.name[0]}
+    </div>
+  )
+}
 
 export default function ClientsPage() {
-  const [clients, setClients] = useState<Client[]>(DEMO)
+  const [clients, setClients] = useState<Client[]>(DEMO_CLIENTS)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
   const [showModal, setShowModal] = useState(false)
-  const [filter, setFilter] = useState<typeof FILTERS[number]>('all')
+  const [search, setSearch] = useState('')
+  const [view, setView] = useState<'grid'|'list'>('grid')
+  const [menuOpen, setMenuOpen] = useState<string|null>(null)
+  const [newName, setNewName] = useState('')
+  const [newDomain, setNewDomain] = useState('')
+  const [adding, setAdding] = useState(false)
 
-  const filtered = filter === 'all' ? clients : clients.filter(c => c.status === filter)
+  const filtered = clients.filter(c => c.name.toLowerCase().includes(search.toLowerCase()))
+
+  function toggleSelect(id: string) {
+    setSelected(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  async function handleAdd() {
+    if (!newName.trim()) return
+    setAdding(true)
+    await new Promise(r => setTimeout(r, 500))
+    const logo = newDomain ? `https://logo.clearbit.com/${newDomain}` : null
+    setClients(prev => [...prev, { id: Date.now().toString(), name: newName.trim(), domain: newDomain.trim(), logo_url: logo, status:'active', agency_id:'1', created_at: new Date().toISOString() }])
+    setNewName(''); setNewDomain(''); setAdding(false); setShowModal(false)
+  }
+
+  function deleteSelected() {
+    setClients(prev => prev.filter(c => !selected.has(c.id)))
+    setSelected(new Set())
+  }
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', height:'100%', overflow:'hidden' }}>
+    <div style={{ display:'flex', flexDirection:'column', height:'100%', overflow:'hidden', background:'#fff' }}>
       {/* Topbar */}
-      <div style={{ display:'flex', alignItems:'center', gap:10, padding:'13px 24px', borderBottom:'1px solid #E6E6E6', background:'#FFFFFF', flexShrink:0 }}>
-        <div>
-          <span style={{ fontSize:14, fontWeight:500, color:'#111111', fontFamily:"'DM Sans',sans-serif" }}>Clients</span>
-          <span style={{ fontFamily:"'Barlow',sans-serif", fontSize:9, color:'#6B6B6B', marginLeft:8, letterSpacing:'0.08em', textTransform:'uppercase' }}>— {clients.length} accounts</span>
-        </div>
+      <div style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 24px', borderBottom:'1px solid #e5e5e5', background:'#fff', flexShrink:0 }}>
+        <h1 style={{ fontSize:18, fontWeight:700, color:'#1a1a1a' }}>Clients</h1>
         <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:8 }}>
-          {FILTERS.map(f => (
-            <button key={f} onClick={() => setFilter(f)} style={{
-              padding:'5px 12px', borderRadius:2, fontSize:9, fontFamily:"'Barlow',sans-serif", fontWeight:600,
-              letterSpacing:'0.08em', textTransform:'uppercase', cursor:'pointer', border:'1px solid',
-              background: filter===f ? '#C2FFE2' : '#FFFFFF',
-              borderColor: filter===f ? '#20BB71' : '#E6E6E6',
-              color: filter===f ? '#111' : '#6B6B6B',
-            }}>{f}</button>
-          ))}
-          <button onClick={() => setShowModal(true)} style={{
-            display:'flex', alignItems:'center', gap:6, background:'#20BB71', border:'none',
-            color:'#111111', fontSize:9, fontWeight:700, fontFamily:"'Barlow',sans-serif",
-            letterSpacing:'0.08em', textTransform:'uppercase', padding:'7px 14px', borderRadius:2, cursor:'pointer', marginLeft:4,
-          }}>
-            <Plus size={11} /> Add Client
+          <button style={{ display:'flex', alignItems:'center', gap:6, background:'#f5f5f5', border:'1px solid #e5e5e5', borderRadius:6, padding:'6px 12px', fontSize:12, color:'#333', cursor:'pointer', fontWeight:500 }}>
+            <Sparkles size={13} style={{ color:'#7c3aed' }} /> Ask AI
+          </button>
+          <div style={{ display:'flex', alignItems:'center', background:'#f5f5f5', border:'1px solid #e5e5e5', borderRadius:6, overflow:'hidden' }}>
+            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search"
+              style={{ background:'transparent', border:'none', outline:'none', padding:'6px 10px', fontSize:12, color:'#333', width:160 }} />
+            <Search size={13} style={{ color:'#999', marginRight:8 }} />
+          </div>
+          <button onClick={()=>setView('list')} style={{ padding:'6px 8px', borderRadius:4, background:view==='list'?'#e5e5e5':'transparent', border:'none', cursor:'pointer', color:view==='list'?'#333':'#999' }}>
+            <List size={15} />
+          </button>
+          <button onClick={()=>setView('grid')} style={{ padding:'6px 8px', borderRadius:4, background:view==='grid'?'#e5e5e5':'transparent', border:'none', cursor:'pointer', color:view==='grid'?'#333':'#999' }}>
+            <LayoutGrid size={15} />
+          </button>
+          <button onClick={()=>setShowModal(true)} style={{ display:'flex', alignItems:'center', gap:6, background:'#48b5ea', border:'none', borderRadius:6, padding:'7px 14px', color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+            <Plus size={14} /> Add Client
           </button>
         </div>
       </div>
 
-      <div style={{ flex:1, overflowY:'auto', padding:24 }}>
-        {/* KPI row */}
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginBottom:24 }}>
-          {KPIS.map(k => (
-            <div key={k.label} style={{ background:'#FFFFFF', border:'1px solid #E6E6E6', borderRadius:2, padding:16 }}>
-              <p style={{ fontFamily:"'Barlow',sans-serif", fontSize:9, fontWeight:600, color:'#6B6B6B', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:8 }}>{k.label}</p>
-              <p style={{ fontSize:22, fontWeight:300, color:'#111111', letterSpacing:'-0.5px', lineHeight:1 }}>{k.value}</p>
-              <p style={{ fontFamily:"'Barlow',sans-serif", fontSize:9, fontWeight:600, color:'#20BB71', marginTop:6, letterSpacing:'0.04em' }}>{k.change}</p>
-              <div style={{ height:2, background:'#E6E6E6', borderRadius:0, marginTop:10, overflow:'hidden' }}>
-                <div style={{ height:'100%', width:k.w, background:k.c }} />
+      {/* Bulk action bar */}
+      {selected.size > 0 && (
+        <div style={{ display:'flex', alignItems:'center', gap:12, padding:'8px 24px', background:'#1a1a1a', color:'#fff', fontSize:13 }}>
+          <span>{selected.size} client{selected.size>1?'s':''} selected</span>
+          <button style={{ background:'#333', border:'none', borderRadius:4, padding:'4px 10px', color:'#fff', fontSize:12, cursor:'pointer', display:'flex', alignItems:'center', gap:5 }}>
+            <Copy size={12} />
+          </button>
+          <button onClick={deleteSelected} style={{ background:'#ef4444', border:'none', borderRadius:4, padding:'4px 10px', color:'#fff', fontSize:12, cursor:'pointer', display:'flex', alignItems:'center', gap:5 }}>
+            <Trash2 size={12} />
+          </button>
+          <button onClick={()=>setSelected(new Set())} style={{ marginLeft:'auto', background:'none', border:'none', color:'#aaa', cursor:'pointer' }}>
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
+      {/* Filter bar */}
+      <div style={{ padding:'8px 24px', borderBottom:'1px solid #f0f0f0', flexShrink:0 }}>
+        <button style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, color:'#666', background:'none', border:'1px dashed #ccc', borderRadius:6, padding:'5px 10px', cursor:'pointer' }}>
+          <Plus size={11} /> Add Filter
+        </button>
+      </div>
+
+      {/* Grid */}
+      <div style={{ flex:1, overflowY:'auto', padding:24 }} onClick={()=>setMenuOpen(null)}>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(160px, 1fr))', gap:12 }}>
+          {filtered.map(client => (
+            <div key={client.id} style={{ position:'relative' }}>
+              {/* Checkbox */}
+              <div style={{ position:'absolute', top:10, left:10, zIndex:2 }} onClick={e=>{e.preventDefault();e.stopPropagation();toggleSelect(client.id)}}>
+                <div style={{ width:18, height:18, borderRadius:4, border:`2px solid ${selected.has(client.id)?'#48b5ea':'#ccc'}`, background:selected.has(client.id)?'#48b5ea':'#fff', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}>
+                  {selected.has(client.id) && <span style={{ color:'#fff', fontSize:10, fontWeight:700 }}>✓</span>}
+                </div>
+              </div>
+
+              {/* 3-dot menu */}
+              {!client.group && (
+                <div style={{ position:'absolute', top:8, right:8, zIndex:2 }} onClick={e=>{e.preventDefault();e.stopPropagation();setMenuOpen(menuOpen===client.id?null:client.id)}}>
+                  <button style={{ background:'rgba(255,255,255,0.9)', border:'1px solid #e5e5e5', borderRadius:6, padding:'3px 6px', cursor:'pointer', display:'flex', alignItems:'center' }}>
+                    <MoreHorizontal size={13} style={{ color:'#666' }} />
+                  </button>
+                  {menuOpen===client.id && (
+                    <div style={{ position:'absolute', right:0, top:'100%', marginTop:4, background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, boxShadow:'0 4px 16px rgba(0,0,0,0.12)', padding:4, minWidth:120, zIndex:10 }}>
+                      <button style={{ display:'flex', alignItems:'center', gap:8, width:'100%', padding:'8px 12px', fontSize:13, color:'#333', background:'none', border:'none', cursor:'pointer', borderRadius:4 }}>
+                        <Copy size={13} /> Clone
+                      </button>
+                      <button style={{ display:'flex', alignItems:'center', gap:8, width:'100%', padding:'8px 12px', fontSize:13, color:'#ef4444', background:'none', border:'none', cursor:'pointer', borderRadius:4 }}>
+                        <Trash2 size={13} /> Delete
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Card */}
+              {client.group ? (
+                <div style={{ background:'#f9f9f9', border:'1px solid #e5e5e5', borderRadius:8, padding:16, textAlign:'center', cursor:'pointer' }}>
+                  <ClientLogo client={client} />
+                  <p style={{ fontSize:12, fontWeight:600, color:'#1a1a1a', marginBottom:4 }}>{client.name}</p>
+                  <p style={{ fontSize:11, color:'#999' }}>{client.group_count} Clients</p>
+                </div>
+              ) : (
+                <Link href={`/dashboard/clients/${client.id}`} style={{ textDecoration:'none', display:'block' }}>
+                  <div style={{ background:'#fff', border:`2px solid ${selected.has(client.id)?'#48b5ea':'#e5e5e5'}`, borderRadius:8, padding:16, textAlign:'center', cursor:'pointer', transition:'border-color 0.15s' }}>
+                    <ClientLogo client={client} />
+                    <p style={{ fontSize:12, fontWeight:600, color:'#1a1a1a' }}>{client.name}</p>
+                  </div>
+                </Link>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Add Client Modal */}
+      {showModal && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:50, padding:16 }} onClick={()=>setShowModal(false)}>
+          <div style={{ background:'#fff', borderRadius:12, width:'100%', maxWidth:420, overflow:'hidden' }} onClick={e=>e.stopPropagation()}>
+            <div style={{ height:3, background:'#48b5ea' }} />
+            <div style={{ padding:28 }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:4 }}>
+                <h2 style={{ fontSize:16, fontWeight:700, color:'#1a1a1a' }}>Add Client</h2>
+                <button onClick={()=>setShowModal(false)} style={{ background:'none', border:'none', cursor:'pointer', color:'#999' }}><X size={16} /></button>
+              </div>
+              <p style={{ fontSize:12, color:'#999', marginBottom:20 }}>Logo is fetched automatically from the domain.</p>
+              <div style={{ marginBottom:14 }}>
+                <label style={{ display:'block', fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Client Name</label>
+                <input value={newName} onChange={e=>setNewName(e.target.value)} placeholder="e.g. Atlanta Beltline"
+                  style={{ width:'100%', background:'#fafafa', border:'1px solid #e5e5e5', borderRadius:6, padding:'9px 12px', color:'#1a1a1a', fontSize:13, outline:'none', boxSizing:'border-box' as const }} />
+              </div>
+              <div style={{ marginBottom:24 }}>
+                <label style={{ display:'block', fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Website / Domain</label>
+                <input value={newDomain} onChange={e=>setNewDomain(e.target.value)} placeholder="e.g. beltline.org"
+                  style={{ width:'100%', background:'#fafafa', border:'1px solid #e5e5e5', borderRadius:6, padding:'9px 12px', color:'#1a1a1a', fontSize:13, outline:'none', boxSizing:'border-box' as const }} />
+              </div>
+              <div style={{ display:'flex', gap:8 }}>
+                <button onClick={()=>setShowModal(false)} style={{ flex:1, background:'#f5f5f5', border:'1px solid #e5e5e5', borderRadius:6, padding:'9px', fontSize:13, color:'#666', cursor:'pointer' }}>Cancel</button>
+                <button onClick={handleAdd} disabled={!newName.trim()||adding} style={{ flex:2, background:'#48b5ea', border:'none', borderRadius:6, padding:'9px', fontSize:13, fontWeight:600, color:'#fff', cursor:'pointer', opacity:!newName.trim()||adding?0.6:1 }}>
+                  {adding ? 'Adding...' : 'Add Client'}
+                </button>
               </div>
             </div>
-          ))}
+          </div>
         </div>
-
-        <p style={{ fontFamily:"'Barlow',sans-serif", fontSize:9, fontWeight:600, color:'#6B6B6B', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:10 }}>All Clients</p>
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(140px,1fr))', gap:8 }}>
-          {filtered.map(c => <ClientCard key={c.id} client={c} />)}
-          <button onClick={() => setShowModal(true)} style={{
-            minHeight:104, background:'#FAFAFA', border:'1px dashed #E6E6E6', borderRadius:2,
-            display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8, cursor:'pointer',
-          }}>
-            <div style={{ width:24, height:24, borderRadius:2, background:'#E6E6E6', display:'flex', alignItems:'center', justifyContent:'center', color:'#6B6B6B' }}>
-              <Plus size={13} />
-            </div>
-            <span style={{ fontFamily:"'Barlow',sans-serif", fontSize:9, fontWeight:600, color:'#6B6B6B', textTransform:'uppercase', letterSpacing:'0.08em' }}>Add client</span>
-          </button>
-        </div>
-      </div>
-
-      {showModal && <AddClientModal onClose={() => setShowModal(false)} onAdd={c => { setClients(p => [...p, c]); setShowModal(false) }} />}
+      )}
     </div>
   )
 }

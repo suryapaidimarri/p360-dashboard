@@ -2,39 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Barlow:wght@400;500;600;700&display=swap');
-
-:root {
-  --alloy-black: #000000;
-  --alloy-ink: #111111;
-  --alloy-white: #FFFFFF;
-  --alloy-paper: #FAFAFA;
-  --alloy-line: #E6E6E6;
-  --alloy-mute: #6B6B6B;
-  --alloy-green-1: #20BB71;
-  --alloy-green-2: #3FDB90;
-  --alloy-green-3: #6FF5B5;
-  --alloy-green-4: #C2FFE2;
-  --alloy-blue-1: #48B5EA;
-  --alloy-blue-4: #E1F7FF;
-  --alloy-yellow-1: #F9B62A;
-  --alloy-yellow-4: #FFEECA;
-  --alloy-red-1: #F53619;
-  --alloy-red-2: #F64674;
-  --alloy-red-4: #FFCFDC;
-  --font-display: 'DM Sans', system-ui, sans-serif;
-  --font-body: 'DM Sans', system-ui, sans-serif;
-  --font-label: 'Barlow', 'DM Sans', system-ui, sans-serif;
-}
-
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: var(--font-body);
-  background: var(--alloy-paper);
-  color: var(--alloy-ink);
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+  background: #f5f5f5;
+  color: #1a1a1a;
 }
 
-::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--alloy-line); border-radius: 0; }
+::-webkit-scrollbar-thumb { background: #d0d0d0; border-radius: 2px; }

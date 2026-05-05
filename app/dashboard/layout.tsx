@@ -3,30 +3,32 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { LayoutGrid, TrendingUp, FileText, Users, Database, Target, Bell, Layout, Zap, Settings, LogOut, BarChart2, Search } from 'lucide-react'
+import {
+  Users, BarChart2, FileText, Target, Bell, Layout, Zap,
+  Database, Hash, Settings, LogOut, Search, Download,
+  BellRing, ChevronLeft, Briefcase, TrendingUp
+} from 'lucide-react'
 
 const NAV = [
-  { label: 'Main', items: [
-    { href: '/dashboard/clients', icon: LayoutGrid, label: 'Clients', badge: '60' },
-    { href: '/dashboard/prospects', icon: Users, label: 'Prospects' },
-    { href: '/dashboard/rollup', icon: TrendingUp, label: 'Roll-up' },
+  { items: [
+    { href: '/dashboard/clients', icon: Users, label: 'Clients' },
+    { href: '/dashboard/prospects', icon: Briefcase, label: 'Prospects' },
   ]},
-  { label: 'Tools', items: [
-    { href: '/dashboard/datasources', icon: Database, label: 'Data Sources' },
+  { label: 'ANALYSIS', items: [
     { href: '/dashboard/reports', icon: FileText, label: 'Reports' },
+    { href: '/dashboard/rollup', icon: TrendingUp, label: 'Roll-up Dashboards' },
+  ]},
+  { label: 'PROJECT MANAGEMENT', items: [
+    { href: '/dashboard/proposals', icon: Layout, label: 'Proposals' },
     { href: '/dashboard/goals', icon: Target, label: 'Goals' },
     { href: '/dashboard/alerts', icon: Bell, label: 'Alerts' },
+  ]},
+  { label: 'MANAGEMENT', items: [
+    { href: '/dashboard/datasources', icon: Database, label: 'Data Sources' },
+    { href: '/dashboard/metrics', icon: Hash, label: 'Custom Metrics' },
     { href: '/dashboard/templates', icon: Layout, label: 'Templates' },
     { href: '/dashboard/bulk', icon: Zap, label: 'Bulk Actions' },
-  ]}
-]
-
-const RAIL = [
-  { href: '/dashboard/clients', icon: LayoutGrid },
-  { href: '/dashboard/datasources', icon: Database },
-  { href: '/dashboard/reports', icon: FileText },
-  { href: '/dashboard/rollup', icon: BarChart2 },
-  { href: '/dashboard/alerts', icon: Bell },
+  ]},
 ]
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -34,79 +36,80 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter()
   const supabase = createClient()
   const [search, setSearch] = useState('')
+  const [collapsed, setCollapsed] = useState(false)
   const on = (href: string) => pathname.startsWith(href)
 
-  const railItem = (href: string, Icon: React.ElementType) => ({
-    width:36, height:36, borderRadius:2, display:'flex', alignItems:'center', justifyContent:'center',
-    background: on(href) ? 'rgba(32,187,113,0.2)' : 'transparent',
-    color: on(href) ? '#20BB71' : 'rgba(255,255,255,0.35)',
-    textDecoration:'none', cursor:'pointer', transition:'all 0.1s',
-  })
-
-  const navItem = (href: string) => ({
-    display:'flex', alignItems:'center', gap:8, padding:'7px 8px', borderRadius:2,
-    background: on(href) ? '#C2FFE2' : 'transparent',
-    color: on(href) ? '#111111' : '#2A2A2A',
-    fontSize:12, textDecoration:'none', marginBottom:1, cursor:'pointer',
-    fontFamily:"'DM Sans', sans-serif",
-  })
-
   return (
-    <div style={{ display:'flex', height:'100vh', overflow:'hidden', background:'#FAFAFA', fontFamily:"'DM Sans',sans-serif" }}>
-      {/* Black icon rail */}
-      <div style={{ width:52, minWidth:52, background:'#111111', display:'flex', flexDirection:'column', alignItems:'center', padding:'16px 0', gap:2 }}>
-        <Link href="/dashboard/clients" style={{ width:32, height:32, background:'#20BB71', borderRadius:2, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:20, textDecoration:'none' }}>
-          <span style={{ fontFamily:"'Barlow',sans-serif", fontSize:13, fontWeight:700, color:'#111', letterSpacing:'0.05em' }}>P</span>
-        </Link>
-        {RAIL.map(({ href, icon: Icon }) => (
-          <Link key={href} href={href} style={railItem(href, Icon)}>
-            <Icon size={15} />
-          </Link>
-        ))}
-        <div style={{ marginTop:'auto', display:'flex', flexDirection:'column', alignItems:'center', gap:2 }}>
-          <Link href="/dashboard/settings" style={railItem('/dashboard/settings', Settings)}>
-            <Settings size={15} />
-          </Link>
-          <button onClick={async () => { await supabase.auth.signOut(); router.push('/login') }}
-            style={{ width:36, height:36, borderRadius:2, display:'flex', alignItems:'center', justifyContent:'center', color:'rgba(255,255,255,0.35)', background:'transparent', border:'none', cursor:'pointer' }}>
-            <LogOut size={15} />
-          </button>
+    <div style={{ display:'flex', height:'100vh', overflow:'hidden', background:'#f5f5f5' }}>
+      {/* Sidebar */}
+      <div style={{ width: collapsed ? 0 : 220, minWidth: collapsed ? 0 : 220, background:'#fff', borderRight:'1px solid #e5e5e5', display:'flex', flexDirection:'column', overflow:'hidden', transition:'all 0.2s' }}>
+        {/* Logo */}
+        <div style={{ padding:'16px 16px 12px', borderBottom:'1px solid #e5e5e5', display:'flex', alignItems:'center', gap:10 }}>
+          <div style={{ width:36, height:36, borderRadius:'50%', background:'#1a1a2e', border:'2px solid #48b5ea', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+            <span style={{ fontSize:10, fontWeight:700, color:'#fff' }}>360</span>
+          </div>
+          <span style={{ fontSize:13, fontWeight:700, color:'#1a1a2e', letterSpacing:'-0.2px', whiteSpace:'nowrap' }}>PARTNERSHIP360</span>
         </div>
-      </div>
 
-      {/* White nav panel */}
-      <div style={{ width:196, minWidth:196, background:'#FFFFFF', borderRight:'1px solid #E6E6E6', display:'flex', flexDirection:'column' }}>
-        <div style={{ padding:'18px 16px', borderBottom:'1px solid #E6E6E6', display:'flex', alignItems:'center', gap:8 }}>
-          <div style={{ width:22, height:22, background:'#20BB71', borderRadius:2, display:'flex', alignItems:'center', justifyContent:'center' }}>
-            <span style={{ fontFamily:"'Barlow',sans-serif", fontSize:10, fontWeight:700, color:'#111' }}>P</span>
-          </div>
-          <span style={{ fontFamily:"'Barlow',sans-serif", fontSize:11, fontWeight:700, color:'#111111', letterSpacing:'0.1em', textTransform:'uppercase' }}>P360</span>
-        </div>
-        <div style={{ padding:'12px 8px' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:8, background:'#FAFAFA', border:'1px solid #E6E6E6', borderRadius:2, padding:'6px 10px' }}>
-            <Search size={11} style={{ color:'#6B6B6B', flexShrink:0 }} />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..."
-              style={{ background:'transparent', border:'none', outline:'none', color:'#111', fontSize:12, width:'100%', fontFamily:"'DM Sans',sans-serif" }} />
+        {/* Search */}
+        <div style={{ padding:'10px 12px', borderBottom:'1px solid #f0f0f0' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8, background:'#f5f5f5', border:'1px solid #e5e5e5', borderRadius:6, padding:'6px 10px' }}>
+            <Search size={12} style={{ color:'#999', flexShrink:0 }} />
+            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search..."
+              style={{ background:'transparent', border:'none', outline:'none', color:'#333', fontSize:12, width:'100%' }} />
           </div>
         </div>
-        <div style={{ flex:1, overflowY:'auto', padding:'0 8px' }}>
-          {NAV.map(group => (
-            <div key={group.label} style={{ marginBottom:20 }}>
-              <p style={{ fontFamily:"'Barlow',sans-serif", fontSize:9, fontWeight:600, color:'#6B6B6B', textTransform:'uppercase', letterSpacing:'0.12em', padding:'0 8px 6px' }}>{group.label}</p>
-              {group.items.map(({ href, icon: Icon, label, badge }) => (
-                <Link key={href} href={href} style={navItem(href)}>
-                  <Icon size={13} style={{ flexShrink:0, color: on(href) ? '#111' : '#6B6B6B' }} />
-                  <span>{label}</span>
-                  {badge && <span style={{ marginLeft:'auto', fontFamily:"'Barlow',sans-serif", fontSize:9, background: on(href) ? '#6FF5B5' : '#E6E6E6', color: on(href) ? '#111' : '#6B6B6B', padding:'1px 6px', borderRadius:999 }}>{badge}</span>}
+
+        {/* Nav */}
+        <div style={{ flex:1, overflowY:'auto', padding:'8px 0' }}>
+          {NAV.map((group, gi) => (
+            <div key={gi} style={{ marginBottom:4 }}>
+              {group.label && (
+                <p style={{ fontSize:10, fontWeight:600, color:'#999', letterSpacing:'0.06em', padding:'8px 16px 4px', textTransform:'uppercase' as const }}>{group.label}</p>
+              )}
+              {group.items.map(({ href, icon: Icon, label }) => (
+                <Link key={href} href={href} style={{
+                  display:'flex', alignItems:'center', gap:10, padding:'8px 16px',
+                  background: on(href) ? '#ebf7ff' : 'transparent',
+                  color: on(href) ? '#1a85c8' : '#333',
+                  fontSize:13, textDecoration:'none', fontWeight: on(href) ? 600 : 400,
+                  borderRight: on(href) ? '3px solid #48b5ea' : '3px solid transparent',
+                }}>
+                  <Icon size={15} style={{ flexShrink:0 }} />
+                  <span style={{ whiteSpace:'nowrap' }}>{label}</span>
                 </Link>
               ))}
             </div>
           ))}
         </div>
+
+        {/* Bottom */}
+        <div style={{ borderTop:'1px solid #e5e5e5', padding:'8px 0' }}>
+          <Link href="/dashboard/exports" style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 16px', color:'#333', fontSize:13, textDecoration:'none' }}>
+            <Download size={15} /><span>Exports</span>
+          </Link>
+          <Link href="/dashboard/notifications" style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 16px', color:'#333', fontSize:13, textDecoration:'none' }}>
+            <BellRing size={15} /><span>Notifications</span>
+            <span style={{ marginLeft:'auto', background:'#ef4444', color:'#fff', fontSize:10, fontWeight:600, padding:'1px 5px', borderRadius:999 }}>3</span>
+          </Link>
+          <div style={{ padding:'8px 16px', display:'flex', alignItems:'center', gap:8 }}>
+            <div style={{ width:28, height:28, borderRadius:'50%', background:'#1a1a2e', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+              <span style={{ fontSize:10, fontWeight:700, color:'#fff' }}>A</span>
+            </div>
+            <div style={{ flex:1, minWidth:0 }}>
+              <p style={{ fontSize:12, fontWeight:600, color:'#1a1a1a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>Analytics (alloy...)</p>
+              <p style={{ fontSize:10, color:'#999', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>analytics@alloy...</p>
+            </div>
+            <button onClick={async()=>{await supabase.auth.signOut();router.push('/login')}}
+              style={{ background:'none', border:'none', cursor:'pointer', color:'#999', padding:2 }}>
+              <LogOut size={13} />
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Main */}
-      <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', background:'#FAFAFA' }}>
+      <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
         {children}
       </div>
     </div>
