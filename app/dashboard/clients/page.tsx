@@ -30,8 +30,9 @@ function ClientLogo({ client }: { client: Client }) {
       </div>
     )
   }
-  if (client.logo_url && !imgError) {
-    return <img src={client.logo_url} alt={client.name} onError={()=>setImgError(true)}
+  const logoSrc = client.logo_url || (client.domain ? `https://logo.clearbit.com/${client.domain}` : null)
+if (logoSrc && !imgError) {
+    return <img src={logoSrc} alt={client.name} onError={()=>setImgError(true)}
       style={{ width:80, height:80, objectFit:'contain', margin:'0 auto 12px', display:'block' }} />
   }
   return (
@@ -130,12 +131,10 @@ export default function ClientsPage() {
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(160px, 1fr))', gap:12 }}>
           {filtered.map(client => (
             <div key={client.id} style={{ position:'relative' }}>
-              {/* Checkbox */}
-              <div style={{ position:'absolute', top:10, left:10, zIndex:2 }} onClick={e=>{e.preventDefault();e.stopPropagation();toggleSelect(client.id)}}>
-                <div style={{ width:18, height:18, borderRadius:4, border:`2px solid ${selected.has(client.id)?'#48b5ea':'#ccc'}`, background:selected.has(client.id)?'#48b5ea':'#fff', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}>
-                  {selected.has(client.id) && <span style={{ color:'#fff', fontSize:10, fontWeight:700 }}>✓</span>}
-                </div>
-              </div>
+              {/* Checkbox - show on hover only */}
+<div style={{ position:'absolute', top:10, left:10, zIndex:2, opacity: selected.has(client.id) ? 1 : 0, transition:'opacity 0.15s' }}
+  onMouseEnter={e=>(e.currentTarget.style.opacity='1')}
+  onMouseLeave={e=>{if(!selected.has(client.id))e.currentTarget.style.opacity='0'}}
 
               {/* 3-dot menu */}
               {!client.group && (
