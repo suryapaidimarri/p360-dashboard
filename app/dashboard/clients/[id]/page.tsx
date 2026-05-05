@@ -192,7 +192,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                   <div style={{ position:'relative', width:90, height:90 }}>
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
-                        <Pie data={[{v:44},{v:56}]} cx="50%" cy="50%" innerRadius={30} outerRadius:42 dataKey="v" startAngle={90} endAngle={-270}>
+                        <Pie data={[{v:44},{v:56}]} cx="50%" cy="50%" innerRadius={30} outerRadius={42} dataKey="v" startAngle={90} endAngle={-270}>
                           <Cell fill="#f9b62a" />
                           <Cell fill="#e5e5e5" />
                         </Pie>
