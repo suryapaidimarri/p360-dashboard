@@ -154,12 +154,12 @@ export default function ClientsPage() {
           setClients(JSON.parse(saved))
         } else {
           // Seed localStorage with demo clients
-          const seeded = SEED_CLIENTS.map((c, i) => ({ ...c, id: `seed-${i}`, logo_url: null, agency_id: '1', created_at: new Date().toISOString(), status: c.status as 'active' | 'review' | 'paused' }))
-localStorage.setItem('p360_clients', JSON.stringify(seeded))
-setClients(seeded)
+          const seeded = SEED_CLIENTS.map((c, i) => ({ ...c, id: `seed-${i}`, logo_url: null, agency_id: '1', created_at: new Date().toISOString() }))
+          localStorage.setItem('p360_clients', JSON.stringify(seeded))
+          setClients(seeded)
         }
       } catch {
-        setClients(SEED_CLIENTS.map((c, i) => ({ ...c, id: `seed-${i}`, logo_url: null, agency_id: '1', created_at: '', status: c.status as 'active' | 'review' | 'paused' })))
+        setClients(SEED_CLIENTS.map((c, i) => ({ ...c, id: `seed-${i}`, logo_url: null, agency_id: '1', created_at: '' })))
       }
     } finally {
       setLoading(false)
@@ -184,7 +184,7 @@ setClients(seeded)
       setClients(prev => [...prev, data])
     } catch {
       // localStorage fallback
-      const newClient = { id: `local-${Date.now()}`, name: newName.trim(), domain: cleanDomain, color, status: 'active' as const, agency_id: '1', logo_url: null, created_at: new Date().toISOString() }
+      const newClient: Client = { id: `local-${Date.now()}`, name: newName.trim(), domain: cleanDomain, color, status: 'active', agency_id: '1', logo_url: null, created_at: new Date().toISOString() }
       const updated = [...clients, newClient]
       try { localStorage.setItem('p360_clients', JSON.stringify(updated)) } catch {}
       setClients(updated)
@@ -194,17 +194,16 @@ setClients(seeded)
   }
 
   async function handleDelete(id: string) {
-    // Optimistic update first
-    setClients(prev => prev.filter(c => c.id !== id))
+    // Optimistic update first — immediately remove from UI
+    const updated = clients.filter(c => c.id !== id)
+    setClients(updated)
     setMenuOpen(null)
+    // Update localStorage immediately too
+    try { localStorage.setItem('p360_clients', JSON.stringify(updated)) } catch {}
+    // Delete from Supabase
     try {
       await supabase.from('clients').delete().eq('id', id)
-    } catch {
-      try {
-        const updated = clients.filter(c => c.id !== id)
-        localStorage.setItem('p360_clients', JSON.stringify(updated))
-      } catch {}
-    }
+    } catch {}
   }
 
   const filtered = clients.filter(c => c.name.toLowerCase().includes(search.toLowerCase()))
