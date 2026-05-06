@@ -74,6 +74,12 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [dateRange, setDateRange] = useState('30daysAgo')
   const [clientName, setClientName] = useState('Client')
   const [clientDomain, setClientDomain] = useState('')
+  const [showMappingModal, setShowMappingModal] = useState(false)
+  const [mappingProp, setMappingProp] = useState('')
+  const [mappingPropName, setMappingPropName] = useState('')
+  const [mappingSite, setMappingSite] = useState('')
+  const [savingMapping, setSavingMapping] = useState(false)
+  const [mappingSaved, setMappingSaved] = useState(false)
 
   const [widgets, setWidgets] = useState<Widget[]>([
     {id:'w1',title:'Total Sessions',dataSource:'google-analytics-4 / traffic-analytics',chartType:'sparkline',tooltip:'Total sessions during the selected period.',color:'white',value:'120.5 K',change:'29%',up:true},
