@@ -90,9 +90,9 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   ])
 
   useEffect(() => {
-    checkConnection()
     loadClientInfo()
-    loadMapping()
+    // Run checkConnection first, then loadMapping overrides the property if saved
+    checkConnection().then(() => loadMapping())
   }, [clientId])
 
   async function loadMapping() {
@@ -100,13 +100,20 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       const res = await fetch(`/api/mapping?client_id=${clientId}`)
       const data = await res.json()
       if (data.ga4_property_id) {
+        // Saved mapping found — override default selection
         setSelectedProperty(data.ga4_property_id)
         setMappingProp(data.ga4_property_id)
         setMappingPropName(data.ga4_property_name || '')
         setMappingSite(data.gsc_site_url || '')
+        // Always fetch with the mapped property
         fetchGA4(data.ga4_property_id)
+      } else {
+        // No mapping yet — fetch with whatever is currently selected
+        fetchGA4()
       }
-    } catch {}
+    } catch {
+      fetchGA4()
+    }
   }
 
   async function saveMapping() {
@@ -139,36 +146,18 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     } catch {}
   }
 
-  async function checkConnection() {
+  async function checkConnection(): Promise<void> {
     setCheckingConn(true)
     try {
       const res = await fetch(`/api/connection?client_id=${clientId}`)
       const data = await res.json()
       setConnection(data)
       if (data.connected && data.ga4_properties?.length > 0) {
-        // Try to find matching property by client domain or name
-        const props = data.ga4_properties
-        let bestProp = props[0]
-
-        // Get client domain/name to find best match
-        try {
-          const { createClient: createSB } = await import('@/lib/supabase/client')
-          const sb = createSB()
-          const { data: clientData } = await sb.from('clients').select('name,domain').eq('id', clientId).single()
-          if (clientData) {
-            const domain = (clientData.domain || '').toLowerCase().replace('www.', '').replace('.org','').replace('.com','').replace('.net','')
-            const name = (clientData.name || '').toLowerCase()
-            // Find best matching property
-            const match = props.find((p: any) => {
-              const pName = (p.displayName || '').toLowerCase()
-              return pName.includes(domain) || pName.includes(name) || domain.includes(pName.split(' ')[0])
-            })
-            if (match) bestProp = match
-          }
-        } catch {}
-
-        setSelectedProperty(bestProp.name)
-        fetchGA4(bestProp.name)
+        // Only set default if no mapping is saved yet
+        // loadMapping() will override this with the saved property
+        const firstProp = data.ga4_properties[0]
+        setSelectedProperty(firstProp.name)
+        // Don't fetch yet — loadMapping will fetch with correct property
       }
     } catch { setConnection({ connected: false }) }
     finally { setCheckingConn(false) }
