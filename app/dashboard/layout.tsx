@@ -1,9 +1,9 @@
 'use client'
-import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { LayoutGrid, TrendingUp, FileText, Users, Database, Target, Bell, Layout, Zap, Settings, LogOut, BarChart2, Search, Download, BellRing, Briefcase, Hash } from 'lucide-react'
+import { LayoutGrid, TrendingUp, FileText, Database, Target, Bell, Layout, Zap, LogOut, BarChart2, Search, Download, BellRing, Briefcase, Hash, Settings } from 'lucide-react'
+import { useState } from 'react'
 
 const NAV = [
   { items: [
@@ -27,7 +27,21 @@ const NAV = [
   ]},
 ]
 
-const label9 = { fontFamily:"'Barlow',sans-serif", fontSize:'9px', fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'0.1em' }
+// Alloy design tokens as JS constants
+const T = {
+  ink: '#111111',
+  paper: '#FAFAFA',
+  white: '#FFFFFF',
+  line: '#E6E6E6',
+  mute: '#6B6B6B',
+  green1: '#20BB71',
+  green4: '#C2FFE2',
+  blue1: '#48B5EA',
+  red1: '#F53619',
+  label: { fontFamily:"'Barlow',sans-serif", fontSize:'9px' as const, fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'0.12em' },
+  body: { fontFamily:"'DM Sans',sans-serif" },
+  display: { fontFamily:"'Aeonik','DM Sans',sans-serif" },
+}
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -37,12 +51,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const on = (href: string) => pathname.startsWith(href)
 
   return (
-    <div style={{ display:'flex', height:'100vh', overflow:'hidden', background:'#FAFAFA', fontFamily:"'DM Sans',sans-serif" }}>
+    <div style={{ display:'flex', height:'100vh', overflow:'hidden', background:T.paper, ...T.body }}>
 
       {/* Black icon rail */}
-      <div style={{ width:52, minWidth:52, background:'#111111', display:'flex', flexDirection:'column', alignItems:'center', padding:'16px 0', gap:2 }}>
-        <Link href="/dashboard/clients" style={{ width:32, height:32, background:'#20BB71', borderRadius:2, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:20, textDecoration:'none', flexShrink:0 }}>
-          <span style={{ fontFamily:"'Barlow',sans-serif", fontSize:13, fontWeight:700, color:'#111', letterSpacing:'0.05em' }}>P</span>
+      <div style={{ width:48, minWidth:48, background:T.ink, display:'flex', flexDirection:'column', alignItems:'center', padding:'14px 0', gap:2, borderRight:`1px solid #222` }}>
+        {/* Alloy mark */}
+        <Link href="/dashboard/clients" style={{ marginBottom:20, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <img src="/logos/Alloy-Logo-WHT-Green.png" alt="Alloy Intelligence" style={{ width:28, height:'auto', objectFit:'contain' }}
+            onError={e => {
+              e.currentTarget.style.display = 'none'
+              const span = document.createElement('span')
+              span.style.cssText = 'font-family:Barlow,sans-serif;font-size:11px;font-weight:700;color:#20BB71;letter-spacing:0.1em'
+              span.textContent = 'AI'
+              e.currentTarget.parentElement?.appendChild(span)
+            }}
+          />
         </Link>
         {[
           {href:'/dashboard/clients', icon:LayoutGrid},
@@ -53,63 +76,71 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         ].map(({href, icon:Icon}) => (
           <Link key={href} href={href} style={{
             width:36, height:36, borderRadius:2, display:'flex', alignItems:'center', justifyContent:'center',
-            background: on(href) ? 'rgba(32,187,113,0.2)' : 'transparent',
-            color: on(href) ? '#20BB71' : 'rgba(255,255,255,0.35)',
-            textDecoration:'none', transition:'all 0.1s',
+            background: on(href) ? 'rgba(32,187,113,0.15)' : 'transparent',
+            color: on(href) ? T.green1 : 'rgba(255,255,255,0.3)',
+            textDecoration:'none', transition:'all 0.12s',
           }}>
-            <Icon size={15}/>
+            <Icon size={15} strokeWidth={1.5}/>
           </Link>
         ))}
         <div style={{ marginTop:'auto', display:'flex', flexDirection:'column', alignItems:'center', gap:2 }}>
-          <Link href="/dashboard/settings" style={{ width:36, height:36, borderRadius:2, display:'flex', alignItems:'center', justifyContent:'center', color:'rgba(255,255,255,0.35)', textDecoration:'none' }}>
-            <Settings size={15}/>
+          <Link href="/dashboard/settings" style={{ width:36, height:36, borderRadius:2, display:'flex', alignItems:'center', justifyContent:'center', color:'rgba(255,255,255,0.3)', textDecoration:'none' }}>
+            <Settings size={15} strokeWidth={1.5}/>
           </Link>
           <button onClick={async()=>{await supabase.auth.signOut();router.push('/login')}}
-            style={{ width:36, height:36, borderRadius:2, display:'flex', alignItems:'center', justifyContent:'center', color:'rgba(255,255,255,0.35)', background:'transparent', border:'none', cursor:'pointer' }}>
-            <LogOut size={15}/>
+            style={{ width:36, height:36, borderRadius:2, display:'flex', alignItems:'center', justifyContent:'center', color:'rgba(255,255,255,0.3)', background:'transparent', border:'none', cursor:'pointer' }}>
+            <LogOut size={15} strokeWidth={1.5}/>
           </button>
         </div>
       </div>
 
       {/* White nav panel */}
-      <div style={{ width:210, minWidth:210, background:'#FFFFFF', borderRight:'1px solid #E6E6E6', display:'flex', flexDirection:'column' }}>
-        {/* Logo */}
-        <div style={{ padding:'16px 16px 14px', borderBottom:'1px solid #E6E6E6', display:'flex', alignItems:'center', gap:8 }}>
-          <div style={{ width:24, height:24, background:'#20BB71', borderRadius:2, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-            <span style={{ fontFamily:"'Barlow',sans-serif", fontSize:11, fontWeight:700, color:'#111' }}>P</span>
+      <div style={{ width:216, minWidth:216, background:T.white, borderRight:`1px solid ${T.line}`, display:'flex', flexDirection:'column' }}>
+        {/* Brand lockup */}
+        <div style={{ padding:'16px 16px 14px', borderBottom:`1px solid ${T.line}`, display:'flex', alignItems:'center', gap:10 }}>
+          <img src="/logos/Alloy-Logo-BLK-Green.png" alt="Alloy Intelligence"
+            style={{ height:18, width:'auto', objectFit:'contain' }}
+            onError={e => { e.currentTarget.style.display = 'none' }}
+          />
+          <div style={{ display:'flex', flexDirection:'column' }}>
+            <span style={{ ...T.label, fontSize:'10px', color:T.ink, letterSpacing:'0.08em' }}>INTELLIGENCE</span>
           </div>
-          <span style={{ fontFamily:"'Barlow',sans-serif", fontSize:11, fontWeight:700, color:'#111111', letterSpacing:'0.1em', textTransform:'uppercase' as const }}>P360</span>
         </div>
 
         {/* Search */}
-        <div style={{ padding:'10px 12px', borderBottom:'1px solid #F0F0F0' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:8, background:'#FAFAFA', border:'1px solid #E6E6E6', borderRadius:2, padding:'6px 10px' }}>
-            <Search size={11} style={{ color:'#6B6B6B', flexShrink:0 }}/>
+        <div style={{ padding:'10px 12px', borderBottom:`1px solid ${T.paper}` }}>
+          <div style={{ display:'flex', alignItems:'center', gap:6, background:T.paper, border:`1px solid ${T.line}`, padding:'6px 10px' }}>
+            <Search size={11} style={{ color:T.mute, flexShrink:0 }} strokeWidth={1.5}/>
             <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search..."
-              style={{ background:'transparent', border:'none', outline:'none', color:'#333', fontSize:12, width:'100%', fontFamily:"'DM Sans',sans-serif" }}/>
+              style={{ background:'transparent', border:'none', outline:'none', color:T.ink, fontSize:12, width:'100%', fontFamily:"'DM Sans',sans-serif" }}/>
           </div>
         </div>
 
         {/* Nav */}
         <div style={{ flex:1, overflowY:'auto', padding:'8px 0' }}>
           {NAV.map((group, gi) => (
-            <div key={gi} style={{ marginBottom:4 }}>
+            <div key={gi} style={{ marginBottom:2 }}>
               {group.label && (
-                <p style={{ ...label9, color:'#999', padding:'8px 16px 4px', display:'block' }}>{group.label}</p>
+                <p style={{ ...T.label, color:T.mute, padding:'10px 16px 4px', display:'block', fontSize:'9px' }}>{group.label}</p>
               )}
-              {group.items.map(({ href, icon:Icon, label, badge }: { href:string; icon:any; label:string; badge?:string }) => (
+              {group.items.map(({ href, icon:Icon, label, badge }: any) => (
                 <Link key={href} href={href} style={{
-                  display:'flex', alignItems:'center', gap:10, padding:'8px 16px', cursor:'pointer',
-                  background: on(href) ? '#C2FFE2' : 'transparent',
-                  color: on(href) ? '#111111' : '#333',
-                  fontSize:13, textDecoration:'none', fontWeight: on(href) ? 600 : 400,
-                  borderRight: on(href) ? '3px solid #20BB71' : '3px solid transparent',
-                  transition:'background 0.1s',
+                  display:'flex', alignItems:'center', gap:9, padding:'8px 16px',
+                  background: on(href) ? T.green4 : 'transparent',
+                  color: on(href) ? T.ink : '#2A2A2A',
+                  fontSize:13, textDecoration:'none', fontWeight: on(href) ? 500 : 400,
+                  borderRight: on(href) ? `2px solid ${T.green1}` : '2px solid transparent',
+                  transition:'background 0.1s', ...T.body,
                 }}>
-                  <Icon size={14} style={{ flexShrink:0, color: on(href) ? '#20BB71' : '#6B6B6B' }}/>
+                  <Icon size={14} style={{ flexShrink:0, color: on(href) ? T.green1 : T.mute }} strokeWidth={1.5}/>
                   <span style={{ whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{label}</span>
                   {badge && (
-                    <span style={{ marginLeft:'auto', ...label9, background: on(href)?'#6FF5B5':'#E6E6E6', color: on(href)?'#111':'#6B6B6B', padding:'1px 6px', borderRadius:999 }}>{badge}</span>
+                    <span style={{ marginLeft:'auto', ...T.label, fontSize:'9px',
+                      background: on(href) ? T.green1 : T.line,
+                      color: on(href) ? T.white : T.mute,
+                      padding:'2px 6px', borderRadius:T.green1 ? 999 : 999 }}>
+                      {badge}
+                    </span>
                   )}
                 </Link>
               ))}
@@ -118,31 +149,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         {/* Bottom */}
-        <div style={{ borderTop:'1px solid #E6E6E6', padding:'6px 0' }}>
-          <Link href="/dashboard/exports" style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 16px', color:'#333', fontSize:13, textDecoration:'none' }}>
-            <Download size={14} style={{ color:'#6B6B6B' }}/><span>Exports</span>
+        <div style={{ borderTop:`1px solid ${T.line}`, padding:'6px 0' }}>
+          <Link href="/dashboard/exports" style={{ display:'flex', alignItems:'center', gap:9, padding:'8px 16px', color:'#2A2A2A', fontSize:13, textDecoration:'none', ...T.body }}>
+            <Download size={14} style={{ color:T.mute }} strokeWidth={1.5}/><span>Exports</span>
           </Link>
-          <Link href="/dashboard/notifications" style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 16px', color:'#333', fontSize:13, textDecoration:'none' }}>
-            <BellRing size={14} style={{ color:'#6B6B6B' }}/><span>Notifications</span>
-            <span style={{ marginLeft:'auto', background:'#F53619', color:'#fff', ...label9, padding:'1px 5px', borderRadius:999 }}>3</span>
+          <Link href="/dashboard/notifications" style={{ display:'flex', alignItems:'center', gap:9, padding:'8px 16px', color:'#2A2A2A', fontSize:13, textDecoration:'none', ...T.body }}>
+            <BellRing size={14} style={{ color:T.mute }} strokeWidth={1.5}/><span>Notifications</span>
+            <span style={{ marginLeft:'auto', background:T.red1, color:T.white, ...T.label, fontSize:'9px', padding:'2px 5px', borderRadius:999 }}>3</span>
           </Link>
+          {/* User row */}
           <div style={{ padding:'8px 16px', display:'flex', alignItems:'center', gap:8 }}>
-            <div style={{ width:26, height:26, borderRadius:'50%', background:'#111111', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-              <span style={{ ...label9, color:'#20BB71' }}>A</span>
+            <div style={{ width:26, height:26, borderRadius:'50%', background:T.ink, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+              <span style={{ ...T.label, fontSize:'9px', color:T.green1 }}>A</span>
             </div>
             <div style={{ flex:1, minWidth:0 }}>
-              <p style={{ fontSize:12, fontWeight:600, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>Analytics (alloy...)</p>
-              <p style={{ fontSize:10, color:'#6B6B6B', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>analytics@alloy...</p>
+              <p style={{ fontSize:12, fontWeight:500, color:T.ink, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', ...T.body }}>Analytics (alloy...)</p>
+              <p style={{ fontSize:10, color:T.mute, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>analytics@alloy...</p>
             </div>
             <button onClick={async()=>{await supabase.auth.signOut();router.push('/login')}}
-              style={{ background:'none', border:'none', cursor:'pointer', color:'#6B6B6B', padding:2 }}>
-              <LogOut size={12}/>
+              style={{ background:'none', border:'none', cursor:'pointer', color:T.mute, padding:2 }}>
+              <LogOut size={12} strokeWidth={1.5}/>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Main */}
+      {/* Main content */}
       <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
         {children}
       </div>
