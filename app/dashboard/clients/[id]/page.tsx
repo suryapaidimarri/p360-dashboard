@@ -722,7 +722,6 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
           )
         )}
       </div>
-    </div>
 
       {/* Data Source Mapping Modal */}
       {showMappingModal && (
