@@ -11,44 +11,65 @@ export default function LoginPage() {
   const router = useRouter()
   const supabase = createClient()
 
+  const T = {
+    ink:'#111111', line:'#E6E6E6', paper:'#FAFAFA', mute:'#6B6B6B',
+    green1:'#20BB71', green4:'#C2FFE2',
+    label: { fontFamily:"'Barlow',sans-serif", fontSize:'9px', fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'0.12em' },
+    body: { fontFamily:"'DM Sans',sans-serif" },
+  }
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
-    setLoading(true)
-    setError('')
+    setLoading(true); setError('')
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) { setError(error.message); setLoading(false) }
     else router.push('/dashboard/clients')
   }
 
   return (
-    <div style={{ minHeight:'100vh', background:'#f5f5f5', display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
-      <div style={{ width:'100%', maxWidth:380 }}>
-        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:32, justifyContent:'center' }}>
-          <div style={{ width:40, height:40, borderRadius:'50%', background:'#1a1a2e', border:'2px solid #48b5ea', display:'flex', alignItems:'center', justifyContent:'center' }}>
-            <span style={{ fontSize:12, fontWeight:700, color:'#fff' }}>360</span>
-          </div>
-          <span style={{ fontSize:16, fontWeight:700, color:'#1a1a2e', letterSpacing:'-0.3px' }}>PARTNERSHIP360</span>
+    <div style={{ minHeight:'100vh', background:T.paper, display:'flex', alignItems:'center', justifyContent:'center', padding:16, ...T.body }}>
+      <div style={{ width:'100%', maxWidth:360 }}>
+        {/* Logo lockup */}
+        <div style={{ textAlign:'center', marginBottom:40 }}>
+          <img src="/logos/Alloy-Logo-BLK-Green.png" alt="Alloy Intelligence"
+            style={{ height:24, width:'auto', objectFit:'contain', marginBottom:8 }}
+            onError={e => { e.currentTarget.style.display = 'none' }}
+          />
+          <p style={{ ...T.label, color:T.mute, marginTop:4 }}>INTELLIGENCE PLATFORM</p>
         </div>
-        <div style={{ background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, padding:32 }}>
-          <h1 style={{ fontSize:18, fontWeight:600, color:'#1a1a1a', marginBottom:4 }}>Sign in</h1>
-          <p style={{ fontSize:13, color:'#6b6b6b', marginBottom:24 }}>Access your P360 dashboard</p>
-          {error && <div style={{ marginBottom:16, padding:'10px 12px', borderRadius:6, background:'#fff0f0', border:'1px solid #fcc', fontSize:12, color:'#c00' }}>{error}</div>}
+
+        <div style={{ background:'#fff', border:`1px solid ${T.line}`, padding:32 }}>
+          <h1 style={{ fontFamily:"'Aeonik','DM Sans',sans-serif", fontSize:20, fontWeight:400, color:T.ink, marginBottom:4, letterSpacing:'-0.02em' }}>Sign in</h1>
+          <p style={{ ...T.label, color:T.mute, marginBottom:28 }}>ACCESS YOUR DASHBOARD</p>
+
+          {error && (
+            <div style={{ marginBottom:16, padding:'10px 12px', background:'#fff5f5', border:`1px solid #fcc`, fontSize:12, color:'#c00', ...T.body }}>
+              {error}
+            </div>
+          )}
+
           <form onSubmit={handleLogin}>
             <div style={{ marginBottom:14 }}>
-              <label style={{ display:'block', fontSize:11, fontWeight:600, color:'#6b6b6b', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Email</label>
+              <label style={{ ...T.label, color:T.mute, display:'block', marginBottom:6 }}>EMAIL</label>
               <input type="email" value={email} onChange={e=>setEmail(e.target.value)} required placeholder="you@agency.com"
-                style={{ width:'100%', background:'#fafafa', border:'1px solid #e5e5e5', borderRadius:6, padding:'9px 12px', color:'#1a1a1a', fontSize:13, outline:'none', boxSizing:'border-box' }} />
+                style={{ width:'100%', background:T.paper, border:`1px solid ${T.line}`, padding:'9px 12px', color:T.ink, fontSize:13, outline:'none', boxSizing:'border-box' as const, ...T.body }}/>
             </div>
-            <div style={{ marginBottom:20 }}>
-              <label style={{ display:'block', fontSize:11, fontWeight:600, color:'#6b6b6b', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Password</label>
+            <div style={{ marginBottom:24 }}>
+              <label style={{ ...T.label, color:T.mute, display:'block', marginBottom:6 }}>PASSWORD</label>
               <input type="password" value={password} onChange={e=>setPassword(e.target.value)} required placeholder="••••••••"
-                style={{ width:'100%', background:'#fafafa', border:'1px solid #e5e5e5', borderRadius:6, padding:'9px 12px', color:'#1a1a1a', fontSize:13, outline:'none', boxSizing:'border-box' }} />
+                style={{ width:'100%', background:T.paper, border:`1px solid ${T.line}`, padding:'9px 12px', color:T.ink, fontSize:13, outline:'none', boxSizing:'border-box' as const, ...T.body }}/>
             </div>
-            <button type="submit" disabled={loading} style={{ width:'100%', background:'#48b5ea', border:'none', borderRadius:6, padding:'10px', color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer', opacity:loading?0.7:1 }}>
-              {loading ? 'Signing in...' : 'Sign in'}
+            <button type="submit" disabled={loading}
+              style={{ width:'100%', background:loading ? T.mute : T.green1, border:'none', padding:'11px', color:'#111', fontSize:11, fontWeight:700, cursor:'pointer', ...T.label, letterSpacing:'0.1em' }}>
+              {loading ? 'SIGNING IN...' : 'SIGN IN'}
             </button>
           </form>
         </div>
+
+        {/* Footer */}
+        <p style={{ textAlign:'center', marginTop:24, ...T.label, color:T.mute }}>
+          ALLOY + INTELLIGENCE PLATFORM
+        </p>
       </div>
     </div>
   )
