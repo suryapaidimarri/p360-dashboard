@@ -60,7 +60,7 @@ export default function LoginPage() {
                 style={{ width:'100%', background:T.paper, border:`1px solid ${T.line}`, padding:'9px 12px', color:T.ink, fontSize:13, outline:'none', boxSizing:'border-box' as const, ...T.body }}/>
             </div>
             <button type="submit" disabled={loading}
-              style={{ width:'100%', background:loading ? T.mute : T.green1, border:'none', padding:'11px', color:'#111', fontSize:11, fontWeight:700, cursor:'pointer', ...T.label, letterSpacing:'0.1em' }}>
+              style={{ width:'100%', background:loading ? T.mute : T.green1, border:'none', padding:'11px', color:'#111', cursor:'pointer', fontFamily:"'Barlow',sans-serif", fontSize:'9px', fontWeight:700, textTransform:'uppercase' as const, letterSpacing:'0.1em' }}>
               {loading ? 'SIGNING IN...' : 'SIGN IN'}
             </button>
           </form>
