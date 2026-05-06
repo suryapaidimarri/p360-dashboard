@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'P360 — Partnership Marketing Dashboard',
-  description: 'All-in-one marketing analytics platform',
+  title: 'Alloy Intelligence — Marketing Analytics Platform',
+  description: 'Partnership analytics and marketing intelligence platform by Alloy',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
