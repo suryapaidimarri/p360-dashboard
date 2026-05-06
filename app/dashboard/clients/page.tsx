@@ -51,7 +51,12 @@ function ClientLogo({ client }: { client: Client }) {
   }
 
   const domain = (client.domain||'').replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]
-  const SRCS = domain ? [`https://logo.clearbit.com/${domain}`, `https://www.google.com/s2/favicons?domain=${domain}&sz=64`] : []
+  const SRCS = domain ? [
+    `https://img.logo.dev/${domain}?token=pk_R9ZPqh9xR5Kfh1M6GvCXFA`,
+    `https://www.google.com/s2/favicons?domain=${domain}&sz=128`,
+    `https://logo.clearbit.com/${domain}`,
+    `https://icons.duckduckgo.com/ip3/${domain}.ico`,
+  ] : []
 
   const Fallback = () => (
     <div style={{ width:64, height:64, borderRadius:2, background:tint, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'Barlow',sans-serif", fontSize:20, fontWeight:700, color:'#111' }}>
@@ -214,7 +219,7 @@ export default function ClientsPage() {
   function handleDelete(id: string) {
     if (id.startsWith('demo-') || id === 'group1') {
       // Mark demo client as deleted
-      const newDeleted = new Set(Array.from(deletedIds).concat(id))
+      const newDeleted = new Set([...deletedIds, id])
       setDeletedIds(newDeleted)
       persist(extraClients, newDeleted)
     } else {
@@ -330,9 +335,9 @@ export default function ClientsPage() {
                     style={{ flex:1, background:'#FAFAFA', border:'1px solid #E6E6E6', borderRadius:2, padding:'9px 12px', color:'#111', fontSize:13, outline:'none', boxSizing:'border-box' as const, fontFamily:"'DM Sans',sans-serif" }}/>
                   {newDomain.trim() && (
                     <div style={{ width:40, height:40, borderRadius:4, border:'1px solid #E6E6E6', background:'#FAFAFA', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, overflow:'hidden' }}>
-                      <img src={`https://logo.clearbit.com/${newDomain.trim().replace(/^https?:\/\//, '').replace(/^www\./, '')}`} alt="logo"
+                      <img src={`https://www.google.com/s2/favicons?domain=${newDomain.trim().replace(/^https?:\/\//, '').replace(/^www\./, '')}&sz=128`} alt="logo"
                         style={{ maxWidth:36, maxHeight:36, objectFit:'contain' }}
-                        onError={e=>{const img=e.currentTarget;const d=newDomain.trim().replace(/^https?:\/\//, '').replace(/^www\./, '');if(!img.dataset.fb){img.dataset.fb='1';img.src=`https://www.google.com/s2/favicons?domain=${d}&sz=64`}else img.style.display='none'}}
+                        onError={e=>{const img=e.currentTarget;const d=newDomain.trim().replace(/^https?:\/\//, '').replace(/^www\./, '');if(!img.dataset.fb){img.dataset.fb='1';img.src=`https://logo.clearbit.com/${d}`}else if(!img.dataset.fb2){img.dataset.fb2='1';img.src=`https://icons.duckduckgo.com/ip3/${d}.ico`}else img.style.display='none'}}
                       />
                     </div>
                   )}
