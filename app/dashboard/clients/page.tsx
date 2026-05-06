@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback } from 'react'
 import { Plus, Search, LayoutGrid, List, Sparkles, MoreHorizontal, Copy, Trash2, X, FolderOpen } from 'lucide-react'
 import Link from 'next/link'
 import { Client } from '@/types'
-import { createClient as createSupabase } from '@/lib/supabase/client'
 
 const ALLOY_COLORS = ['#20BB71','#48B5EA','#F9B62A','#F64674','#F53619','#3FDB90','#5BD1F2','#FDC550']
 const ALLOY_TINTS: Record<string,string> = {
@@ -11,9 +10,7 @@ const ALLOY_TINTS: Record<string,string> = {
   '#F64674':'#FFCFDC','#F53619':'#FFCFDC','#3FDB90':'#C2FFE2',
   '#5BD1F2':'#E1F7FF','#FDC550':'#FFEECA',
 }
-
 const label = { fontFamily:"'Barlow',sans-serif", fontSize:'9px' as const, fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'0.1em' }
-
 const KPIS = [
   { label:'Total Sessions', value:'2.4M', change:'+18.2%', w:'72%', c:'#20BB71' },
   { label:'Conversions', value:'94.1K', change:'+11.4%', w:'55%', c:'#48B5EA' },
@@ -21,67 +18,68 @@ const KPIS = [
   { label:'Active Sources', value:'247', change:'+8 new', w:'40%', c:'#20BB71' },
 ]
 
-// Seed data — inserted into Supabase once, then read back
-const SEED_CLIENTS = [
-  { name:'Lumistella', domain:'lumistella.com', color:'#6B6B6B', status:'active' },
-  { name:'Alloy (internal)', domain:'alloy.com', color:'#20BB71', status:'active' },
-  { name:'Atlanta Beltline', domain:'beltline.org', color:'#48B5EA', status:'active' },
-  { name:'Collaborating Docs', domain:'collaboratingdocs.com', color:'#F64674', status:'active' },
-  { name:'DEMO: Grainwise', domain:'grainwise.com', color:'#F9B62A', status:'active' },
-  { name:'Georgia Aquarium', domain:'georgiaaquarium.org', color:'#20BB71', status:'active' },
-  { name:'GFVGA', domain:'gfvga.org', color:'#F53619', status:'active' },
-  { name:'HHAeXchange', domain:'hhaexchange.com', color:'#48B5EA', status:'active' },
-  { name:'IOU Financial', domain:'ioufinancial.com', color:'#F9B62A', status:'active' },
-  { name:'Latapult', domain:'latapult.com', color:'#48B5EA', status:'active' },
-  { name:'Litmos', domain:'litmos.com', color:'#F9B62A', status:'active' },
-  { name:'NCH', domain:'nchmd.org', color:'#F64674', status:'active' },
-  { name:'S&T Bank', domain:'stbank.com', color:'#F64674', status:'active' },
-  { name:'TPX', domain:'tpx.com', color:'#48B5EA', status:'active' },
-]
-
-function getColorForName(name: string) {
+function getColor(name: string) {
   let h = 0; for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % ALLOY_COLORS.length
   return ALLOY_COLORS[h]
 }
 
+// ── localStorage helpers ─────────────────────────────────────────────────────
+const LS_KEY = 'p360_clients_v2'
+
+function lsLoad(): Client[] {
+  try { const v = localStorage.getItem(LS_KEY); return v ? JSON.parse(v) : [] } catch { return [] }
+}
+function lsSave(clients: Client[]) {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(clients)) } catch {}
+}
+
+// ── logo component ───────────────────────────────────────────────────────────
 function ClientLogo({ client }: { client: Client }) {
   const [srcIndex, setSrcIndex] = useState(0)
   const [loaded, setLoaded] = useState(false)
-  const color = client.color || getColorForName(client.name)
+  const color = getColor(client.name)
   const tint = ALLOY_TINTS[color] || '#E6E6E6'
 
   useEffect(() => { setSrcIndex(0); setLoaded(false) }, [client.domain])
 
+  if (client.group) {
+    return (
+      <div style={{ width:64, height:64, borderRadius:'50%', background:'#F0F0F0', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 10px' }}>
+        <FolderOpen size={24} style={{ color:'#999' }} />
+      </div>
+    )
+  }
+
+  const domain = (client.domain||'').replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]
+  const SRCS = domain ? [`https://logo.clearbit.com/${domain}`, `https://www.google.com/s2/favicons?domain=${domain}&sz=64`] : []
+
   const Fallback = () => (
     <div style={{ width:64, height:64, borderRadius:2, background:tint, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'Barlow',sans-serif", fontSize:20, fontWeight:700, color:'#111' }}>
-      {client.name[0].toUpperCase()}
+      {client.name[0]?.toUpperCase()}
     </div>
   )
 
-  const domain = (client.domain||'').replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]
-  const SRCS = domain ? [
-    `https://logo.clearbit.com/${domain}`,
-    `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,
-  ] : []
-
   if (!SRCS[srcIndex]) return <div style={{ margin:'0 auto 10px' }}><Fallback /></div>
+
   return (
     <div style={{ width:64, height:64, margin:'0 auto 10px', display:'flex', alignItems:'center', justifyContent:'center' }}>
       <img key={SRCS[srcIndex]} src={SRCS[srcIndex]} alt={client.name}
         onLoad={() => setLoaded(true)}
         onError={() => { setLoaded(false); setSrcIndex(p => p + 1) }}
-        style={{ maxWidth:64, maxHeight:64, objectFit:'contain', display:loaded?'block':'none', borderRadius:srcIndex>0?4:0 }}
+        style={{ maxWidth:64, maxHeight:64, objectFit:'contain', display:loaded?'block':'none' }}
       />
       {!loaded && <Fallback />}
     </div>
   )
 }
 
+// ── card component ───────────────────────────────────────────────────────────
 function ClientCard({ client, selected, onToggle, menuOpen, onMenuToggle, onDelete }: {
   client: Client; selected:boolean; onToggle:()=>void; menuOpen:boolean; onMenuToggle:()=>void; onDelete:()=>void
 }) {
   const [hovered, setHovered] = useState(false)
-  const color = client.color || getColorForName(client.name)
+  const color = getColor(client.name)
+
   const inner = (
     <div style={{ background:'#FFF', border:`1px solid ${selected||hovered?'#20BB71':'#E6E6E6'}`, borderRadius:2, padding:14, cursor:'pointer', position:'relative', overflow:'hidden', transition:'border-color 0.12s' }}>
       <div style={{ position:'absolute', top:0, left:0, right:0, height:3, background:color }} />
@@ -105,8 +103,11 @@ function ClientCard({ client, selected, onToggle, menuOpen, onMenuToggle, onDele
       </div>
       <ClientLogo client={client} />
       <p style={{ fontSize:12, fontWeight:500, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', textAlign:'center' as const, fontFamily:"'DM Sans',sans-serif" }}>{client.name}</p>
+      {client.group && <p style={{ ...label, color:'#6B6B6B', textAlign:'center' as const, display:'block', marginTop:2 }}>{client.group_count} Clients</p>}
     </div>
   )
+
+  if (client.group) return <div onMouseEnter={()=>setHovered(true)} onMouseLeave={()=>setHovered(false)}>{inner}</div>
   return (
     <div onMouseEnter={()=>setHovered(true)} onMouseLeave={()=>setHovered(false)}>
       <Link href={`/dashboard/clients/${client.id}`} style={{ textDecoration:'none', display:'block' }}>{inner}</Link>
@@ -114,9 +115,29 @@ function ClientCard({ client, selected, onToggle, menuOpen, onMenuToggle, onDele
   )
 }
 
+// ── page ─────────────────────────────────────────────────────────────────────
+const DEMO: Client[] = [
+  { id:'group1', name:'Lumistella', domain:'', logo_url:null, status:'active', agency_id:'1', group:'group', group_count:5, created_at:'2024-01-01' },
+  { id:'demo-1', name:'Alloy (internal)', domain:'alloy.com', logo_url:null, status:'active', agency_id:'1', created_at:'2024-01-01' },
+  { id:'demo-2', name:'Atlanta Beltline', domain:'beltline.org', logo_url:null, status:'active', agency_id:'1', created_at:'2024-01-01' },
+  { id:'demo-3', name:'Collaborating Docs', domain:'collaboratingdocs.com', logo_url:null, status:'active', agency_id:'1', created_at:'2024-01-01' },
+  { id:'demo-4', name:'DEMO: Grainwise', domain:'grainwise.com', logo_url:null, status:'active', agency_id:'1', created_at:'2024-01-01' },
+  { id:'demo-5', name:'Georgia Aquarium', domain:'georgiaaquarium.org', logo_url:null, status:'active', agency_id:'1', created_at:'2024-01-01' },
+  { id:'demo-6', name:'GFVGA', domain:'gfvga.org', logo_url:null, status:'active', agency_id:'1', created_at:'2024-01-01' },
+  { id:'demo-7', name:'HHAeXchange', domain:'hhaexchange.com', logo_url:null, status:'active', agency_id:'1', created_at:'2024-01-01' },
+  { id:'demo-8', name:'IOU Financial', domain:'ioufinancial.com', logo_url:null, status:'active', agency_id:'1', created_at:'2024-01-01' },
+  { id:'demo-9', name:'Latapult', domain:'latapult.com', logo_url:null, status:'active', agency_id:'1', created_at:'2024-01-01' },
+  { id:'demo-10', name:'Litmos', domain:'litmos.com', logo_url:null, status:'active', agency_id:'1', created_at:'2024-01-01' },
+  { id:'demo-11', name:'NCH', domain:'nchmd.org', logo_url:null, status:'active', agency_id:'1', created_at:'2024-01-01' },
+  { id:'demo-12', name:'S&T Bank', domain:'stbank.com', logo_url:null, status:'active', agency_id:'1', created_at:'2024-01-01' },
+  { id:'demo-13', name:'TPX', domain:'tpx.com', logo_url:null, status:'active', agency_id:'1', created_at:'2024-01-01' },
+]
+
 export default function ClientsPage() {
-  const [clients, setClients] = useState<Client[]>([])
-  const [loading, setLoading] = useState(true)
+  // Start with demo clients immediately — no loading flash
+  const [clients, setClients] = useState<Client[]>(DEMO)
+  const [extraClients, setExtraClients] = useState<Client[]>([])
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set())
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [showModal, setShowModal] = useState(false)
   const [search, setSearch] = useState('')
@@ -124,96 +145,100 @@ export default function ClientsPage() {
   const [newName, setNewName] = useState('')
   const [newDomain, setNewDomain] = useState('')
   const [adding, setAdding] = useState(false)
-  const supabase = createSupabase()
 
-  // Single source of truth: load from Supabase only
-  const loadClients = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from('clients')
-        .select('*')
-        .order('created_at', { ascending: true })
-
-      if (error) throw error
-
-      if (data.length === 0) {
-        // First time — seed demo clients
-        const { data: seeded } = await supabase
-          .from('clients')
-          .insert(SEED_CLIENTS.map(c => ({ ...c, agency_id: '1', logo_url: null })))
-          .select()
-        if (seeded) setClients(seeded)
-      } else {
-        setClients(data)
-      }
-    } catch {
-      // Supabase not available — use localStorage
-      try {
-        const saved = localStorage.getItem('p360_clients')
-        if (saved) {
-          setClients(JSON.parse(saved))
-        } else {
-          // Seed localStorage with demo clients
-          const seeded = SEED_CLIENTS.map((c, i) => ({ ...c, id: `local-seed-${i}`, logo_url: null, agency_id: '1', created_at: new Date().toISOString(), status: 'active' as const }))
-          localStorage.setItem('p360_clients', JSON.stringify(seeded))
-          setClients(seeded)
-        }
-      } catch {
-        setClients(SEED_CLIENTS.map((c, i) => ({ ...c, id: `local-seed-${i}`, logo_url: null, agency_id: '1', created_at: '', status: 'active' as const })))
-      }
-    } finally {
-      setLoading(false)
+  // Load persisted data from localStorage on mount
+  useEffect(() => {
+    const saved = lsLoad()
+    if (saved.length > 0) {
+      const extras = saved.filter((c: Client) => c.id.startsWith('user-'))
+      const deleted = saved.filter((c: Client) => c.id.startsWith('deleted-')).map((c: Client) => c.id.replace('deleted-', ''))
+      setExtraClients(extras)
+      setDeletedIds(new Set(deleted))
     }
   }, [])
 
-  useEffect(() => { loadClients() }, [loadClients])
+  // Compute displayed clients: demo (minus deleted) + user-added
+  const allClients = [
+    ...DEMO.filter(c => !deletedIds.has(c.id)),
+    ...extraClients,
+  ]
+  const filtered = allClients.filter(c => c.name.toLowerCase().includes(search.toLowerCase()))
+
+  function persist(extras: Client[], deleted: Set<string>) {
+    const toSave = [
+      ...extras,
+      ...Array.from(deleted).map(id => ({ id: `deleted-${id}` } as Client)),
+    ]
+    lsSave(toSave)
+  }
 
   async function handleAdd() {
     if (!newName.trim()) return
     setAdding(true)
     const cleanDomain = newDomain.trim().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]
-    const color = getColorForName(newName.trim())
-
-    try {
-      const { data, error } = await supabase
-        .from('clients')
-        .insert([{ name: newName.trim(), domain: cleanDomain, color, status: 'active', agency_id: '1', logo_url: null }])
-        .select()
-        .single()
-      if (error) throw error
-      setClients(prev => [...prev, data])
-    } catch {
-      // localStorage fallback
-      const newClient: Client = { id: `local-${Date.now()}`, name: newName.trim(), domain: cleanDomain, color, status: 'active', agency_id: '1', logo_url: null, created_at: new Date().toISOString() }
-      const updated = [...clients, newClient]
-      try { localStorage.setItem('p360_clients', JSON.stringify(updated)) } catch {}
-      setClients(updated)
+    const color = getColor(newName.trim())
+    const newClient: Client = {
+      id: `user-${Date.now()}`,
+      name: newName.trim(),
+      domain: cleanDomain,
+      logo_url: null,
+      status: 'active',
+      agency_id: '1',
+      color,
+      created_at: new Date().toISOString(),
     }
+
+    // Save to localStorage immediately
+    const updatedExtras = [...extraClients, newClient]
+    setExtraClients(updatedExtras)
+    persist(updatedExtras, deletedIds)
+
+    // Also try Supabase in background
+    try {
+      const { createClient } = await import('@/lib/supabase/client')
+      const supabase = createClient()
+      const { data } = await supabase.from('clients')
+        .insert([{ name: newClient.name, domain: newClient.domain, color, status: 'active', agency_id: '1', logo_url: null }])
+        .select().single()
+      if (data) {
+        // Replace temp client with Supabase version
+        const replaced = updatedExtras.map(c => c.id === newClient.id ? { ...data } : c)
+        setExtraClients(replaced)
+        persist(replaced, deletedIds)
+      }
+    } catch {}
 
     setNewName(''); setNewDomain(''); setAdding(false); setShowModal(false)
   }
 
-  async function handleDelete(id: string) {
-    // Optimistic update first — immediately remove from UI
-    const updated = clients.filter(c => c.id !== id)
-    setClients(updated)
+  function handleDelete(id: string) {
+    if (id.startsWith('demo-') || id === 'group1') {
+      // Mark demo client as deleted
+      const newDeleted = new Set([...deletedIds, id])
+      setDeletedIds(newDeleted)
+      persist(extraClients, newDeleted)
+    } else {
+      // Remove user-added client
+      const newExtras = extraClients.filter(c => c.id !== id)
+      setExtraClients(newExtras)
+      persist(newExtras, deletedIds)
+      // Also delete from Supabase in background
+      import('@/lib/supabase/client').then(({ createClient }) => {
+        createClient().from('clients').delete().eq('id', id).then(() => {})
+      }).catch(() => {})
+    }
     setMenuOpen(null)
-    // Update localStorage immediately too
-    try { localStorage.setItem('p360_clients', JSON.stringify(updated)) } catch {}
-    // Delete from Supabase
-    try {
-      await supabase.from('clients').delete().eq('id', id)
-    } catch {}
+    setSelected(prev => { const n = new Set(prev); n.delete(id); return n })
   }
 
-  const filtered = clients.filter(c => c.name.toLowerCase().includes(search.toLowerCase()))
-
   return (
-    <div style={{ display:'flex', flexDirection:'column', height:'100%', overflow:'hidden', background:'#FAFAFA', fontFamily:"'DM Sans',sans-serif" }} onClick={()=>setMenuOpen(null)}>
+    <div style={{ display:'flex', flexDirection:'column', height:'100%', overflow:'hidden', background:'#FAFAFA', fontFamily:"'DM Sans',sans-serif" }}
+      onClick={()=>setMenuOpen(null)}>
+
       {/* Topbar */}
       <div style={{ display:'flex', alignItems:'center', gap:10, padding:'13px 24px', borderBottom:'1px solid #E6E6E6', background:'#FFF', flexShrink:0 }}>
         <span style={{ fontSize:15, fontWeight:500, color:'#111' }}>Clients</span>
-        <span style={{ ...label, color:'#6B6B6B', marginLeft:4 }}>— {clients.length} ACCOUNTS</span>
+        <span style={{ ...label, color:'#6B6B6B', marginLeft:4 }}>— {allClients.filter(c=>!c.group).length} ACCOUNTS</span>
         <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:8 }}>
           <button style={{ display:'flex', alignItems:'center', gap:6, background:'#F5F5F5', border:'1px solid #E6E6E6', borderRadius:2, padding:'6px 12px', fontSize:11, color:'#333', cursor:'pointer', fontFamily:"'Barlow',sans-serif", fontWeight:500, letterSpacing:'0.04em' }}>
             <Sparkles size={12} style={{ color:'#7c3aed' }}/> ASK AI
@@ -247,6 +272,7 @@ export default function ClientsPage() {
       </div>
 
       <div style={{ flex:1, overflowY:'auto', padding:24 }}>
+        {/* KPI row */}
         <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginBottom:24 }}>
           {KPIS.map(k => (
             <div key={k.label} style={{ background:'#FFF', border:'1px solid #E6E6E6', borderRadius:2, padding:14 }}>
@@ -260,32 +286,26 @@ export default function ClientsPage() {
 
         <p style={{ ...label, color:'#6B6B6B', marginBottom:10, display:'block' }}>ALL CLIENTS</p>
 
-        {loading ? (
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(140px, 1fr))', gap:8 }}>
-            {[...Array(8)].map((_,i) => (
-              <div key={i} style={{ background:'#F5F5F5', border:'1px solid #E6E6E6', borderRadius:2, padding:14, minHeight:120, animation:'pulse 1.5s infinite' }}/>
-            ))}
-          </div>
-        ) : (
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(140px, 1fr))', gap:8 }}>
-            {filtered.map(client => (
-              <ClientCard key={client.id} client={client} selected={selected.has(client.id)}
-                onToggle={()=>setSelected(prev=>{const n=new Set(prev);n.has(client.id)?n.delete(client.id):n.add(client.id);return n})}
-                menuOpen={menuOpen===client.id}
-                onMenuToggle={()=>setMenuOpen(menuOpen===client.id?null:client.id)}
-                onDelete={()=>handleDelete(client.id)}/>
-            ))}
-            <button onClick={()=>setShowModal(true)}
-              style={{ background:'#FAFAFA', border:'1px dashed #E6E6E6', borderRadius:2, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8, minHeight:120, cursor:'pointer' }}
-              onMouseEnter={e=>{(e.currentTarget as HTMLButtonElement).style.borderColor='#20BB71';(e.currentTarget as HTMLButtonElement).style.background='#C2FFE2'}}
-              onMouseLeave={e=>{(e.currentTarget as HTMLButtonElement).style.borderColor='#E6E6E6';(e.currentTarget as HTMLButtonElement).style.background='#FAFAFA'}}>
-              <div style={{ width:24, height:24, borderRadius:2, background:'#E6E6E6', display:'flex', alignItems:'center', justifyContent:'center', color:'#6B6B6B', fontSize:16 }}>+</div>
-              <span style={{ ...label, color:'#6B6B6B' }}>ADD CLIENT</span>
-            </button>
-          </div>
-        )}
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(140px, 1fr))', gap:8 }}>
+          {filtered.map(client => (
+            <ClientCard key={client.id} client={client}
+              selected={selected.has(client.id)}
+              onToggle={()=>setSelected(prev=>{const n=new Set(prev);n.has(client.id)?n.delete(client.id):n.add(client.id);return n})}
+              menuOpen={menuOpen===client.id}
+              onMenuToggle={()=>setMenuOpen(menuOpen===client.id?null:client.id)}
+              onDelete={()=>handleDelete(client.id)}/>
+          ))}
+          <button onClick={()=>setShowModal(true)}
+            style={{ background:'#FAFAFA', border:'1px dashed #E6E6E6', borderRadius:2, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8, minHeight:120, cursor:'pointer' }}
+            onMouseEnter={e=>{(e.currentTarget as HTMLButtonElement).style.borderColor='#20BB71';(e.currentTarget as HTMLButtonElement).style.background='#C2FFE2'}}
+            onMouseLeave={e=>{(e.currentTarget as HTMLButtonElement).style.borderColor='#E6E6E6';(e.currentTarget as HTMLButtonElement).style.background='#FAFAFA'}}>
+            <div style={{ width:24, height:24, borderRadius:2, background:'#E6E6E6', display:'flex', alignItems:'center', justifyContent:'center', color:'#6B6B6B', fontSize:16 }}>+</div>
+            <span style={{ ...label, color:'#6B6B6B' }}>ADD CLIENT</span>
+          </button>
+        </div>
       </div>
 
+      {/* Add Modal */}
       {showModal && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:50, padding:16 }} onClick={()=>setShowModal(false)}>
           <div style={{ background:'#FFF', borderRadius:2, width:'100%', maxWidth:400, overflow:'hidden', boxShadow:'0 18px 40px rgba(0,0,0,0.12)' }} onClick={e=>e.stopPropagation()}>
@@ -299,12 +319,14 @@ export default function ClientsPage() {
               <div style={{ marginBottom:14 }}>
                 <label style={{ ...label, color:'#6B6B6B', display:'block', marginBottom:6 }}>CLIENT NAME</label>
                 <input value={newName} onChange={e=>setNewName(e.target.value)} placeholder="e.g. Atlanta Beltline"
+                  onKeyDown={e=>e.key==='Enter'&&handleAdd()}
                   style={{ width:'100%', background:'#FAFAFA', border:'1px solid #E6E6E6', borderRadius:2, padding:'9px 12px', color:'#111', fontSize:13, outline:'none', boxSizing:'border-box' as const, fontFamily:"'DM Sans',sans-serif" }}/>
               </div>
               <div style={{ marginBottom:22 }}>
                 <label style={{ ...label, color:'#6B6B6B', display:'block', marginBottom:6 }}>WEBSITE / DOMAIN</label>
                 <div style={{ display:'flex', gap:10, alignItems:'center' }}>
                   <input value={newDomain} onChange={e=>setNewDomain(e.target.value)} placeholder="e.g. beltline.org"
+                    onKeyDown={e=>e.key==='Enter'&&handleAdd()}
                     style={{ flex:1, background:'#FAFAFA', border:'1px solid #E6E6E6', borderRadius:2, padding:'9px 12px', color:'#111', fontSize:13, outline:'none', boxSizing:'border-box' as const, fontFamily:"'DM Sans',sans-serif" }}/>
                   {newDomain.trim() && (
                     <div style={{ width:40, height:40, borderRadius:4, border:'1px solid #E6E6E6', background:'#FAFAFA', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, overflow:'hidden' }}>
