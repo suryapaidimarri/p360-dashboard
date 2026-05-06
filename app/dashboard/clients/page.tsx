@@ -154,12 +154,12 @@ export default function ClientsPage() {
           setClients(JSON.parse(saved))
         } else {
           // Seed localStorage with demo clients
-          const seeded = SEED_CLIENTS.map((c, i) => ({ ...c, id: `seed-${i}`, logo_url: null, agency_id: '1', created_at: new Date().toISOString() }))
+          const seeded = SEED_CLIENTS.map((c, i) => ({ ...c, id: `local-seed-${i}`, logo_url: null, agency_id: '1', created_at: new Date().toISOString(), status: 'active' as const }))
           localStorage.setItem('p360_clients', JSON.stringify(seeded))
           setClients(seeded)
         }
       } catch {
-        setClients(SEED_CLIENTS.map((c, i) => ({ ...c, id: `seed-${i}`, logo_url: null, agency_id: '1', created_at: '' })))
+        setClients(SEED_CLIENTS.map((c, i) => ({ ...c, id: `local-seed-${i}`, logo_url: null, agency_id: '1', created_at: '', status: 'active' as const })))
       }
     } finally {
       setLoading(false)
