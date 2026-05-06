@@ -8,7 +8,7 @@ const supabase = createClient(
 
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get('code')
-  const state = request.nextUrl.searchParams.get('state') // client_id
+  const state = request.nextUrl.searchParams.get('state')
   const error = request.nextUrl.searchParams.get('error')
 
   if (error || !code) {
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Exchange code for tokens
+    // 1. Exchange code for tokens
     const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -28,33 +28,53 @@ export async function GET(request: NextRequest) {
         grant_type: 'authorization_code',
       }),
     })
-
     const tokens = await tokenRes.json()
-    if (!tokens.access_token) throw new Error('No access token')
+    if (!tokens.access_token) throw new Error(`No access token: ${JSON.stringify(tokens)}`)
 
-    // Get user info
+    // 2. Get user info
     const userRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
       headers: { Authorization: `Bearer ${tokens.access_token}` },
     })
     const userInfo = await userRes.json()
 
-    // Get GA4 properties
-    const ga4Res = await fetch(
-      'https://analyticsadmin.googleapis.com/v1beta/properties?filter=parent:accounts/-',
-      { headers: { Authorization: `Bearer ${tokens.access_token}` } }
-    )
-    const ga4Data = await ga4Res.json()
-    const properties = ga4Data.properties || []
+    // 3. Get GA4 properties via accountSummaries (most reliable endpoint)
+    let properties: any[] = []
+    try {
+      const summaryRes = await fetch(
+        'https://analyticsadmin.googleapis.com/v1beta/accountSummaries',
+        { headers: { Authorization: `Bearer ${tokens.access_token}` } }
+      )
+      const summaryData = await summaryRes.json()
+      const summaries = summaryData.accountSummaries || []
+      for (const acc of summaries) {
+        if (acc.propertySummaries) {
+          for (const prop of acc.propertySummaries) {
+            properties.push({
+              name: prop.property,
+              displayName: prop.displayName,
+              account: acc.displayName,
+            })
+          }
+        }
+      }
+    } catch (e) {
+      console.error('GA4 properties error:', e)
+    }
 
-    // Get GSC sites
-    const gscRes = await fetch(
-      'https://www.googleapis.com/webmasters/v3/sites',
-      { headers: { Authorization: `Bearer ${tokens.access_token}` } }
-    )
-    const gscData = await gscRes.json()
-    const sites = gscData.siteEntry || []
+    // 4. Get GSC sites
+    let sites: any[] = []
+    try {
+      const gscRes = await fetch(
+        'https://www.googleapis.com/webmasters/v3/sites',
+        { headers: { Authorization: `Bearer ${tokens.access_token}` } }
+      )
+      const gscData = await gscRes.json()
+      sites = gscData.siteEntry || []
+    } catch (e) {
+      console.error('GSC sites error:', e)
+    }
 
-    // Store tokens in Supabase
+    // 5. Save everything to Supabase
     const { error: dbError } = await supabase
       .from('google_connections')
       .upsert({
@@ -62,7 +82,7 @@ export async function GET(request: NextRequest) {
         email: userInfo.email,
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token,
-        expires_at: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
+        expires_at: new Date(Date.now() + (tokens.expires_in || 3600) * 1000).toISOString(),
         ga4_properties: properties,
         gsc_sites: sites,
         connected_at: new Date().toISOString(),
@@ -70,7 +90,6 @@ export async function GET(request: NextRequest) {
 
     if (dbError) console.error('DB error:', dbError)
 
-    // Redirect back to client dashboard
     return NextResponse.redirect(
       `${process.env.NEXTAUTH_URL}/dashboard/clients/${state}?connected=true`
     )
