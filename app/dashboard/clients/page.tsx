@@ -219,7 +219,7 @@ export default function ClientsPage() {
   function handleDelete(id: string) {
     if (id.startsWith('demo-') || id === 'group1') {
       // Mark demo client as deleted
-      const newDeleted = new Set([...deletedIds, id])
+      const newDeleted = new Set(Array.from(deletedIds).concat(id))
       setDeletedIds(newDeleted)
       persist(extraClients, newDeleted)
     } else {
