@@ -103,9 +103,29 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       const data = await res.json()
       setConnection(data)
       if (data.connected && data.ga4_properties?.length > 0) {
-        const prop = data.ga4_properties[0]
-        setSelectedProperty(prop.name)
-        fetchGA4(prop.name)
+        // Try to find matching property by client domain or name
+        const props = data.ga4_properties
+        let bestProp = props[0]
+
+        // Get client domain/name to find best match
+        try {
+          const { createClient: createSB } = await import('@/lib/supabase/client')
+          const sb = createSB()
+          const { data: clientData } = await sb.from('clients').select('name,domain').eq('id', clientId).single()
+          if (clientData) {
+            const domain = (clientData.domain || '').toLowerCase().replace('www.', '').replace('.org','').replace('.com','').replace('.net','')
+            const name = (clientData.name || '').toLowerCase()
+            // Find best matching property
+            const match = props.find((p: any) => {
+              const pName = (p.displayName || '').toLowerCase()
+              return pName.includes(domain) || pName.includes(name) || domain.includes(pName.split(' ')[0])
+            })
+            if (match) bestProp = match
+          }
+        } catch {}
+
+        setSelectedProperty(bestProp.name)
+        fetchGA4(bestProp.name)
       }
     } catch { setConnection({ connected: false }) }
     finally { setCheckingConn(false) }
