@@ -85,7 +85,43 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   useEffect(() => {
     checkConnection()
     loadClientInfo()
+    loadMapping()
   }, [clientId])
+
+  async function loadMapping() {
+    try {
+      const res = await fetch(`/api/mapping?client_id=${clientId}`)
+      const data = await res.json()
+      if (data.ga4_property_id) {
+        setSelectedProperty(data.ga4_property_id)
+        setMappingProp(data.ga4_property_id)
+        setMappingPropName(data.ga4_property_name || '')
+        setMappingSite(data.gsc_site_url || '')
+        fetchGA4(data.ga4_property_id)
+      }
+    } catch {}
+  }
+
+  async function saveMapping() {
+    setSavingMapping(true)
+    try {
+      await fetch('/api/mapping', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          client_id: clientId,
+          ga4_property_id: mappingProp,
+          ga4_property_name: mappingPropName,
+          gsc_site_url: mappingSite,
+        }),
+      })
+      setSelectedProperty(mappingProp)
+      fetchGA4(mappingProp)
+      setMappingSaved(true)
+      setTimeout(() => { setMappingSaved(false); setShowMappingModal(false) }, 1500)
+    } catch {}
+    setSavingMapping(false)
+  }
 
   async function loadClientInfo() {
     try {
@@ -341,12 +377,19 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
             ))}
             <div style={{ marginLeft:'auto', display:'flex', gap:8, alignItems:'center' }}>
               {connection?.connected && connection.ga4_properties?.length > 0 && (
-                <select value={selectedProperty} onChange={e=>{setSelectedProperty(e.target.value);fetchGA4(e.target.value)}}
-                  style={{ background:'#f5f5f5', border:'1px solid #e5e5e5', borderRadius:6, padding:'5px 10px', fontSize:11, color:'#333' }}>
-                  {connection.ga4_properties.map((p: any) => (
-                    <option key={p.name} value={p.name}>{p.displayName||p.name}</option>
-                  ))}
-                </select>
+                <div style={{ display:'flex', alignItems:'center', gap:4 }}>
+                  <select value={selectedProperty} onChange={e=>{setSelectedProperty(e.target.value);fetchGA4(e.target.value)}}
+                    style={{ background:'#f5f5f5', border:'1px solid #e5e5e5', borderRadius:6, padding:'5px 10px', fontSize:11, color:'#333', maxWidth:200 }}>
+                    {connection.ga4_properties.map((p: any) => (
+                      <option key={p.name} value={p.name}>{p.displayName||p.name}</option>
+                    ))}
+                  </select>
+                  <button onClick={()=>{setMappingProp(selectedProperty);setMappingSite(selectedSite);setShowMappingModal(true)}}
+                    title="Set default data sources for this client"
+                    style={{ background: mappingPropName?'#f0fdf4':'#fff7ed', border:`1px solid ${mappingPropName?'#20BB71':'#f9b62a'}`, borderRadius:6, padding:'5px 8px', cursor:'pointer', fontSize:11, color:mappingPropName?'#20BB71':'#f59e0b', fontWeight:600, whiteSpace:'nowrap' as const }}>
+                    {mappingPropName ? '✓ Mapped' : '⚙ Map Sources'}
+                  </button>
+                </div>
               )}
               <select value={dateRange} onChange={e=>{setDateRange(e.target.value);fetchGA4()}}
                 style={{ background:'#f5f5f5', border:'1px solid #e5e5e5', borderRadius:6, padding:'5px 10px', fontSize:11, color:'#333' }}>
@@ -679,6 +722,79 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
           )
         )}
       </div>
+    </div>
+
+      {/* Data Source Mapping Modal */}
+      {showMappingModal && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:100, padding:16 }}
+          onClick={()=>setShowMappingModal(false)}>
+          <div style={{ background:'#fff', borderRadius:12, width:'100%', maxWidth:480, overflow:'hidden', boxShadow:'0 20px 60px rgba(0,0,0,0.2)' }}
+            onClick={e=>e.stopPropagation()}>
+            <div style={{ height:3, background:'#20BB71' }}/>
+            <div style={{ padding:28 }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6 }}>
+                <div>
+                  <h2 style={{ fontSize:16, fontWeight:700, color:'#1a1a1a', marginBottom:2 }}>Map Data Sources</h2>
+                  <p style={{ fontSize:12, color:'#999' }}>Set the default data sources for <strong>{clientName}</strong></p>
+                </div>
+                <button onClick={()=>setShowMappingModal(false)} style={{ background:'none', border:'none', cursor:'pointer', color:'#999', fontSize:18 }}>✕</button>
+              </div>
+
+              <div style={{ borderRadius:8, background:'#f8f9fa', border:'1px solid #e5e5e5', padding:16, marginTop:16, marginBottom:16 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
+                  <div style={{ width:28, height:28, borderRadius:6, background:'#e8f5e9', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14 }}>📊</div>
+                  <div>
+                    <p style={{ fontSize:12, fontWeight:700, color:'#1a1a1a' }}>Google Analytics 4</p>
+                    <p style={{ fontSize:11, color:'#999' }}>Select the GA4 property for this client</p>
+                  </div>
+                </div>
+                <select value={mappingProp}
+                  onChange={e=>{
+                    setMappingProp(e.target.value)
+                    const prop = connection?.ga4_properties?.find((p: any) => p.name === e.target.value)
+                    setMappingPropName(prop?.displayName || e.target.value)
+                  }}
+                  style={{ width:'100%', background:'#fff', border:'1px solid #e5e5e5', borderRadius:6, padding:'9px 12px', fontSize:13, outline:'none', color:'#333', cursor:'pointer' }}>
+                  <option value="">— Select GA4 Property —</option>
+                  {connection?.ga4_properties?.map((p: any) => (
+                    <option key={p.name} value={p.name}>{p.displayName || p.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {connection?.gsc_sites?.length > 0 && (
+                <div style={{ borderRadius:8, background:'#f8f9fa', border:'1px solid #e5e5e5', padding:16, marginBottom:16 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
+                    <div style={{ width:28, height:28, borderRadius:6, background:'#e3f2fd', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14 }}>🔍</div>
+                    <div>
+                      <p style={{ fontSize:12, fontWeight:700, color:'#1a1a1a' }}>Google Search Console</p>
+                      <p style={{ fontSize:11, color:'#999' }}>Select the GSC site for this client</p>
+                    </div>
+                  </div>
+                  <select value={mappingSite} onChange={e=>setMappingSite(e.target.value)}
+                    style={{ width:'100%', background:'#fff', border:'1px solid #e5e5e5', borderRadius:6, padding:'9px 12px', fontSize:13, outline:'none', color:'#333', cursor:'pointer' }}>
+                    <option value="">— Select GSC Site —</option>
+                    {connection?.gsc_sites?.map((s: any) => (
+                      <option key={s.siteUrl} value={s.siteUrl}>{s.siteUrl}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div style={{ display:'flex', gap:8 }}>
+                <button onClick={()=>setShowMappingModal(false)}
+                  style={{ flex:1, background:'#f5f5f5', border:'1px solid #e5e5e5', borderRadius:8, padding:'10px', fontSize:13, color:'#666', cursor:'pointer', fontWeight:500 }}>
+                  Cancel
+                </button>
+                <button onClick={saveMapping} disabled={!mappingProp || savingMapping}
+                  style={{ flex:2, background: mappingSaved?'#20BB71':'#48b5ea', border:'none', borderRadius:8, padding:'10px', fontSize:13, fontWeight:600, color:'#fff', cursor:'pointer', opacity:!mappingProp||savingMapping?0.6:1, transition:'background 0.2s' }}>
+                  {mappingSaved ? '✓ Saved!' : savingMapping ? 'Saving...' : 'Save & Apply'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
