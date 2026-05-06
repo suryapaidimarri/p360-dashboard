@@ -34,7 +34,7 @@ function getColor(id: string) {
 }
 
 function ClientLogo({ client }: { client: Client }) {
-  const [imgError, setImgError] = useState(false)
+  const [srcIndex, setSrcIndex] = useState(0)
   const [loaded, setLoaded] = useState(false)
   const color = getColor(client.id)
   const tint = ALLOY_TINTS[color] || '#E6E6E6'
@@ -47,16 +47,42 @@ function ClientLogo({ client }: { client: Client }) {
     )
   }
 
-  const logoSrc = client.domain ? `https://logo.clearbit.com/${client.domain}` : null
+  const domain = client.domain ? client.domain.replace(/^https?:\/\//, '').replace(/^www\./, '') : ''
 
-  if (logoSrc && !imgError) {
+  const LOGO_SOURCES = domain ? [
+    `https://logo.clearbit.com/${domain}`,
+    `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,
+    `https://icons.duckduckgo.com/ip3/${domain}.ico`,
+    `https://${domain}/favicon.ico`,
+  ] : []
+
+  const currentSrc = LOGO_SOURCES[srcIndex]
+
+  if (currentSrc) {
     return (
-      <div style={{ width:64, height:64, margin:'0 auto 10px', display:'flex', alignItems:'center', justifyContent:'center' }}>
-        <img src={logoSrc} alt={client.name}
+      <div style={{ width:64, height:64, margin:'0 auto 10px', display:'flex', alignItems:'center', justifyContent:'center', position:'relative' }}>
+        <img
+          key={currentSrc}
+          src={currentSrc}
+          alt={client.name}
+          crossOrigin="anonymous"
           onLoad={() => setLoaded(true)}
-          onError={() => setImgError(true)}
-          style={{ maxWidth:64, maxHeight:64, objectFit:'contain', display: loaded ? 'block' : 'none' }} />
-        {!loaded && (
+          onError={() => {
+            if (srcIndex < LOGO_SOURCES.length - 1) {
+              setSrcIndex(prev => prev + 1)
+            } else {
+              setLoaded(false)
+              setSrcIndex(LOGO_SOURCES.length) // past all sources = show fallback
+            }
+          }}
+          style={{ maxWidth:64, maxHeight:64, objectFit:'contain', display: loaded ? 'block' : 'none', borderRadius: srcIndex > 0 ? 4 : 0 }}
+        />
+        {!loaded && srcIndex < LOGO_SOURCES.length && (
+          <div style={{ width:64, height:64, borderRadius:2, background:tint, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'Barlow',sans-serif", fontSize:20, fontWeight:700, color:'#111' }}>
+            {client.name[0].toUpperCase()}
+          </div>
+        )}
+        {srcIndex >= LOGO_SOURCES.length && (
           <div style={{ width:64, height:64, borderRadius:2, background:tint, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'Barlow',sans-serif", fontSize:20, fontWeight:700, color:'#111' }}>
             {client.name[0].toUpperCase()}
           </div>
@@ -162,7 +188,8 @@ export default function ClientsPage() {
     if (!newName.trim()) return
     setAdding(true)
     await new Promise(r => setTimeout(r, 400))
-    setClients(prev => [...prev, { id:Date.now().toString(), name:newName.trim(), domain:newDomain.trim(), logo_url:null, status:'active', agency_id:'1', created_at:new Date().toISOString() }])
+    const cleanDomain = newDomain.trim().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]
+    setClients(prev => [...prev, { id:Date.now().toString(), name:newName.trim(), domain:cleanDomain, logo_url:null, status:'active', agency_id:'1', created_at:new Date().toISOString() }])
     setNewName(''); setNewDomain(''); setAdding(false); setShowModal(false)
   }
 
@@ -266,8 +293,32 @@ export default function ClientsPage() {
               </div>
               <div style={{ marginBottom:22 }}>
                 <label style={{ ...label, color:'#6B6B6B', display:'block', marginBottom:6 }}>WEBSITE / DOMAIN</label>
-                <input value={newDomain} onChange={e=>setNewDomain(e.target.value)} placeholder="e.g. beltline.org"
-                  style={{ width:'100%', background:'#FAFAFA', border:'1px solid #E6E6E6', borderRadius:2, padding:'9px 12px', color:'#111', fontSize:13, outline:'none', boxSizing:'border-box' as const, fontFamily:"'DM Sans',sans-serif" }} />
+                <div style={{ display:'flex', gap:10, alignItems:'center' }}>
+                  <input value={newDomain} onChange={e=>setNewDomain(e.target.value)} placeholder="e.g. beltline.org"
+                    style={{ flex:1, background:'#FAFAFA', border:'1px solid #E6E6E6', borderRadius:2, padding:'9px 12px', color:'#111', fontSize:13, outline:'none', boxSizing:'border-box' as const, fontFamily:"'DM Sans',sans-serif" }} />
+                  {newDomain.trim() && (
+                    <div style={{ width:40, height:40, borderRadius:4, border:'1px solid #E6E6E6', background:'#FAFAFA', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, overflow:'hidden' }}>
+                      <img
+                        src={`https://logo.clearbit.com/${newDomain.trim().replace(/^https?:\/\//, '').replace(/^www\./, '')}`}
+                        alt="logo preview"
+                        style={{ maxWidth:36, maxHeight:36, objectFit:'contain' }}
+                        onError={e => {
+                          const img = e.currentTarget
+                          const domain = newDomain.trim().replace(/^https?:\/\//, '').replace(/^www\./, '')
+                          if (!img.dataset.fallback) {
+                            img.dataset.fallback = '1'
+                            img.src = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`
+                          } else {
+                            img.style.display = 'none'
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+                {newDomain.trim() && (
+                  <p style={{ ...label, color:'#20BB71', marginTop:6, display:'block' }}>✓ LOGO WILL BE FETCHED FROM DOMAIN</p>
+                )}
               </div>
               <div style={{ display:'flex', gap:8 }}>
                 <button onClick={()=>setShowModal(false)} style={{ flex:1, background:'#FAFAFA', border:'1px solid #E6E6E6', borderRadius:2, padding:'9px', ...label, color:'#6B6B6B', cursor:'pointer' }}>CANCEL</button>
