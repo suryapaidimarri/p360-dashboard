@@ -1,10 +1,118 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, Search, LayoutGrid, List, Sparkles, MoreHorizontal, Copy, Trash2, X, FolderOpen } from 'lucide-react'
 import Link from 'next/link'
 import { Client } from '@/types'
+import { createClient as createSupabase } from '@/lib/supabase/client'
 
-const DEMO_CLIENTS: Client[] = [
+const ALLOY_COLORS = ['#20BB71','#48B5EA','#F9B62A','#F64674','#F53619','#3FDB90','#5BD1F2','#FDC550']
+const ALLOY_TINTS: Record<string,string> = {
+  '#20BB71':'#C2FFE2','#48B5EA':'#E1F7FF','#F9B62A':'#FFEECA',
+  '#F64674':'#FFCFDC','#F53619':'#FFCFDC','#3FDB90':'#C2FFE2',
+  '#5BD1F2':'#E1F7FF','#FDC550':'#FFEECA',
+}
+function getColor(id: string) {
+  const idx = parseInt(id) % ALLOY_COLORS.length
+  return ALLOY_COLORS[isNaN(idx) ? 0 : idx]
+}
+
+const label = { fontFamily:"'Barlow',sans-serif", fontSize:'9px' as const, fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'0.1em' }
+
+const KPIS = [
+  { label:'Total Sessions', value:'2.4M', change:'+18.2%', w:'72%', c:'#20BB71' },
+  { label:'Conversions', value:'94.1K', change:'+11.4%', w:'55%', c:'#48B5EA' },
+  { label:'Avg Engagement', value:'62.4%', change:'+4.2%', w:'62%', c:'#F9B62A' },
+  { label:'Active Sources', value:'247', change:'+8 new', w:'40%', c:'#20BB71' },
+]
+
+function ClientLogo({ client }: { client: Client }) {
+  const [srcIndex, setSrcIndex] = useState(0)
+  const [loaded, setLoaded] = useState(false)
+  const color = getColor(client.id)
+  const tint = ALLOY_TINTS[color] || '#E6E6E6'
+
+  useEffect(() => { setSrcIndex(0); setLoaded(false) }, [client.domain])
+
+  if (client.group) {
+    return (
+      <div style={{ width:64, height:64, borderRadius:'50%', background:'#F0F0F0', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 10px' }}>
+        <FolderOpen size={24} style={{ color:'#999' }} />
+      </div>
+    )
+  }
+  const domain = client.domain ? client.domain.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0] : ''
+  const SRCS = domain ? [
+    `https://logo.clearbit.com/${domain}`,
+    `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,
+    `https://icons.duckduckgo.com/ip3/${domain}.ico`,
+  ] : []
+  const currentSrc = SRCS[srcIndex]
+  const Fallback = () => (
+    <div style={{ width:64, height:64, borderRadius:2, background:tint, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'Barlow',sans-serif", fontSize:20, fontWeight:700, color:'#111' }}>
+      {client.name[0].toUpperCase()}
+    </div>
+  )
+  if (!currentSrc) return <div style={{ margin:'0 auto 10px' }}><Fallback /></div>
+  return (
+    <div style={{ width:64, height:64, margin:'0 auto 10px', display:'flex', alignItems:'center', justifyContent:'center' }}>
+      {srcIndex < SRCS.length ? (
+        <>
+          <img key={currentSrc} src={currentSrc} alt={client.name}
+            onLoad={() => setLoaded(true)}
+            onError={() => { setLoaded(false); setSrcIndex(p => p + 1) }}
+            style={{ maxWidth:64, maxHeight:64, objectFit:'contain', display: loaded ? 'block' : 'none', borderRadius: srcIndex > 0 ? 4 : 0 }}
+          />
+          {!loaded && <Fallback />}
+        </>
+      ) : <Fallback />}
+    </div>
+  )
+}
+
+function ClientCard({ client, selected, onToggle, menuOpen, onMenuToggle, onDelete }: {
+  client: Client; selected: boolean; onToggle:()=>void; menuOpen:boolean; onMenuToggle:()=>void; onDelete:()=>void
+}) {
+  const [hovered, setHovered] = useState(false)
+  const color = getColor(client.id)
+  const cardContent = (
+    <div style={{ background:'#FFFFFF', border:`1px solid ${selected?'#20BB71':hovered?'#20BB71':'#E6E6E6'}`, borderRadius:2, padding:14, cursor:'pointer', position:'relative', overflow:'hidden', transition:'border-color 0.12s' }}>
+      <div style={{ position:'absolute', top:0, left:0, right:0, height:3, background:color }} />
+      <div style={{ position:'absolute', top:8, left:8, zIndex:2, opacity:hovered||selected?1:0, transition:'opacity 0.15s' }}
+        onClick={e=>{e.preventDefault();e.stopPropagation();onToggle()}}>
+        <div style={{ width:16, height:16, borderRadius:3, border:`2px solid ${selected?'#20BB71':'#ccc'}`, background:selected?'#20BB71':'#fff', display:'flex', alignItems:'center', justifyContent:'center' }}>
+          {selected && <span style={{ color:'#fff', fontSize:9, fontWeight:700, lineHeight:1 }}>✓</span>}
+        </div>
+      </div>
+      {!client.group && (
+        <div style={{ position:'absolute', top:6, right:6, zIndex:2, opacity:hovered||menuOpen?1:0, transition:'opacity 0.15s' }}
+          onClick={e=>{e.preventDefault();e.stopPropagation();onMenuToggle()}}>
+          <button style={{ background:'rgba(255,255,255,0.95)', border:'1px solid #E6E6E6', borderRadius:2, padding:'2px 5px', cursor:'pointer', display:'flex', alignItems:'center' }}>
+            <MoreHorizontal size={12} style={{ color:'#6B6B6B' }} />
+          </button>
+          {menuOpen && (
+            <div style={{ position:'absolute', right:0, top:'100%', marginTop:2, background:'#fff', border:'1px solid #E6E6E6', borderRadius:4, boxShadow:'0 6px 18px rgba(0,0,0,0.08)', padding:4, minWidth:110, zIndex:20 }}>
+              <button style={{ display:'flex', alignItems:'center', gap:8, width:'100%', padding:'7px 10px', fontSize:12, color:'#111', background:'none', border:'none', cursor:'pointer' }}><Copy size={12} /> Clone</button>
+              <button onClick={onDelete} style={{ display:'flex', alignItems:'center', gap:8, width:'100%', padding:'7px 10px', fontSize:12, color:'#F53619', background:'none', border:'none', cursor:'pointer' }}><Trash2 size={12} /> Delete</button>
+            </div>
+          )}
+        </div>
+      )}
+      <ClientLogo client={client} />
+      <p style={{ fontSize:12, fontWeight:500, color:'#111111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', fontFamily:"'DM Sans',sans-serif", textAlign:'center' as const }}>
+        {client.name}
+      </p>
+      {client.group && <p style={{ ...label, color:'#6B6B6B', textAlign:'center' as const, display:'block', marginTop:2 }}>{client.group_count} Clients</p>}
+    </div>
+  )
+  if (client.group) return <div onMouseEnter={()=>setHovered(true)} onMouseLeave={()=>setHovered(false)}>{cardContent}</div>
+  return (
+    <div onMouseEnter={()=>setHovered(true)} onMouseLeave={()=>setHovered(false)}>
+      <Link href={`/dashboard/clients/${client.id}`} style={{ textDecoration:'none', display:'block' }}>{cardContent}</Link>
+    </div>
+  )
+}
+
+const STATIC_CLIENTS: Client[] = [
   { id:'group1', name:'Lumistella', domain:'', logo_url:null, status:'active', agency_id:'1', group:'group', group_count:5, created_at:'' },
   { id:'1', name:'Alloy (internal)', domain:'alloy.com', logo_url:null, status:'active', agency_id:'1', created_at:'' },
   { id:'2', name:'Atlanta Beltline', domain:'beltline.org', logo_url:null, status:'active', agency_id:'1', created_at:'' },
@@ -21,155 +129,8 @@ const DEMO_CLIENTS: Client[] = [
   { id:'13', name:'TPX', domain:'tpx.com', logo_url:null, status:'active', agency_id:'1', created_at:'' },
 ]
 
-const ALLOY_COLORS = ['#20BB71','#48B5EA','#F9B62A','#F64674','#F53619','#3FDB90','#5BD1F2','#FDC550']
-const ALLOY_TINTS: Record<string,string> = {
-  '#20BB71':'#C2FFE2','#48B5EA':'#E1F7FF','#F9B62A':'#FFEECA',
-  '#F64674':'#FFCFDC','#F53619':'#FFCFDC','#3FDB90':'#C2FFE2',
-  '#5BD1F2':'#E1F7FF','#FDC550':'#FFEECA',
-}
-
-function getColor(id: string) {
-  const idx = parseInt(id) % ALLOY_COLORS.length
-  return ALLOY_COLORS[isNaN(idx) ? 0 : idx]
-}
-
-function ClientLogo({ client }: { client: Client }) {
-  const [srcIndex, setSrcIndex] = useState(0)
-  const [loaded, setLoaded] = useState(false)
-  const color = getColor(client.id)
-  const tint = ALLOY_TINTS[color] || '#E6E6E6'
-
-  if (client.group) {
-    return (
-      <div style={{ width:64, height:64, borderRadius:'50%', background:'#F0F0F0', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 10px' }}>
-        <FolderOpen size={24} style={{ color:'#999' }} />
-      </div>
-    )
-  }
-
-  const domain = client.domain ? client.domain.replace(/^https?:\/\//, '').replace(/^www\./, '') : ''
-
-  const LOGO_SOURCES = domain ? [
-    `https://logo.clearbit.com/${domain}`,
-    `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,
-    `https://icons.duckduckgo.com/ip3/${domain}.ico`,
-    `https://${domain}/favicon.ico`,
-  ] : []
-
-  const currentSrc = LOGO_SOURCES[srcIndex]
-
-  if (currentSrc) {
-    return (
-      <div style={{ width:64, height:64, margin:'0 auto 10px', display:'flex', alignItems:'center', justifyContent:'center', position:'relative' }}>
-        <img
-          key={currentSrc}
-          src={currentSrc}
-          alt={client.name}
-          crossOrigin="anonymous"
-          onLoad={() => setLoaded(true)}
-          onError={() => {
-            if (srcIndex < LOGO_SOURCES.length - 1) {
-              setSrcIndex(prev => prev + 1)
-            } else {
-              setLoaded(false)
-              setSrcIndex(LOGO_SOURCES.length) // past all sources = show fallback
-            }
-          }}
-          style={{ maxWidth:64, maxHeight:64, objectFit:'contain', display: loaded ? 'block' : 'none', borderRadius: srcIndex > 0 ? 4 : 0 }}
-        />
-        {!loaded && srcIndex < LOGO_SOURCES.length && (
-          <div style={{ width:64, height:64, borderRadius:2, background:tint, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'Barlow',sans-serif", fontSize:20, fontWeight:700, color:'#111' }}>
-            {client.name[0].toUpperCase()}
-          </div>
-        )}
-        {srcIndex >= LOGO_SOURCES.length && (
-          <div style={{ width:64, height:64, borderRadius:2, background:tint, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'Barlow',sans-serif", fontSize:20, fontWeight:700, color:'#111' }}>
-            {client.name[0].toUpperCase()}
-          </div>
-        )}
-      </div>
-    )
-  }
-
-  return (
-    <div style={{ width:64, height:64, borderRadius:2, background:tint, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 10px', fontFamily:"'Barlow',sans-serif", fontSize:20, fontWeight:700, color:'#111' }}>
-      {client.name[0].toUpperCase()}
-    </div>
-  )
-}
-
-const label = { fontFamily:"'Barlow',sans-serif", fontSize:'9px', fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'0.1em' }
-
-function ClientCard({ client, selected, onToggle, menuOpen, onMenuToggle, onDelete }: {
-  client: Client; selected: boolean; onToggle:()=>void; menuOpen:boolean; onMenuToggle:()=>void; onDelete:()=>void
-}) {
-  const [hovered, setHovered] = useState(false)
-  const color = getColor(client.id)
-
-  const cardStyle = {
-    background: '#FFFFFF',
-    border: `1px solid ${selected ? '#20BB71' : hovered ? '#20BB71' : '#E6E6E6'}`,
-    borderRadius: 2,
-    padding: 14,
-    cursor: 'pointer',
-    position: 'relative' as const,
-    overflow: 'hidden' as const,
-    transition: 'border-color 0.12s',
-  }
-
-  const content = (
-    <div style={cardStyle}>
-      {/* color stripe */}
-      <div style={{ position:'absolute', top:0, left:0, right:0, height:2, background: color }} />
-      {/* hover checkbox */}
-      <div style={{ position:'absolute', top:8, left:8, zIndex:2, opacity: hovered||selected ? 1 : 0, transition:'opacity 0.15s' }}
-        onClick={e=>{e.preventDefault();e.stopPropagation();onToggle()}}>
-        <div style={{ width:16, height:16, borderRadius:3, border:`2px solid ${selected?'#20BB71':'#ccc'}`, background:selected?'#20BB71':'#fff', display:'flex', alignItems:'center', justifyContent:'center' }}>
-          {selected && <span style={{ color:'#fff', fontSize:9, fontWeight:700, lineHeight:1 }}>✓</span>}
-        </div>
-      </div>
-      {/* 3-dot menu */}
-      {!client.group && (
-        <div style={{ position:'absolute', top:6, right:6, zIndex:2, opacity: hovered||menuOpen ? 1 : 0, transition:'opacity 0.15s' }}
-          onClick={e=>{e.preventDefault();e.stopPropagation();onMenuToggle()}}>
-          <button style={{ background:'rgba(255,255,255,0.95)', border:'1px solid #E6E6E6', borderRadius:2, padding:'2px 5px', cursor:'pointer', display:'flex', alignItems:'center' }}>
-            <MoreHorizontal size={12} style={{ color:'#6B6B6B' }} />
-          </button>
-          {menuOpen && (
-            <div style={{ position:'absolute', right:0, top:'100%', marginTop:2, background:'#fff', border:'1px solid #E6E6E6', borderRadius:4, boxShadow:'0 6px 18px rgba(0,0,0,0.08)', padding:4, minWidth:110, zIndex:20 }}>
-              <button style={{ display:'flex', alignItems:'center', gap:8, width:'100%', padding:'7px 10px', fontSize:12, color:'#111', background:'none', border:'none', cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
-                <Copy size={12} /> Clone
-              </button>
-              <button onClick={onDelete} style={{ display:'flex', alignItems:'center', gap:8, width:'100%', padding:'7px 10px', fontSize:12, color:'#F53619', background:'none', border:'none', cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
-                <Trash2 size={12} /> Delete
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-      <ClientLogo client={client} />
-      <p style={{ fontSize:12, fontWeight:500, color:'#111111', marginBottom: client.group ? 2 : 0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', fontFamily:"'DM Sans',sans-serif", textAlign:'center' }}>
-        {client.name}
-      </p>
-      {client.group && <p style={{ ...label, color:'#6B6B6B', textAlign:'center', display:'block' }}>{client.group_count} Clients</p>}
-    </div>
-  )
-
-  if (client.group) {
-    return <div onMouseEnter={()=>setHovered(true)} onMouseLeave={()=>setHovered(false)}>{content}</div>
-  }
-
-  return (
-    <div onMouseEnter={()=>setHovered(true)} onMouseLeave={()=>setHovered(false)}>
-      <Link href={`/dashboard/clients/${client.id}`} style={{ textDecoration:'none', display:'block' }}>
-        {content}
-      </Link>
-    </div>
-  )
-}
-
 export default function ClientsPage() {
-  const [clients, setClients] = useState<Client[]>(DEMO_CLIENTS)
+  const [clients, setClients] = useState<Client[]>(STATIC_CLIENTS)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [showModal, setShowModal] = useState(false)
   const [search, setSearch] = useState('')
@@ -177,6 +138,38 @@ export default function ClientsPage() {
   const [newName, setNewName] = useState('')
   const [newDomain, setNewDomain] = useState('')
   const [adding, setAdding] = useState(false)
+  const [loadingClients, setLoadingClients] = useState(true)
+  const supabase = createSupabase()
+
+  // Load clients from Supabase on mount
+  useEffect(() => {
+    async function loadClients() {
+      try {
+        const { data, error } = await supabase
+          .from('clients')
+          .select('*')
+          .order('created_at', { ascending: true })
+        if (!error && data && data.length > 0) {
+          // Merge Supabase clients with static demo clients
+          const supabaseClients = data.map((c: any) => ({
+            id: c.id,
+            name: c.name,
+            domain: c.domain || '',
+            logo_url: c.logo_url,
+            status: c.status || 'active',
+            agency_id: c.agency_id || '1',
+            created_at: c.created_at,
+          }))
+          setClients([...STATIC_CLIENTS, ...supabaseClients])
+        }
+      } catch (e) {
+        // Supabase not configured yet - use static clients
+      } finally {
+        setLoadingClients(false)
+      }
+    }
+    loadClients()
+  }, [])
 
   const filtered = clients.filter(c => c.name.toLowerCase().includes(search.toLowerCase()))
 
@@ -187,26 +180,76 @@ export default function ClientsPage() {
   async function handleAdd() {
     if (!newName.trim()) return
     setAdding(true)
-    await new Promise(r => setTimeout(r, 400))
     const cleanDomain = newDomain.trim().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]
-    setClients(prev => [...prev, { id:Date.now().toString(), name:newName.trim(), domain:cleanDomain, logo_url:null, status:'active', agency_id:'1', created_at:new Date().toISOString() }])
+    const newClient: Client = {
+      id: Date.now().toString(),
+      name: newName.trim(),
+      domain: cleanDomain,
+      logo_url: null,
+      status: 'active',
+      agency_id: '1',
+      created_at: new Date().toISOString(),
+    }
+    // Save to Supabase
+    try {
+      const { data, error } = await supabase.from('clients').insert([{
+        name: newName.trim(),
+        domain: cleanDomain,
+        logo_url: null,
+        status: 'active',
+        agency_id: '1',
+        color: getColor(newClient.id),
+      }]).select().single()
+      if (!error && data) {
+        newClient.id = data.id // use Supabase UUID
+      }
+    } catch (e) {
+      // Supabase not configured — save to localStorage as fallback
+      try {
+        const saved = JSON.parse(localStorage.getItem('p360_clients') || '[]')
+        saved.push(newClient)
+        localStorage.setItem('p360_clients', JSON.stringify(saved))
+      } catch {}
+    }
+    setClients(prev => [...prev, newClient])
     setNewName(''); setNewDomain(''); setAdding(false); setShowModal(false)
   }
 
-  const KPIS = [
-    { label:'Total Sessions', value:'2.4M', change:'+18.2%', w:'72%', c:'#20BB71' },
-    { label:'Conversions', value:'94.1K', change:'+11.4%', w:'55%', c:'#48B5EA' },
-    { label:'Avg Engagement', value:'62.4%', change:'+4.2%', w:'62%', c:'#F9B62A' },
-    { label:'Active Sources', value:'247', change:'+8 new', w:'40%', c:'#20BB71' },
-  ]
+  async function handleDelete(id: string) {
+    // Delete from Supabase
+    try {
+      await supabase.from('clients').delete().eq('id', id)
+    } catch {}
+    // Remove from localStorage
+    try {
+      const saved = JSON.parse(localStorage.getItem('p360_clients') || '[]')
+      localStorage.setItem('p360_clients', JSON.stringify(saved.filter((c: any) => c.id !== id)))
+    } catch {}
+    setClients(prev => prev.filter(c => c.id !== id))
+    setMenuOpen(null)
+  }
+
+  // Also load from localStorage as fallback
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('p360_clients') || '[]')
+      if (saved.length > 0) {
+        setClients(prev => {
+          const existingIds = new Set(prev.map(c => c.id))
+          const newOnes = saved.filter((c: Client) => !existingIds.has(c.id))
+          return [...prev, ...newOnes]
+        })
+      }
+    } catch {}
+    setLoadingClients(false)
+  }, [])
 
   return (
     <div style={{ display:'flex', flexDirection:'column', height:'100%', overflow:'hidden', background:'#FAFAFA', fontFamily:"'DM Sans',sans-serif" }} onClick={()=>setMenuOpen(null)}>
-
       {/* Topbar */}
       <div style={{ display:'flex', alignItems:'center', gap:10, padding:'13px 24px', borderBottom:'1px solid #E6E6E6', background:'#FFFFFF', flexShrink:0 }}>
         <span style={{ fontSize:15, fontWeight:500, color:'#111111' }}>Clients</span>
-        <span style={{ ...label, color:'#6B6B6B', marginLeft:4 }}>— {clients.length} ACCOUNTS</span>
+        <span style={{ ...label, color:'#6B6B6B', marginLeft:4 }}>— {clients.filter(c=>!c.group).length} ACCOUNTS</span>
         <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:8 }}>
           <button style={{ display:'flex', alignItems:'center', gap:6, background:'#F5F5F5', border:'1px solid #E6E6E6', borderRadius:2, padding:'6px 12px', fontSize:11, color:'#333', cursor:'pointer', fontFamily:"'Barlow',sans-serif", fontWeight:500, letterSpacing:'0.04em' }}>
             <Sparkles size={12} style={{ color:'#7c3aed' }} /> ASK AI
@@ -224,17 +267,16 @@ export default function ClientsPage() {
         </div>
       </div>
 
-      {/* Bulk action bar */}
       {selected.size > 0 && (
         <div style={{ display:'flex', alignItems:'center', gap:12, padding:'8px 24px', background:'#111111', flexShrink:0 }}>
           <span style={{ ...label, color:'#fff' }}>{selected.size} CLIENT{selected.size>1?'S':''} SELECTED</span>
           <button style={{ background:'#333', border:'none', borderRadius:2, padding:'4px 10px', color:'#fff', fontSize:11, cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}><Copy size={11}/></button>
-          <button onClick={()=>{setClients(p=>p.filter(c=>!selected.has(c.id)));setSelected(new Set())}} style={{ background:'#F53619', border:'none', borderRadius:2, padding:'4px 10px', color:'#fff', fontSize:11, cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}><Trash2 size={11}/></button>
+          <button onClick={()=>{clients.filter(c=>selected.has(c.id)).forEach(c=>handleDelete(c.id));setSelected(new Set())}}
+            style={{ background:'#F53619', border:'none', borderRadius:2, padding:'4px 10px', color:'#fff', fontSize:11, cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}><Trash2 size={11}/></button>
           <button onClick={()=>setSelected(new Set())} style={{ marginLeft:'auto', background:'none', border:'none', color:'#aaa', cursor:'pointer' }}><X size={15}/></button>
         </div>
       )}
 
-      {/* Filter bar */}
       <div style={{ padding:'8px 24px', borderBottom:'1px solid #E6E6E6', flexShrink:0 }}>
         <button style={{ display:'flex', alignItems:'center', gap:5, ...label, color:'#6B6B6B', background:'none', border:'1px dashed #ccc', borderRadius:2, padding:'4px 10px', cursor:'pointer' }}>
           <Plus size={10} /> ADD FILTER
@@ -256,17 +298,15 @@ export default function ClientsPage() {
           ))}
         </div>
 
-        {/* Client grid */}
         <p style={{ ...label, color:'#6B6B6B', marginBottom:10, display:'block' }}>ALL CLIENTS</p>
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(140px, 1fr))', gap:8 }}>
           {filtered.map(client => (
             <ClientCard key={client.id} client={client} selected={selected.has(client.id)}
               onToggle={()=>toggleSelect(client.id)} menuOpen={menuOpen===client.id}
               onMenuToggle={()=>setMenuOpen(menuOpen===client.id?null:client.id)}
-              onDelete={()=>{setClients(p=>p.filter(c=>c.id!==client.id));setMenuOpen(null)}} />
+              onDelete={()=>handleDelete(client.id)} />
           ))}
-          {/* Add card */}
-          <button onClick={()=>setShowModal(true)} style={{ background:'#FAFAFA', border:'1px dashed #E6E6E6', borderRadius:2, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8, minHeight:120, cursor:'pointer', transition:'all 0.12s' }}
+          <button onClick={()=>setShowModal(true)} style={{ background:'#FAFAFA', border:'1px dashed #E6E6E6', borderRadius:2, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8, minHeight:120, cursor:'pointer' }}
             onMouseEnter={e=>{(e.currentTarget as HTMLButtonElement).style.borderColor='#20BB71';(e.currentTarget as HTMLButtonElement).style.background='#C2FFE2'}}
             onMouseLeave={e=>{(e.currentTarget as HTMLButtonElement).style.borderColor='#E6E6E6';(e.currentTarget as HTMLButtonElement).style.background='#FAFAFA'}}>
             <div style={{ width:24, height:24, borderRadius:2, background:'#E6E6E6', display:'flex', alignItems:'center', justifyContent:'center', color:'#6B6B6B', fontSize:16 }}>+</div>
@@ -275,7 +315,6 @@ export default function ClientsPage() {
         </div>
       </div>
 
-      {/* Add Client Modal */}
       {showModal && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:50, padding:16 }} onClick={()=>setShowModal(false)}>
           <div style={{ background:'#FFFFFF', borderRadius:2, width:'100%', maxWidth:400, overflow:'hidden', boxShadow:'0 18px 40px rgba(0,0,0,0.12)' }} onClick={e=>e.stopPropagation()}>
@@ -298,27 +337,20 @@ export default function ClientsPage() {
                     style={{ flex:1, background:'#FAFAFA', border:'1px solid #E6E6E6', borderRadius:2, padding:'9px 12px', color:'#111', fontSize:13, outline:'none', boxSizing:'border-box' as const, fontFamily:"'DM Sans',sans-serif" }} />
                   {newDomain.trim() && (
                     <div style={{ width:40, height:40, borderRadius:4, border:'1px solid #E6E6E6', background:'#FAFAFA', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, overflow:'hidden' }}>
-                      <img
-                        src={`https://logo.clearbit.com/${newDomain.trim().replace(/^https?:\/\//, '').replace(/^www\./, '')}`}
-                        alt="logo preview"
+                      <img src={`https://logo.clearbit.com/${newDomain.trim().replace(/^https?:\/\//, '').replace(/^www\./, '')}`}
+                        alt="logo"
                         style={{ maxWidth:36, maxHeight:36, objectFit:'contain' }}
-                        onError={e => {
+                        onError={e=>{
                           const img = e.currentTarget
-                          const domain = newDomain.trim().replace(/^https?:\/\//, '').replace(/^www\./, '')
-                          if (!img.dataset.fallback) {
-                            img.dataset.fallback = '1'
-                            img.src = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`
-                          } else {
-                            img.style.display = 'none'
-                          }
+                          const d = newDomain.trim().replace(/^https?:\/\//, '').replace(/^www\./, '')
+                          if (!img.dataset.fallback) { img.dataset.fallback='1'; img.src=`https://www.google.com/s2/favicons?domain=${d}&sz=64` }
+                          else img.style.display='none'
                         }}
                       />
                     </div>
                   )}
                 </div>
-                {newDomain.trim() && (
-                  <p style={{ ...label, color:'#20BB71', marginTop:6, display:'block' }}>✓ LOGO WILL BE FETCHED FROM DOMAIN</p>
-                )}
+                {newDomain.trim() && <p style={{ ...label, color:'#20BB71', marginTop:6, display:'block' }}>✓ LOGO WILL BE FETCHED FROM DOMAIN</p>}
               </div>
               <div style={{ display:'flex', gap:8 }}>
                 <button onClick={()=>setShowModal(false)} style={{ flex:1, background:'#FAFAFA', border:'1px solid #E6E6E6', borderRadius:2, padding:'9px', ...label, color:'#6B6B6B', cursor:'pointer' }}>CANCEL</button>
