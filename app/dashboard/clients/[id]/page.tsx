@@ -252,10 +252,10 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     const c = KPI_BG[w.color]||KPI_BG.white
     const isWhite = w.color==='white'
     return (
-      <div style={{ background:c.bg, border:`1px solid ${c.border}`, borderRadius:8, padding:16, position:'relative', minHeight:110 }}>
+      <div onClick={()=>{ if(editMode) startEdit(w) }} style={{ background:c.bg, border:`1px solid ${c.border}`, borderRadius:8, padding:16, position:'relative', minHeight:110, cursor: editMode ? 'pointer' : 'default', outline: editMode && editingWidget?.id===w.id ? '2px solid #48b5ea' : 'none' }}>
         {editMode && <div style={{ position:'absolute', top:6, left:6, cursor:'grab', color:isWhite?'#d0d0d0':'rgba(255,255,255,0.35)' }}><Grip size={13}/></div>}
         {editMode && (
-          <div style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', alignItems:'center', gap:4 }}>
+          <div onClick={e=>e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', alignItems:'center', gap:4 }}>
             <button style={{ background:isWhite?'rgba(0,0,0,0.05)':'rgba(255,255,255,0.15)', border:'none', borderRadius:4, padding:'3px 5px', cursor:'pointer', display:'flex' }}>
               <Maximize2 size={10} style={{ color:isWhite?'#666':'rgba(255,255,255,0.7)' }}/>
             </button>
@@ -275,10 +275,10 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   function ChartCard({id, children}: {id:string; children:React.ReactNode}) {
     const w = widgets.find(x=>x.id===id)||widgets[0]
     return (
-      <div style={{ background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, padding:16, position:'relative' }}>
+      <div onClick={()=>{ if(editMode) startEdit(w) }} style={{ background:'#fff', border:`1px solid ${editMode && editingWidget?.id===id ? '#48b5ea' : '#e5e5e5'}`, borderRadius:8, padding:16, position:'relative', cursor: editMode ? 'pointer' : 'default', outline: editMode && editingWidget?.id===id ? '2px solid #48b5ea' : 'none' }}>
         {editMode && <div style={{ position:'absolute', top:6, left:6, cursor:'grab', color:'#d0d0d0' }}><Grip size={13}/></div>}
         {editMode && (
-          <div style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', alignItems:'center', gap:4 }}>
+          <div onClick={e=>e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', alignItems:'center', gap:4 }}>
             <button style={{ background:'rgba(0,0,0,0.04)', border:'none', borderRadius:4, padding:'3px 5px', cursor:'pointer', display:'flex' }}><Maximize2 size={10} style={{ color:'#888' }}/></button>
             <WidgetDot wid={id} onEdit={()=>startEdit(w)}/>
           </div>
@@ -538,10 +538,12 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
           </div>
         </div>
 
-        {/* Right panel */}
+        {/* Right panel — icon strip always visible, edit panel slides in */}
         {editMode && (
-          editingWidget ? (
-            <div style={{ width:300, minWidth:300, borderLeft:'1px solid #e5e5e5', background:'#fff', display:'flex', flexDirection:'column', overflow:'hidden' }}>
+          <div style={{ display:'flex', height:'100%', borderLeft:'1px solid #e5e5e5' }}>
+          {/* Edit widget panel — only when widget selected */}
+          {editingWidget && (
+            <div style={{ width:300, minWidth:300, background:'#fff', borderRight:'1px solid #e5e5e5', display:'flex', flexDirection:'column', overflow:'hidden' }}>
               <div style={{ padding:'14px 16px', borderBottom:'1px solid #e5e5e5' }}>
                 <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:12 }}>
                   <button onClick={()=>setEditingWidget(null)} style={{ width:28, height:28, borderRadius:'50%', background:'#f5f5f5', border:'1px solid #e5e5e5', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0 }}>
@@ -619,103 +621,18 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                 )}
               </div>
             </div>
-          ) : (
-            <div style={{ display:'flex', borderLeft:'1px solid #e5e5e5' }}>
-              {activeRightPanel && (
-                <div style={{ width:320, borderRight:'1px solid #e5e5e5', background:'#fff', display:'flex', flexDirection:'column', overflow:'hidden' }}>
-                  {activeRightPanel==='build' && (
-                    <div style={{ flex:1, overflowY:'auto', padding:20 }}>
-                      {[{icon:'⊞',title:'Summarize your data with AI',desc:'Transform your data into clear, meaningful insights your clients will actually understand'},{icon:'📊',title:'Build metrics with AI',desc:'Use natural prompts to find the right widgets and instantly add the metrics that matter most'}].map(item=>(
-                        <div key={item.title} style={{ display:'flex', alignItems:'flex-start', gap:12, padding:'16px 0', borderBottom:'1px solid #f0f0f0', cursor:'pointer' }}>
-                          <div style={{ width:36, height:36, borderRadius:8, background:'#f0f0f0', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:16 }}>{item.icon}</div>
-                          <div style={{ flex:1 }}><p style={{ fontSize:15, fontWeight:700, color:'#1a1a1a', marginBottom:4 }}>{item.title}</p><p style={{ fontSize:13, color:'#666', lineHeight:1.5 }}>{item.desc}</p></div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {activeRightPanel==='integrations' && (
-                    <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
-                      <div style={{ padding:12, borderBottom:'1px solid #f0f0f0' }}>
-                        <div style={{ display:'flex', alignItems:'center', gap:8, background:'#f5f5f5', border:'1px solid #e5e5e5', borderRadius:6, padding:'8px 12px', marginBottom:8 }}>
-                          <span style={{ color:'#999' }}>🔍</span>
-                          <input value={integrationSearch} onChange={e=>setIntegrationSearch(e.target.value)} placeholder="Search" style={{ background:'transparent', border:'none', outline:'none', fontSize:13, color:'#333', width:'100%' }}/>
-                        </div>
-                      </div>
-                      <div style={{ flex:1, overflowY:'auto' }}>
-                        {INTEGRATIONS.filter(i=>i.name.toLowerCase().includes(integrationSearch.toLowerCase())).map(i=>(
-                          <div key={i.name} style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px', borderBottom:'1px solid #f5f5f5', cursor:'pointer' }}>
-                            <div style={{ width:28, height:28, borderRadius:'50%', background:i.connected?'#e3f2fd':'#f0f0f0', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:700, color:i.connected?'#1565c0':'#999', flexShrink:0 }}>{i.name[0]}</div>
-                            <span style={{ flex:1, fontSize:13, color:i.connected?'#1a1a1a':'#999' }}>{i.name}</span>
-                            {!i.connected && <span style={{ fontSize:12, color:'#48b5ea', fontWeight:600 }}>Connect</span>}
-                            <span style={{ color:'#ccc' }}>›</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {activeRightPanel==='content' && (
-                    <div style={{ flex:1, overflowY:'auto', padding:20 }}>
-                      {[{icon:'Aa',title:'Title',desc:'Add page titles to structure your report'},{icon:'Aa',title:'Textbox',desc:'Create custom text alongside your data'},{icon:'≡',title:'Table of Contents',desc:'Build your titles and headings for easy navigation'},{icon:'#',title:'Stat',desc:'Spotlight key numbers to make your data stand out'}].map(item=>(
-                        <div key={item.title} style={{ display:'flex', alignItems:'flex-start', gap:12, padding:'16px 0', borderBottom:'1px solid #f0f0f0', cursor:'pointer' }}>
-                          <div style={{ width:32, height:32, borderRadius:6, background:'#f0f0f0', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:14, fontWeight:700, color:'#333' }}>{item.icon}</div>
-                          <div><p style={{ fontSize:14, fontWeight:700, color:'#1a1a1a', marginBottom:4 }}>{item.title}</p><p style={{ fontSize:12, color:'#666', lineHeight:1.5 }}>{item.desc}</p></div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {activeRightPanel==='media' && (
-                    <div style={{ flex:1, overflowY:'auto', padding:20 }}>
-                      {[{icon:'🖼',title:'Image',desc:'Add images, graphics, or logos'},{icon:'</>',title:'Embed',desc:'Pull in live content from YouTube, Google Sheets, and more'}].map(item=>(
-                        <div key={item.title} style={{ display:'flex', alignItems:'flex-start', gap:12, padding:'16px 0', borderBottom:'1px solid #f0f0f0', cursor:'pointer' }}>
-                          <div style={{ width:32, height:32, borderRadius:6, background:'#f0f0f0', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:14, fontWeight:700 }}>{item.icon}</div>
-                          <div><p style={{ fontSize:14, fontWeight:700, color:'#1a1a1a', marginBottom:4 }}>{item.title}</p><p style={{ fontSize:12, color:'#666', lineHeight:1.5 }}>{item.desc}</p></div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {activeRightPanel==='metrics' && (
-                    <div style={{ flex:1, display:'flex', flexDirection:'column' }}>
-                      <div style={{ padding:12, borderBottom:'1px solid #f0f0f0' }}>
-                        <button style={{ width:'100%', background:'#48b5ea', border:'none', borderRadius:6, padding:'10px', fontSize:13, fontWeight:600, color:'#fff', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}><Plus size={14}/> Add Custom Metric</button>
-                      </div>
-                      <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:24, textAlign:'center' }}>
-                        <div style={{ width:60, height:60, borderRadius:'50%', background:'#f0f0f0', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:12, fontSize:24 }}>✏️</div>
-                        <p style={{ fontSize:13, color:'#555', lineHeight:1.6 }}>No custom metrics yet</p>
-                      </div>
-                    </div>
-                  )}
-                  {activeRightPanel==='benchmarks' && (
-                    <div style={{ flex:1, overflowY:'auto', padding:20 }}>
-                      <div style={{ display:'flex', alignItems:'flex-start', gap:12, padding:'16px 0', cursor:'pointer' }}>
-                        <div style={{ width:32, height:32, borderRadius:6, background:'#f0f0f0', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:16 }}>⚖️</div>
-                        <div><p style={{ fontSize:14, fontWeight:700, color:'#1a1a1a', marginBottom:4 }}>Benchmark</p><p style={{ fontSize:12, color:'#666', lineHeight:1.5 }}>Visualize your client's performance against others</p></div>
-                      </div>
-                    </div>
-                  )}
-                  {activeRightPanel==='goals' && (
-                    <div style={{ flex:1, display:'flex', flexDirection:'column' }}>
-                      <div style={{ padding:12, borderBottom:'1px solid #f0f0f0' }}>
-                        <button style={{ width:'100%', background:'#48b5ea', border:'none', borderRadius:6, padding:'10px', fontSize:13, fontWeight:600, color:'#fff', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}><Plus size={14}/> Add Goal</button>
-                      </div>
-                      <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:24, textAlign:'center' }}>
-                        <div style={{ width:60, height:60, borderRadius:'50%', background:'#f0f0f0', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:12, fontSize:24 }}>🚩</div>
-                        <p style={{ fontSize:13, color:'#555', lineHeight:1.6 }}>No goals yet</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-              <div style={{ width:80, minWidth:80, background:'#fff', display:'flex', flexDirection:'column', alignItems:'center', padding:'12px 0', gap:2 }}>
-                {RIGHT_PANEL_ITEMS.map(item=>(
-                  <button key={item.id} onClick={()=>setActiveRightPanel(activeRightPanel===item.id?null:item.id)}
-                    style={{ width:68, padding:'10px 4px', display:'flex', flexDirection:'column', alignItems:'center', gap:5, border:'none', cursor:'pointer', borderRadius:8, background:activeRightPanel===item.id?'#f0f0f0':'none' }}>
-                    <span style={{ fontSize:18, lineHeight:1 }}>{item.icon}</span>
-                    <span style={{ fontSize:9, color:activeRightPanel===item.id?'#333':'#666', textAlign:'center', lineHeight:1.3, whiteSpace:'pre-line', fontWeight:activeRightPanel===item.id?600:400 }}>{item.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )
+}
+          {/* Icon strip — always visible */}
+          <div style={{ width:80, minWidth:80, background:'#fff', display:'flex', flexDirection:'column', alignItems:'center', padding:'12px 0', gap:2 }}>
+            {RIGHT_PANEL_ITEMS.map(item=>(
+              <button key={item.id} onClick={()=>{setActiveRightPanel(activeRightPanel===item.id?null:item.id);if(editingWidget)setEditingWidget(null)}}
+                style={{ width:68, padding:'10px 4px', display:'flex', flexDirection:'column', alignItems:'center', gap:5, border:'none', cursor:'pointer', borderRadius:8, transition:'background 0.1s', background:activeRightPanel===item.id?'#f0f0f0':'none' }}>
+                <span style={{ fontSize:18, lineHeight:1 }}>{item.icon}</span>
+                <span style={{ fontSize:9, color:activeRightPanel===item.id?'#333':'#666', textAlign:'center', lineHeight:1.3, whiteSpace:'pre-line', fontWeight:activeRightPanel===item.id?600:400 }}>{item.label}</span>
+              </button>
+            ))}
+          </div>
+          </div>
         )}
       </div>
 
