@@ -134,18 +134,17 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       const data = await res.json()
       if (data.connected) {
         setGa4Data(data)
-        const rows = data.timeSeries?.rows || []
-        const totals = rows.reduce((acc: any, row: any) => ({
-          sessions: acc.sessions + parseInt(row.metricValues[0].value||'0'),
-          users: acc.users + parseInt(row.metricValues[1].value||'0'),
-          conversions: acc.conversions + parseInt(row.metricValues[2].value||'0'),
-          engagementRate: parseFloat(row.metricValues[4].value||'0'),
-        }), {sessions:0,users:0,conversions:0,engagementRate:0})
+        // Use GA4 totals row (metricAggregations: TOTAL) for accurate KPI numbers
+        const totalsRow = data.timeSeries?.totals?.[0]
+        const sessions = parseInt(totalsRow?.metricValues?.[0]?.value || '0')
+        const users = parseInt(totalsRow?.metricValues?.[1]?.value || '0')
+        const conversions = parseInt(totalsRow?.metricValues?.[2]?.value || '0')
+        const engagementRate = parseFloat(totalsRow?.metricValues?.[4]?.value || '0')
         setWidgets(prev => prev.map(w => {
-          if (w.id==='w1') return {...w, value:formatNum(totals.sessions)}
-          if (w.id==='w2') return {...w, value:formatNum(totals.conversions)}
-          if (w.id==='w3') return {...w, value:formatNum(totals.users)}
-          if (w.id==='w4') return {...w, value:(totals.engagementRate*100/Math.max(rows.length,1)||0).toFixed(2)+'%'}
+          if (w.id==='w1') return {...w, value: formatNum(sessions)}
+          if (w.id==='w2') return {...w, value: formatNum(conversions)}
+          if (w.id==='w3') return {...w, value: formatNum(users)}
+          if (w.id==='w4') return {...w, value: (engagementRate * 100).toFixed(2) + '%'}
           return w
         }))
       }
