@@ -190,7 +190,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [selectedProperty, setSelectedProperty] = useState('')
   const [selectedSite, setSelectedSite] = useState('')
   const [dateRange, setDateRange] = useState('30daysAgo')
-  const [clientName, setClientName] = useState('Client')
+  const [clientName, setClientName] = useState('')
   const [clientDomain, setClientDomain] = useState('')
   const [showMappingModal, setShowMappingModal] = useState(false)
   const [mappingProp, setMappingProp] = useState('')
@@ -855,8 +855,9 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       {/* Dashboard Builder full-screen overlay */}
       {showBuilder && (
         <DashboardBuilder
-          clientName={clientName}
+          clientName={clientName || 'Client'}
           clientDomain={clientDomain}
+          clientId={clientId}
           onClose={() => setShowBuilder(false)}
         />
       )}
