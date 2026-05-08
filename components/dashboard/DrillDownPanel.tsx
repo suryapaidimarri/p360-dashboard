@@ -39,6 +39,22 @@ const AUDIENCE_ITEMS = [
   { id: 'aud-new-returning', label: 'New vs Returning' },
 ]
 
+// ── Full channel breakdown table rows (from screenshots) ──────────────────────
+const ALL_CHANNEL_ROWS = [
+  { channel: 'Organic Search',  sessions: 68639,  sessChange: '7.11%',  sessUp: true,  users: 44985, usersChange: '7.64%',  usersUp: true,  engagement: '44d 8h 39m 25s', engChange: '4.75%',  engUp: true,  views: 152328, viewsChange: '5.26%',  viewsUp: true,  keyEvents: 2368,  keyChange: '11%',    keyUp: false, eventCount: 998510,  evtChange: '5.00%',  evtUp: true,  purchasers: '0.00', pctBadge: '0%' },
+  { channel: 'Direct',          sessions: 30294,  sessChange: '15%',    sessUp: false, users: 24614, usersChange: '16%',    usersUp: false, engagement: '12d 21h 3m 39s',  engChange: '7.43%',  engUp: false, views: 50441,  viewsChange: '9.86%',  viewsUp: false, keyEvents: 596,   keyChange: '26%',    keyUp: false, eventCount: 295939,  evtChange: '9.10%',  evtUp: false, purchasers: '0.00', pctBadge: '0%' },
+  { channel: 'Paid Social',     sessions: 8288,   sessChange: '7.62%',  sessUp: true,  users: 7972,  usersChange: '22%',    usersUp: true,  engagement: '5h 37m 40s',      engChange: '89%',    engUp: false, views: 7921,   viewsChange: '39%',    viewsUp: false, keyEvents: 9,     keyChange: '97%',    keyUp: false, eventCount: 36718,   evtChange: '53%',    evtUp: false, purchasers: '0.00', pctBadge: '0%' },
+  { channel: 'Organic Social',  sessions: 6570,   sessChange: '24%',    sessUp: true,  users: 5587,  usersChange: '21%',    usersUp: true,  engagement: '2d 13h 51m 18s',  engChange: '11%',    engUp: true,  views: 10032,  viewsChange: '7.43%',  viewsUp: false, keyEvents: 179,   keyChange: '25%',    keyUp: false, eventCount: 63071,   evtChange: '13%',    evtUp: false, purchasers: '0.00', pctBadge: '0%' },
+  { channel: 'Referral',        sessions: 4379,   sessChange: '13%',    sessUp: false, users: 3029,  usersChange: '11%',    usersUp: false, engagement: '2d 10h 24m 6s',   engChange: '24%',    engUp: false, views: 8653,   viewsChange: '16%',    viewsUp: false, keyEvents: 247,   keyChange: '29%',    keyUp: false, eventCount: 55416,   evtChange: '19%',    evtUp: false, purchasers: '0.00', pctBadge: '0%' },
+  { channel: 'Paid Search',     sessions: 3874,   sessChange: '0.16%',  sessUp: true,  users: 2931,  usersChange: '2.30%',  usersUp: false, engagement: '3d 20h 50s',      engChange: '8.72%',  engUp: true,  views: 11350,  viewsChange: '3.23%',  viewsUp: true,  keyEvents: 163,   keyChange: '9.40%',  keyUp: true,  eventCount: 78019,   evtChange: '3.76%',  evtUp: true,  purchasers: '0.00', pctBadge: '0%' },
+  { channel: 'Unassigned',      sessions: 768,    sessChange: '3.36%',  sessUp: true,  users: 666,   usersChange: '2.06%',  usersUp: false, engagement: '9h 41m 34s',      engChange: '1.51%',  engUp: true,  views: 1311,   viewsChange: '2.26%',  viewsUp: true,  keyEvents: 41,    keyChange: '6.82%',  keyUp: false, eventCount: 8001,    evtChange: '0.76%',  evtUp: true,  purchasers: '0.00', pctBadge: '0%' },
+  { channel: 'Email',           sessions: 364,    sessChange: '32%',    sessUp: true,  users: 309,   usersChange: '76%',    usersUp: true,  engagement: '3h 30m 40s',      engChange: '4.12%',  engUp: false, views: 733,    viewsChange: '38%',    viewsUp: true,  keyEvents: 6,     keyChange: '20%',    keyUp: true,  eventCount: 3498,    evtChange: '21%',    evtUp: true,  purchasers: '0.00', pctBadge: '0%' },
+  { channel: 'Cross-network',   sessions: 35,     sessChange: '52%',    sessUp: true,  users: 34,    usersChange: '62%',    usersUp: true,  engagement: '30m 47s',          engChange: '53%',    engUp: false, views: 113,    viewsChange: '2.73%',  viewsUp: true,  keyEvents: 0,     keyChange: '100%',   keyUp: false, eventCount: 661,     evtChange: '7.29%',  evtUp: false, purchasers: '0.00', pctBadge: '0%' },
+  { channel: 'Paid Other',      sessions: 9,      sessChange: '800%',   sessUp: true,  users: 9,     usersChange: '800%',   usersUp: true,  engagement: '1m',               engChange: '100%',   engUp: true,  views: 7,      viewsChange: '600%',   viewsUp: true,  keyEvents: 0,     keyChange: '0%',     keyUp: true,  eventCount: 47,      evtChange: '1467%',  evtUp: true,  purchasers: '0.00', pctBadge: '0%' },
+  { channel: 'Organic Video',   sessions: 7,      sessChange: '133%',   sessUp: true,  users: 6,     usersChange: '500%',   usersUp: true,  engagement: '1m 50s',           engChange: '100%',   engUp: true,  views: 11,     viewsChange: '1000%',  viewsUp: true,  keyEvents: 1,     keyChange: '100%',   keyUp: true,  eventCount: 86,      evtChange: '856%',   evtUp: true,  purchasers: '0.00', pctBadge: '0%' },
+  { channel: 'Affiliates',      sessions: 1,      sessChange: '100%',   sessUp: true,  users: 1,     usersChange: '100%',   usersUp: true,  engagement: '—',               engChange: '0%',     engUp: true,  views: 1,      viewsChange: '100%',   viewsUp: true,  keyEvents: 0,     keyChange: '0%',     keyUp: true,  eventCount: 8,       evtChange: '100%',   evtUp: true,  purchasers: '0.00', pctBadge: '0%' },
+]
+
 type ChartEntry = { name: string; value: number; color: string }
 type TimeEntry  = { d: string; v: number; v2: number }
 
@@ -75,9 +91,11 @@ const CHANNEL_DATA: Record<string, ChannelData> = {
       { name: 'Email',          value: 733,    color: '#80CBC4' },
     ],
     timeData: [
-      {d:'6 Apr',v:9200,v2:8100},{d:'8 Apr',v:10500,v2:9600},{d:'10 Apr',v:9800,v2:9200},
+      {d:'1 Apr',v:9200,v2:8100},{d:'3 Apr',v:8800,v2:8400},{d:'5 Apr',v:9600,v2:8900},
+      {d:'7 Apr',v:10200,v2:9400},{d:'9 Apr',v:9800,v2:9200},{d:'11 Apr',v:10500,v2:9600},
       {d:'13 Apr',v:8800,v2:9200},{d:'15 Apr',v:11200,v2:10800},{d:'17 Apr',v:9600,v2:8900},
-      {d:'20 Apr',v:12400,v2:11200},{d:'22 Apr',v:11800,v2:10500},{d:'27 Apr',v:8900,v2:7600},
+      {d:'19 Apr',v:10800,v2:10200},{d:'21 Apr',v:12400,v2:11200},{d:'23 Apr',v:11800,v2:10500},
+      {d:'25 Apr',v:10200,v2:9100},{d:'27 Apr',v:8900,v2:7600},{d:'29 Apr',v:7800,v2:7200},
     ],
   },
   'organic-search': {
@@ -99,9 +117,11 @@ const CHANNEL_DATA: Record<string, ChannelData> = {
       { name: 'cn.bing.com',         value: 32,     color: '#80CBC4' },
     ],
     timeData: [
-      {d:'6 Apr',v:5800,v2:5200},{d:'8 Apr',v:6400,v2:5800},{d:'10 Apr',v:7200,v2:6400},
+      {d:'1 Apr',v:5200,v2:4800},{d:'3 Apr',v:5600,v2:5000},{d:'5 Apr',v:6000,v2:5400},
+      {d:'7 Apr',v:6400,v2:5800},{d:'9 Apr',v:7000,v2:6200},{d:'11 Apr',v:7200,v2:6400},
       {d:'13 Apr',v:6800,v2:7000},{d:'15 Apr',v:7800,v2:7200},{d:'17 Apr',v:6200,v2:6000},
-      {d:'20 Apr',v:5600,v2:5400},{d:'22 Apr',v:4800,v2:5000},{d:'27 Apr',v:4000,v2:4200},
+      {d:'19 Apr',v:5800,v2:5600},{d:'21 Apr',v:5600,v2:5400},{d:'23 Apr',v:4800,v2:5000},
+      {d:'25 Apr',v:4400,v2:4600},{d:'27 Apr',v:4000,v2:4200},{d:'29 Apr',v:3800,v2:4000},
     ],
   },
   'paid-search': {
@@ -112,13 +132,13 @@ const CHANNEL_DATA: Record<string, ChannelData> = {
     keyEvents: 163, keyChange: '9.40%', keyUp: true,
     eventCount: '78,019', evtChange: '3.76%', evtUp: true,
     chartType: 'donut',
-    donutData: [
-      { name: 'google', value: 11350, color: '#4DA6FF' },
-    ],
+    donutData: [{ name: 'google', value: 11350, color: '#4DA6FF' }],
     timeData: [
-      {d:'6 Apr',v:380,v2:340},{d:'8 Apr',v:420,v2:390},{d:'10 Apr',v:460,v2:420},
+      {d:'1 Apr',v:320,v2:300},{d:'3 Apr',v:350,v2:320},{d:'5 Apr',v:380,v2:340},
+      {d:'7 Apr',v:420,v2:390},{d:'9 Apr',v:440,v2:410},{d:'11 Apr',v:460,v2:420},
       {d:'13 Apr',v:390,v2:410},{d:'15 Apr',v:580,v2:520},{d:'17 Apr',v:500,v2:480},
-      {d:'20 Apr',v:440,v2:430},{d:'22 Apr',v:410,v2:400},{d:'27 Apr',v:330,v2:350},
+      {d:'19 Apr',v:460,v2:450},{d:'21 Apr',v:440,v2:430},{d:'23 Apr',v:410,v2:400},
+      {d:'25 Apr',v:380,v2:390},{d:'27 Apr',v:330,v2:350},{d:'29 Apr',v:310,v2:330},
     ],
   },
   direct: {
@@ -140,9 +160,11 @@ const CHANNEL_DATA: Record<string, ChannelData> = {
       { name: '/live/',       value: 500,  color: '#80CBC4' },
     ],
     timeData: [
-      {d:'6 Apr',v:3800,v2:4200},{d:'8 Apr',v:2800,v2:3200},{d:'10 Apr',v:2200,v2:2600},
+      {d:'1 Apr',v:4200,v2:4600},{d:'3 Apr',v:3800,v2:4200},{d:'5 Apr',v:3200,v2:3800},
+      {d:'7 Apr',v:2800,v2:3400},{d:'9 Apr',v:2400,v2:3000},{d:'11 Apr',v:2200,v2:2600},
       {d:'13 Apr',v:1800,v2:2200},{d:'15 Apr',v:2000,v2:2400},{d:'17 Apr',v:1600,v2:2000},
-      {d:'20 Apr',v:7200,v2:2800},{d:'22 Apr',v:2400,v2:2800},{d:'27 Apr',v:1600,v2:2000},
+      {d:'19 Apr',v:2200,v2:2400},{d:'21 Apr',v:7200,v2:2800},{d:'23 Apr',v:2400,v2:2800},
+      {d:'25 Apr',v:2000,v2:2400},{d:'27 Apr',v:1600,v2:2000},{d:'29 Apr',v:1400,v2:1800},
     ],
   },
   social: {
@@ -164,9 +186,11 @@ const CHANNEL_DATA: Record<string, ChannelData> = {
       { name: 't.co',         value: 480,  color: '#80CBC4' },
     ],
     timeData: [
-      {d:'6 Apr',v:380,v2:520},{d:'8 Apr',v:320,v2:440},{d:'10 Apr',v:280,v2:380},
-      {d:'13 Apr',v:240,v2:320},{d:'15 Apr',v:1200,v2:360},{d:'17 Apr',v:480,v2:340},
-      {d:'20 Apr',v:360,v2:320},{d:'22 Apr',v:580,v2:300},{d:'27 Apr',v:280,v2:300},
+      {d:'1 Apr',v:280,v2:420},{d:'3 Apr',v:320,v2:460},{d:'5 Apr',v:360,v2:480},
+      {d:'7 Apr',v:300,v2:440},{d:'9 Apr',v:260,v2:400},{d:'11 Apr',v:240,v2:380},
+      {d:'13 Apr',v:220,v2:340},{d:'15 Apr',v:1200,v2:360},{d:'17 Apr',v:480,v2:340},
+      {d:'19 Apr',v:380,v2:340},{d:'21 Apr',v:360,v2:320},{d:'23 Apr',v:580,v2:300},
+      {d:'25 Apr',v:740,v2:320},{d:'27 Apr',v:280,v2:300},{d:'29 Apr',v:240,v2:280},
     ],
   },
   referral: {
@@ -185,9 +209,11 @@ const CHANNEL_DATA: Record<string, ChannelData> = {
       { name: 'tripadvi...',  value: 540,  color: '#CE93D8' },
     ],
     timeData: [
-      {d:'6 Apr',v:320,v2:380},{d:'8 Apr',v:280,v2:320},{d:'10 Apr',v:310,v2:290},
+      {d:'1 Apr',v:360,v2:400},{d:'3 Apr',v:340,v2:380},{d:'5 Apr',v:320,v2:360},
+      {d:'7 Apr',v:300,v2:340},{d:'9 Apr',v:310,v2:300},{d:'11 Apr',v:290,v2:280},
       {d:'13 Apr',v:260,v2:280},{d:'15 Apr',v:340,v2:300},{d:'17 Apr',v:290,v2:270},
-      {d:'20 Apr',v:270,v2:260},{d:'22 Apr',v:250,v2:240},{d:'27 Apr',v:220,v2:240},
+      {d:'19 Apr',v:280,v2:270},{d:'21 Apr',v:270,v2:260},{d:'23 Apr',v:250,v2:240},
+      {d:'25 Apr',v:240,v2:250},{d:'27 Apr',v:220,v2:240},{d:'29 Apr',v:200,v2:220},
     ],
   },
   display: {
@@ -200,27 +226,31 @@ const CHANNEL_DATA: Record<string, ChannelData> = {
     chartType: 'donut',
     donutData: [{ name: 'google', value: 2100, color: '#4DA6FF' }],
     timeData: [
-      {d:'6 Apr',v:90,v2:80},{d:'8 Apr',v:110,v2:95},{d:'10 Apr',v:95,v2:100},
+      {d:'1 Apr',v:80,v2:70},{d:'3 Apr',v:85,v2:75},{d:'5 Apr',v:90,v2:80},
+      {d:'7 Apr',v:95,v2:85},{d:'9 Apr',v:100,v2:90},{d:'11 Apr',v:95,v2:100},
       {d:'13 Apr',v:80,v2:90},{d:'15 Apr',v:120,v2:100},{d:'17 Apr',v:100,v2:95},
-      {d:'20 Apr',v:85,v2:90},{d:'22 Apr',v:75,v2:85},{d:'27 Apr',v:65,v2:75},
+      {d:'19 Apr',v:90,v2:92},{d:'21 Apr',v:85,v2:90},{d:'23 Apr',v:75,v2:85},
+      {d:'25 Apr',v:70,v2:80},{d:'27 Apr',v:65,v2:75},{d:'29 Apr',v:60,v2:70},
     ],
   },
   email: {
-    views: 733, viewsChange: '2%', viewsUp: false,
-    sessions: 420, sessChange: '3%', sessUp: false,
-    users: 380, usersChange: '2%', usersUp: false,
-    engagement: '4h 12m', engChange: '1%', engUp: true,
-    keyEvents: 8, keyChange: '5%', keyUp: false,
-    eventCount: '4,820', evtChange: '2%', evtUp: false,
+    views: 733, viewsChange: '38%', viewsUp: true,
+    sessions: 364, sessChange: '32%', sessUp: true,
+    users: 309, usersChange: '76%', usersUp: true,
+    engagement: '3h 30m 40s', engChange: '4.12%', engUp: false,
+    keyEvents: 6, keyChange: '20%', keyUp: true,
+    eventCount: '3,498', evtChange: '21%', evtUp: true,
     chartType: 'donut',
     donutData: [
       { name: 'mailchimp', value: 600, color: '#4DA6FF' },
       { name: 'other',     value: 133, color: '#4CAF82' },
     ],
     timeData: [
-      {d:'6 Apr',v:30,v2:35},{d:'8 Apr',v:28,v2:32},{d:'10 Apr',v:32,v2:30},
+      {d:'1 Apr',v:18,v2:22},{d:'3 Apr',v:20,v2:24},{d:'5 Apr',v:22,v2:26},
+      {d:'7 Apr',v:28,v2:30},{d:'9 Apr',v:30,v2:32},{d:'11 Apr',v:32,v2:30},
       {d:'13 Apr',v:25,v2:28},{d:'15 Apr',v:38,v2:32},{d:'17 Apr',v:30,v2:28},
-      {d:'20 Apr',v:26,v2:25},{d:'22 Apr',v:22,v2:24},{d:'27 Apr',v:18,v2:20},
+      {d:'19 Apr',v:28,v2:26},{d:'21 Apr',v:26,v2:25},{d:'23 Apr',v:22,v2:24},
+      {d:'25 Apr',v:20,v2:22},{d:'27 Apr',v:18,v2:20},{d:'29 Apr',v:16,v2:18},
     ],
   },
   video: {
@@ -233,9 +263,11 @@ const CHANNEL_DATA: Record<string, ChannelData> = {
     chartType: 'donut',
     donutData: [{ name: 'youtube', value: 540, color: '#4DA6FF' }],
     timeData: [
-      {d:'6 Apr',v:22,v2:20},{d:'8 Apr',v:28,v2:24},{d:'10 Apr',v:24,v2:22},
+      {d:'1 Apr',v:18,v2:16},{d:'3 Apr',v:20,v2:18},{d:'5 Apr',v:22,v2:20},
+      {d:'7 Apr',v:24,v2:22},{d:'9 Apr',v:26,v2:24},{d:'11 Apr',v:24,v2:22},
       {d:'13 Apr',v:20,v2:22},{d:'15 Apr',v:32,v2:28},{d:'17 Apr',v:26,v2:24},
-      {d:'20 Apr',v:22,v2:20},{d:'22 Apr',v:18,v2:20},{d:'27 Apr',v:14,v2:16},
+      {d:'19 Apr',v:24,v2:22},{d:'21 Apr',v:22,v2:20},{d:'23 Apr',v:18,v2:20},
+      {d:'25 Apr',v:16,v2:18},{d:'27 Apr',v:14,v2:16},{d:'29 Apr',v:12,v2:14},
     ],
   },
   'paid-social': {
@@ -253,9 +285,11 @@ const CHANNEL_DATA: Record<string, ChannelData> = {
       { name: 'twitter',   value: 301,  color: '#A8D8FF' },
     ],
     timeData: [
-      {d:'6 Apr',v:320,v2:420},{d:'8 Apr',v:280,v2:380},{d:'10 Apr',v:310,v2:360},
+      {d:'1 Apr',v:280,v2:380},{d:'3 Apr',v:300,v2:400},{d:'5 Apr',v:320,v2:420},
+      {d:'7 Apr',v:280,v2:380},{d:'9 Apr',v:300,v2:360},{d:'11 Apr',v:310,v2:360},
       {d:'13 Apr',v:260,v2:340},{d:'15 Apr',v:380,v2:320},{d:'17 Apr',v:290,v2:300},
-      {d:'20 Apr',v:340,v2:280},{d:'22 Apr',v:310,v2:260},{d:'27 Apr',v:260,v2:240},
+      {d:'19 Apr',v:310,v2:290},{d:'21 Apr',v:340,v2:280},{d:'23 Apr',v:310,v2:260},
+      {d:'25 Apr',v:290,v2:255},{d:'27 Apr',v:260,v2:240},{d:'29 Apr',v:240,v2:220},
     ],
   },
 }
@@ -277,6 +311,7 @@ function Change({ val, up }: { val: string; up: boolean }) {
 export default function DrillDownPanel({ clientName = 'Atlanta BeltLine Website', onClose }: DrillDownPanelProps) {
   const [activeChannel, setActiveChannel] = useState('all')
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['ga4', 'Acquisition']))
+  const [tableSearch, setTableSearch] = useState('')
 
   function toggleGroup(key: string) {
     setExpandedGroups(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n })
@@ -284,7 +319,9 @@ export default function DrillDownPanel({ clientName = 'Atlanta BeltLine Website'
 
   const cd = CHANNEL_DATA[activeChannel] || CHANNEL_DATA['all']
   const activeLabel = CHANNELS.find(c => c.id === activeChannel)?.label || 'All Channels'
+  const isAll = activeChannel === 'all'
 
+  // ── Left nav ────────────────────────────────────────────────────────────────
   function LeftNav() {
     return (
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 16 }}>
@@ -295,7 +332,6 @@ export default function DrillDownPanel({ clientName = 'Atlanta BeltLine Website'
         </button>
 
         {expandedGroups.has('ga4') && <>
-          {/* Acquisition */}
           <button onClick={() => toggleGroup('Acquisition')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px 7px 28px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' as const }}>
             <ChevronDown size={11} style={{ color: '#888', transform: expandedGroups.has('Acquisition') ? 'rotate(0deg)' : 'rotate(-90deg)', transition: '0.15s' }}/>
             <span style={{ fontSize: 13, fontWeight: 500, color: '#333' }}>Acquisition</span>
@@ -306,7 +342,6 @@ export default function DrillDownPanel({ clientName = 'Atlanta BeltLine Website'
             </button>
           ))}
 
-          {/* Audience */}
           <button onClick={() => toggleGroup('Audience')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px 7px 28px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' as const }}>
             <ChevronRight size={11} style={{ color: '#888', transform: expandedGroups.has('Audience') ? 'rotate(90deg)' : 'none', transition: '0.15s' }}/>
             <span style={{ fontSize: 13, fontWeight: 500, color: '#333' }}>Audience</span>
@@ -317,17 +352,12 @@ export default function DrillDownPanel({ clientName = 'Atlanta BeltLine Website'
             </button>
           ))}
 
-          {/* Conversions */}
           <button onClick={() => toggleGroup('Conversions')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px 7px 28px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' as const }}>
             <ChevronRight size={11} style={{ color: '#888' }}/><span style={{ fontSize: 13, fontWeight: 500, color: '#333' }}>Conversions</span>
           </button>
-
-          {/* Pages */}
           <button onClick={() => toggleGroup('Pages')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px 7px 28px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' as const }}>
             <ChevronRight size={11} style={{ color: '#888' }}/><span style={{ fontSize: 13, fontWeight: 500, color: '#333' }}>Pages</span>
           </button>
-
-          {/* Events */}
           <button onClick={() => toggleGroup('Events')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px 7px 28px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' as const }}>
             <ChevronRight size={11} style={{ color: '#888' }}/><span style={{ fontSize: 13, fontWeight: 500, color: '#333' }}>Events</span>
           </button>
@@ -343,6 +373,7 @@ export default function DrillDownPanel({ clientName = 'Atlanta BeltLine Website'
     )
   }
 
+  // ── Right chart ─────────────────────────────────────────────────────────────
   function RightChart() {
     if (cd.chartType === 'donut' && cd.donutData) {
       const total = cd.donutData.reduce((s, d) => s + d.value, 0)
@@ -356,24 +387,24 @@ export default function DrillDownPanel({ clientName = 'Atlanta BeltLine Website'
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-            <div style={{ position: 'relative', width: 180, height: 180, flexShrink: 0 }}>
+            <div style={{ position: 'relative', width: 170, height: 170, flexShrink: 0 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={cd.donutData} cx="50%" cy="50%" innerRadius={56} outerRadius={84} dataKey="value">
+                  <Pie data={cd.donutData} cx="50%" cy="50%" innerRadius={52} outerRadius={80} dataKey="value">
                     {cd.donutData.map((d, i) => <Cell key={i} fill={d.color}/>)}
                   </Pie>
                   <Tooltip contentStyle={{ fontSize: 11, borderRadius: 6 }} formatter={(v: number) => [v.toLocaleString(), '']}/>
                 </PieChart>
               </ResponsiveContainer>
               <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontSize: 20, fontWeight: 700 }}>{fmt(total)}</span>
+                <span style={{ fontSize: 18, fontWeight: 700 }}>{fmt(total)}</span>
                 <span style={{ fontSize: 10, color: '#999' }}>Views</span>
               </div>
             </div>
             <div style={{ flex: 1 }}>
               {cd.donutData.map(d => (
-                <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                  <div style={{ width: 10, height: 10, borderRadius: '50%', background: d.color, flexShrink: 0 }}/>
+                <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7 }}>
+                  <div style={{ width: 9, height: 9, borderRadius: '50%', background: d.color, flexShrink: 0 }}/>
                   <span style={{ fontSize: 12, color: '#333', flex: 1 }}>{d.name}</span>
                   <span style={{ fontSize: 12, fontWeight: 600 }}>{d.value >= 1000 ? fmt(d.value) : d.value.toLocaleString()}</span>
                 </div>
@@ -395,7 +426,7 @@ export default function DrillDownPanel({ clientName = 'Atlanta BeltLine Website'
             </div>
           </div>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={cd.barData} barSize={28}>
+            <BarChart data={cd.barData} barSize={26}>
               <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#999' }}/>
               <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#999' }} tickFormatter={(v: number) => v >= 1000 ? (v/1000)+'K' : String(v)}/>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false}/>
@@ -409,6 +440,71 @@ export default function DrillDownPanel({ clientName = 'Atlanta BeltLine Website'
       )
     }
     return null
+  }
+
+  // ── Channel breakdown table (only shown when activeChannel === 'all') ────────
+  function ChannelTable() {
+    const filtered = ALL_CHANNEL_ROWS.filter(r =>
+      r.channel.toLowerCase().includes(tableSearch.toLowerCase())
+    )
+    return (
+      <div style={{ background: '#fff', border: '1px solid #e5e5e5', borderRadius: 8, overflow: 'hidden', marginTop: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderBottom: '1px solid #f0f0f0' }}>
+          <span style={{ fontSize: 12, color: '#666' }}>Showing {filtered.length} of {ALL_CHANNEL_ROWS.length} Rows</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input value={tableSearch} onChange={e => setTableSearch(e.target.value)} placeholder="Search"
+              style={{ background: '#fafafa', border: '1px solid #e5e5e5', borderRadius: 6, padding: '5px 10px', fontSize: 12, outline: 'none', width: 160 }}/>
+            <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#bbb' }}><MoreHorizontal size={14}/></button>
+          </div>
+        </div>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid #f0f0f0', background: '#fafafa' }}>
+                {['CHANNEL','SESSIONS ↓','TOTAL USERS','USER ENGAGEMENT','VIEWS','KEY EVENTS','EVENT COUNT','TOTAL PURCHASERS'].map(h => (
+                  <th key={h} style={{ padding: '9px 14px', textAlign: h === 'CHANNEL' ? 'left' : 'right', fontSize: 11, fontWeight: 600, color: '#888', whiteSpace: 'nowrap' as const }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((row, i) => (
+                <tr key={row.channel} style={{ borderBottom: '1px solid #f8f8f8', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                  <td style={{ padding: '11px 14px', fontWeight: 500, color: '#1a1a1a', whiteSpace: 'nowrap' as const }}>{row.channel}</td>
+                  <td style={{ padding: '11px 14px', textAlign: 'right' as const }}>
+                    <div style={{ fontWeight: 500 }}>{row.sessions.toLocaleString()}</div>
+                    <Change val={row.sessChange} up={row.sessUp}/>
+                  </td>
+                  <td style={{ padding: '11px 14px', textAlign: 'right' as const }}>
+                    <div>{row.users.toLocaleString()}</div>
+                    <Change val={row.usersChange} up={row.usersUp}/>
+                  </td>
+                  <td style={{ padding: '11px 14px', textAlign: 'right' as const }}>
+                    <div style={{ fontSize: 12, color: '#333' }}>{row.engagement}</div>
+                    <Change val={row.engChange} up={row.engUp}/>
+                  </td>
+                  <td style={{ padding: '11px 14px', textAlign: 'right' as const }}>
+                    <div>{row.views.toLocaleString()}</div>
+                    <Change val={row.viewsChange} up={row.viewsUp}/>
+                  </td>
+                  <td style={{ padding: '11px 14px', textAlign: 'right' as const }}>
+                    <div>{row.keyEvents.toFixed(2)}</div>
+                    <Change val={row.keyChange} up={row.keyUp}/>
+                  </td>
+                  <td style={{ padding: '11px 14px', textAlign: 'right' as const }}>
+                    <div>{row.eventCount.toLocaleString()}</div>
+                    <Change val={row.evtChange} up={row.evtUp}/>
+                  </td>
+                  <td style={{ padding: '11px 14px', textAlign: 'right' as const }}>
+                    <div>{row.purchasers}</div>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: '#999', background: '#f0f0f0', padding: '1px 5px', borderRadius: 3 }}>{row.pctBadge}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -431,16 +527,15 @@ export default function DrillDownPanel({ clientName = 'Atlanta BeltLine Website'
 
         {/* Body */}
         <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-          {/* Left nav */}
           <div style={{ width: 220, minWidth: 220, borderRight: '1px solid #e5e5e5', background: '#fff', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <LeftNav/>
           </div>
 
-          {/* Main content */}
+          {/* Main scrollable content */}
           <div style={{ flex: 1, overflowY: 'auto', padding: 20, background: '#f8f9fa' }}>
+
             {/* Top two charts */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
-              {/* Area chart */}
               <div style={{ background: '#fff', border: '1px solid #e5e5e5', borderRadius: 8, padding: 20 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                   <span style={{ fontSize: 13, color: '#555' }}>Views</span>
@@ -471,7 +566,7 @@ export default function DrillDownPanel({ clientName = 'Atlanta BeltLine Website'
               <RightChart/>
             </div>
 
-            {/* KPI row 1 */}
+            {/* KPI row 1 — 4 cards: Sessions, Total Users, User Engagement, Views */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 12 }}>
               {[
                 { label: 'Sessions',        val: cd.sessions >= 1000 ? fmt(cd.sessions) : cd.sessions.toLocaleString(), change: cd.sessChange,  up: cd.sessUp,  hl: false },
@@ -493,7 +588,7 @@ export default function DrillDownPanel({ clientName = 'Atlanta BeltLine Website'
               ))}
             </div>
 
-            {/* KPI row 2 */}
+            {/* KPI row 2 — Key Events, Event Count, Total Purchasers */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
               {[
                 { label: 'Key Events',       val: cd.keyEvents >= 1000 ? fmt(cd.keyEvents) : cd.keyEvents.toLocaleString(), change: cd.keyChange, up: cd.keyUp, badge: false },
@@ -512,6 +607,9 @@ export default function DrillDownPanel({ clientName = 'Atlanta BeltLine Website'
                 </div>
               ))}
             </div>
+
+            {/* Channel breakdown table — only for "All" */}
+            {isAll && <ChannelTable/>}
           </div>
         </div>
       </div>
