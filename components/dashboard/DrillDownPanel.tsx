@@ -3334,15 +3334,15 @@ export default function DrillDownPanel({clientName='Atlanta BeltLine Website',on
         case 'fba-demographics': return <FbaDemographics search={tableSearch} onSearch={setTableSearch}/>
         case 'fba-custom-conv':  return <FbaCustomConversions/>
         case 'fba-custom-events':return <FbaCustomEvents/>
-        case 'li-campaign-groups': return <LiCampaignGroups search={tableSearch} onSearch={setTableSearch}/>
-        case 'li-campaigns':       return <LiCampaigns search={tableSearch} onSearch={setTableSearch}/>
-        case 'li-ads':             return <LiAds search={tableSearch} onSearch={setTableSearch}/>
-        case 'li-industry':        return <LiDemoView col="INDUSTRY" search={tableSearch} onSearch={setTableSearch}/>
-        case 'li-company-size':    return <LiDemoView col="COMPANY SIZE" search={tableSearch} onSearch={setTableSearch}/>
-        case 'li-country':         return <LiDemoView col="COUNTRY" search={tableSearch} onSearch={setTableSearch}/>
-        case 'li-seniority':       return <LiDemoView col="SENIORITY" search={tableSearch} onSearch={setTableSearch} showMore={true}/>
-        case 'li-job-function':    return <LiDemoView col="JOB FUNCTION" search={tableSearch} onSearch={setTableSearch}/>
-        case 'li-company':         return <LiDemoView col="COMPANY" search={tableSearch} onSearch={setTableSearch} showMore={true}/>
+        case 'li-campaign-groups': return <LiCampaignLayout tableCol="CAMPAIGN GROUP" search={tableSearch} onSearch={setTableSearch}/>
+        case 'li-campaigns':       return <LiCampaignLayout tableCol="CAMPAIGN" search={tableSearch} onSearch={setTableSearch}/>
+        case 'li-ads':             return <LiAdsView search={tableSearch} onSearch={setTableSearch}/>
+        case 'li-demo-industry':   return <LiDemoView colName="industry" tableLabel="INDUSTRY" search={tableSearch} onSearch={setTableSearch}/>
+        case 'li-demo-company-size':return <LiDemoView colName="company-size" tableLabel="COMPANY SIZE" search={tableSearch} onSearch={setTableSearch}/>
+        case 'li-demo-country':    return <LiDemoView colName="country" tableLabel="COUNTRY" search={tableSearch} onSearch={setTableSearch}/>
+        case 'li-demo-seniority':  return <LiDemoView colName="seniority" tableLabel="SENIORITY" search={tableSearch} onSearch={setTableSearch}/>
+        case 'li-demo-job-function':return <LiDemoView colName="job-function" tableLabel="JOB FUNCTION" search={tableSearch} onSearch={setTableSearch} showMore/>
+        case 'li-demo-company':    return <LiDemoView colName="company" tableLabel="COMPANY" search={tableSearch} onSearch={setTableSearch} showMore/>
         default: return <GaCampaigns search={tableSearch} onSearch={setTableSearch}/>
       }})()
       return <div style={{flex:1,overflowY:'auto',padding:20,background:'#f8f9fa'}}>{inner}</div>
