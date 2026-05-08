@@ -95,8 +95,7 @@ function NewDashCanvas() {
   const options = [
     {
       title: 'Add a page template',
-      desc: 'Choose from a ready-made template
-or one of your saved pages',
+      desc: 'Choose from a ready-made template or one of your saved pages',
       icon: (
         <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
           <rect x="4" y="4" width="12" height="12" rx="2" fill="#D0D0D0"/>
@@ -109,8 +108,7 @@ or one of your saved pages',
     },
     {
       title: 'Build a page using AI',
-      desc: "Tell AI what you're trying to achieve,
-and watch it build your page",
+      desc: "Tell AI what you're trying to achieve, and watch it build your page",
       icon: (
         <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
           <circle cx="18" cy="18" r="12" stroke="#D0D0D0" strokeWidth="2"/>
@@ -135,8 +133,7 @@ and watch it build your page",
     },
     {
       title: 'Smart Dashboard',
-      desc: 'Generate a dashboard from your
-connected integrations',
+      desc: 'Generate a dashboard from your connected integrations',
       icon: (
         <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
           <rect x="4" y="9" width="28" height="18" rx="2" stroke="#D0D0D0" strokeWidth="2"/>
@@ -162,7 +159,7 @@ connected integrations',
             <div style={{ width:56, height:56, display:'flex', alignItems:'center', justifyContent:'center' }}>{opt.icon}</div>
             <div>
               <p style={{ fontSize:14, fontWeight:500, color:'#1a1a1a', marginBottom:6 }}>{opt.title}</p>
-              <p style={{ fontSize:12, color:'#aaa', lineHeight:1.6, whiteSpace:'pre-line' as const }}>{opt.desc}</p>
+              <p style={{ fontSize:12, color:'#aaa', lineHeight:1.6, whiteSpace:'normal' as const }}>{opt.desc}</p>
             </div>
           </button>
         ))}
