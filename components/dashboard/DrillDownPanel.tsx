@@ -2,8 +2,8 @@
 import { useState } from 'react'
 import { X, Plus, MoreHorizontal, ChevronRight, ChevronDown } from 'lucide-react'
 import {
-  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+  AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts'
 
 interface DrillDownPanelProps {
@@ -14,6 +14,16 @@ interface DrillDownPanelProps {
   onClose: () => void
 }
 
+// ── Shared time data (Apr 1 – Apr 29) ────────────────────────────────────────
+const TIME_DATA = [
+  {d:'1 Apr',v:9200,v2:8100},{d:'3 Apr',v:8800,v2:8400},{d:'5 Apr',v:9600,v2:8900},
+  {d:'7 Apr',v:10200,v2:9400},{d:'9 Apr',v:9800,v2:9200},{d:'11 Apr',v:10500,v2:9600},
+  {d:'13 Apr',v:8800,v2:9200},{d:'15 Apr',v:11200,v2:10800},{d:'17 Apr',v:9600,v2:8900},
+  {d:'19 Apr',v:10800,v2:10200},{d:'21 Apr',v:12400,v2:11200},{d:'23 Apr',v:11800,v2:10500},
+  {d:'25 Apr',v:10200,v2:9100},{d:'27 Apr',v:8900,v2:7600},{d:'29 Apr',v:7800,v2:7200},
+]
+
+// ── Acquisition channels ──────────────────────────────────────────────────────
 const CHANNELS = [
   { id: 'all',            label: 'All' },
   { id: 'organic-search', label: 'Organic Search' },
@@ -27,6 +37,7 @@ const CHANNELS = [
   { id: 'paid-social',    label: 'Paid Social' },
 ]
 
+// ── Audience items ────────────────────────────────────────────────────────────
 const AUDIENCE_ITEMS = [
   { id: 'aud-location',      label: 'Location' },
   { id: 'aud-language',      label: 'Language' },
@@ -39,20 +50,20 @@ const AUDIENCE_ITEMS = [
   { id: 'aud-new-returning', label: 'New vs Returning' },
 ]
 
-// ── Full channel breakdown table rows (from screenshots) ──────────────────────
+// ── All-channel table rows ────────────────────────────────────────────────────
 const ALL_CHANNEL_ROWS = [
-  { channel: 'Organic Search',  sessions: 68639,  sessChange: '7.11%',  sessUp: true,  users: 44985, usersChange: '7.64%',  usersUp: true,  engagement: '44d 8h 39m 25s', engChange: '4.75%',  engUp: true,  views: 152328, viewsChange: '5.26%',  viewsUp: true,  keyEvents: 2368,  keyChange: '11%',    keyUp: false, eventCount: 998510,  evtChange: '5.00%',  evtUp: true,  purchasers: '0.00', pctBadge: '0%' },
-  { channel: 'Direct',          sessions: 30294,  sessChange: '15%',    sessUp: false, users: 24614, usersChange: '16%',    usersUp: false, engagement: '12d 21h 3m 39s',  engChange: '7.43%',  engUp: false, views: 50441,  viewsChange: '9.86%',  viewsUp: false, keyEvents: 596,   keyChange: '26%',    keyUp: false, eventCount: 295939,  evtChange: '9.10%',  evtUp: false, purchasers: '0.00', pctBadge: '0%' },
-  { channel: 'Paid Social',     sessions: 8288,   sessChange: '7.62%',  sessUp: true,  users: 7972,  usersChange: '22%',    usersUp: true,  engagement: '5h 37m 40s',      engChange: '89%',    engUp: false, views: 7921,   viewsChange: '39%',    viewsUp: false, keyEvents: 9,     keyChange: '97%',    keyUp: false, eventCount: 36718,   evtChange: '53%',    evtUp: false, purchasers: '0.00', pctBadge: '0%' },
-  { channel: 'Organic Social',  sessions: 6570,   sessChange: '24%',    sessUp: true,  users: 5587,  usersChange: '21%',    usersUp: true,  engagement: '2d 13h 51m 18s',  engChange: '11%',    engUp: true,  views: 10032,  viewsChange: '7.43%',  viewsUp: false, keyEvents: 179,   keyChange: '25%',    keyUp: false, eventCount: 63071,   evtChange: '13%',    evtUp: false, purchasers: '0.00', pctBadge: '0%' },
-  { channel: 'Referral',        sessions: 4379,   sessChange: '13%',    sessUp: false, users: 3029,  usersChange: '11%',    usersUp: false, engagement: '2d 10h 24m 6s',   engChange: '24%',    engUp: false, views: 8653,   viewsChange: '16%',    viewsUp: false, keyEvents: 247,   keyChange: '29%',    keyUp: false, eventCount: 55416,   evtChange: '19%',    evtUp: false, purchasers: '0.00', pctBadge: '0%' },
-  { channel: 'Paid Search',     sessions: 3874,   sessChange: '0.16%',  sessUp: true,  users: 2931,  usersChange: '2.30%',  usersUp: false, engagement: '3d 20h 50s',      engChange: '8.72%',  engUp: true,  views: 11350,  viewsChange: '3.23%',  viewsUp: true,  keyEvents: 163,   keyChange: '9.40%',  keyUp: true,  eventCount: 78019,   evtChange: '3.76%',  evtUp: true,  purchasers: '0.00', pctBadge: '0%' },
-  { channel: 'Unassigned',      sessions: 768,    sessChange: '3.36%',  sessUp: true,  users: 666,   usersChange: '2.06%',  usersUp: false, engagement: '9h 41m 34s',      engChange: '1.51%',  engUp: true,  views: 1311,   viewsChange: '2.26%',  viewsUp: true,  keyEvents: 41,    keyChange: '6.82%',  keyUp: false, eventCount: 8001,    evtChange: '0.76%',  evtUp: true,  purchasers: '0.00', pctBadge: '0%' },
-  { channel: 'Email',           sessions: 364,    sessChange: '32%',    sessUp: true,  users: 309,   usersChange: '76%',    usersUp: true,  engagement: '3h 30m 40s',      engChange: '4.12%',  engUp: false, views: 733,    viewsChange: '38%',    viewsUp: true,  keyEvents: 6,     keyChange: '20%',    keyUp: true,  eventCount: 3498,    evtChange: '21%',    evtUp: true,  purchasers: '0.00', pctBadge: '0%' },
-  { channel: 'Cross-network',   sessions: 35,     sessChange: '52%',    sessUp: true,  users: 34,    usersChange: '62%',    usersUp: true,  engagement: '30m 47s',          engChange: '53%',    engUp: false, views: 113,    viewsChange: '2.73%',  viewsUp: true,  keyEvents: 0,     keyChange: '100%',   keyUp: false, eventCount: 661,     evtChange: '7.29%',  evtUp: false, purchasers: '0.00', pctBadge: '0%' },
-  { channel: 'Paid Other',      sessions: 9,      sessChange: '800%',   sessUp: true,  users: 9,     usersChange: '800%',   usersUp: true,  engagement: '1m',               engChange: '100%',   engUp: true,  views: 7,      viewsChange: '600%',   viewsUp: true,  keyEvents: 0,     keyChange: '0%',     keyUp: true,  eventCount: 47,      evtChange: '1467%',  evtUp: true,  purchasers: '0.00', pctBadge: '0%' },
-  { channel: 'Organic Video',   sessions: 7,      sessChange: '133%',   sessUp: true,  users: 6,     usersChange: '500%',   usersUp: true,  engagement: '1m 50s',           engChange: '100%',   engUp: true,  views: 11,     viewsChange: '1000%',  viewsUp: true,  keyEvents: 1,     keyChange: '100%',   keyUp: true,  eventCount: 86,      evtChange: '856%',   evtUp: true,  purchasers: '0.00', pctBadge: '0%' },
-  { channel: 'Affiliates',      sessions: 1,      sessChange: '100%',   sessUp: true,  users: 1,     usersChange: '100%',   usersUp: true,  engagement: '—',               engChange: '0%',     engUp: true,  views: 1,      viewsChange: '100%',   viewsUp: true,  keyEvents: 0,     keyChange: '0%',     keyUp: true,  eventCount: 8,       evtChange: '100%',   evtUp: true,  purchasers: '0.00', pctBadge: '0%' },
+  { channel:'Organic Search', sessions:68639,  sessChange:'7.11%',  sessUp:true,  users:44985, usersChange:'7.64%',  usersUp:true,  engagement:'44d 8h 39m 25s', engChange:'4.75%',  engUp:true,  views:152328, viewsChange:'5.26%', viewsUp:true,  keyEvents:2368,  keyChange:'11%',   keyUp:false, eventCount:998510, evtChange:'5.00%', evtUp:true,  purchasers:'0.00', pct:'0%' },
+  { channel:'Direct',         sessions:30294,  sessChange:'15%',    sessUp:false, users:24614, usersChange:'16%',    usersUp:false, engagement:'12d 21h 3m 39s',  engChange:'7.43%',  engUp:false, views:50441,  viewsChange:'9.86%', viewsUp:false, keyEvents:596,   keyChange:'26%',   keyUp:false, eventCount:295939, evtChange:'9.10%', evtUp:false, purchasers:'0.00', pct:'0%' },
+  { channel:'Paid Social',    sessions:8288,   sessChange:'7.62%',  sessUp:true,  users:7972,  usersChange:'22%',    usersUp:true,  engagement:'5h 37m 40s',      engChange:'89%',    engUp:false, views:7921,   viewsChange:'39%',   viewsUp:false, keyEvents:9,     keyChange:'97%',   keyUp:false, eventCount:36718,  evtChange:'53%',   evtUp:false, purchasers:'0.00', pct:'0%' },
+  { channel:'Organic Social', sessions:6570,   sessChange:'24%',    sessUp:true,  users:5587,  usersChange:'21%',    usersUp:true,  engagement:'2d 13h 51m 18s',  engChange:'11%',    engUp:true,  views:10032,  viewsChange:'7.43%', viewsUp:false, keyEvents:179,   keyChange:'25%',   keyUp:false, eventCount:63071,  evtChange:'13%',   evtUp:false, purchasers:'0.00', pct:'0%' },
+  { channel:'Referral',       sessions:4379,   sessChange:'13%',    sessUp:false, users:3029,  usersChange:'11%',    usersUp:false, engagement:'2d 10h 24m 6s',   engChange:'24%',    engUp:false, views:8653,   viewsChange:'16%',   viewsUp:false, keyEvents:247,   keyChange:'29%',   keyUp:false, eventCount:55416,  evtChange:'19%',   evtUp:false, purchasers:'0.00', pct:'0%' },
+  { channel:'Paid Search',    sessions:3874,   sessChange:'0.16%',  sessUp:true,  users:2931,  usersChange:'2.30%',  usersUp:false, engagement:'3d 20h 50s',      engChange:'8.72%',  engUp:true,  views:11350,  viewsChange:'3.23%', viewsUp:true,  keyEvents:163,   keyChange:'9.40%', keyUp:true,  eventCount:78019,  evtChange:'3.76%', evtUp:true,  purchasers:'0.00', pct:'0%' },
+  { channel:'Unassigned',     sessions:768,    sessChange:'3.36%',  sessUp:true,  users:666,   usersChange:'2.06%',  usersUp:false, engagement:'9h 41m 34s',      engChange:'1.51%',  engUp:true,  views:1311,   viewsChange:'2.26%', viewsUp:true,  keyEvents:41,    keyChange:'6.82%', keyUp:false, eventCount:8001,   evtChange:'0.76%', evtUp:true,  purchasers:'0.00', pct:'0%' },
+  { channel:'Email',          sessions:364,    sessChange:'32%',    sessUp:true,  users:309,   usersChange:'76%',    usersUp:true,  engagement:'3h 30m 40s',      engChange:'4.12%',  engUp:false, views:733,    viewsChange:'38%',   viewsUp:true,  keyEvents:6,     keyChange:'20%',   keyUp:true,  eventCount:3498,   evtChange:'21%',   evtUp:true,  purchasers:'0.00', pct:'0%' },
+  { channel:'Cross-network',  sessions:35,     sessChange:'52%',    sessUp:true,  users:34,    usersChange:'62%',    usersUp:true,  engagement:'30m 47s',          engChange:'53%',    engUp:false, views:113,    viewsChange:'2.73%', viewsUp:true,  keyEvents:0,     keyChange:'100%',  keyUp:false, eventCount:661,    evtChange:'7.29%', evtUp:false, purchasers:'0.00', pct:'0%' },
+  { channel:'Paid Other',     sessions:9,      sessChange:'800%',   sessUp:true,  users:9,     usersChange:'800%',   usersUp:true,  engagement:'1m',               engChange:'100%',   engUp:true,  views:7,      viewsChange:'600%',  viewsUp:true,  keyEvents:0,     keyChange:'0%',    keyUp:true,  eventCount:47,     evtChange:'1467%', evtUp:true,  purchasers:'0.00', pct:'0%' },
+  { channel:'Organic Video',  sessions:7,      sessChange:'133%',   sessUp:true,  users:6,     usersChange:'500%',   usersUp:true,  engagement:'1m 50s',           engChange:'100%',   engUp:true,  views:11,     viewsChange:'1000%', viewsUp:true,  keyEvents:1,     keyChange:'100%',  keyUp:true,  eventCount:86,     evtChange:'856%',  evtUp:true,  purchasers:'0.00', pct:'0%' },
+  { channel:'Affiliates',     sessions:1,      sessChange:'100%',   sessUp:true,  users:1,     usersChange:'100%',   usersUp:true,  engagement:'—',               engChange:'0%',     engUp:true,  views:1,      viewsChange:'100%',  viewsUp:true,  keyEvents:0,     keyChange:'0%',    keyUp:true,  eventCount:8,      evtChange:'100%',  evtUp:true,  purchasers:'0.00', pct:'0%' },
 ]
 
 type ChartEntry = { name: string; value: number; color: string }
@@ -73,50 +84,36 @@ interface ChannelData {
 
 const CHANNEL_DATA: Record<string, ChannelData> = {
   all: {
-    views: 242900, viewsChange: '1.91%', viewsUp: false,
-    sessions: 120500, sessChange: '0.35%', sessUp: false,
-    users: 88069, usersChange: '0.69%', usersUp: true,
-    engagement: '66d 21h 22m 49s', engChange: '1.65%', engUp: false,
-    keyEvents: 3610, keyChange: '21%', keyUp: false,
-    eventCount: '1.54 M', evtChange: '2.67%', evtUp: false,
-    chartType: 'donut',
-    donutData: [
-      { name: 'Organic Search', value: 152328, color: '#4DA6FF' },
-      { name: 'Direct',         value: 50441,  color: '#4CAF82' },
-      { name: 'Paid Search',    value: 11350,  color: '#F9B62A' },
-      { name: 'Organic Social', value: 10032,  color: '#A8D8FF' },
-      { name: 'Referral',       value: 8653,   color: '#CE93D8' },
-      { name: 'Paid Social',    value: 7921,   color: '#FFB74D' },
-      { name: 'Unassigned',     value: 1311,   color: '#B0BEC5' },
-      { name: 'Email',          value: 733,    color: '#80CBC4' },
+    views:242900, viewsChange:'1.91%', viewsUp:false,
+    sessions:120500, sessChange:'0.35%', sessUp:false,
+    users:88069, usersChange:'0.69%', usersUp:true,
+    engagement:'66d 21h 22m 49s', engChange:'1.65%', engUp:false,
+    keyEvents:3610, keyChange:'21%', keyUp:false,
+    eventCount:'1.54 M', evtChange:'2.67%', evtUp:false,
+    chartType:'donut',
+    donutData:[
+      {name:'Organic Search',value:152328,color:'#4DA6FF'},{name:'Direct',value:50441,color:'#4CAF82'},
+      {name:'Paid Search',value:11350,color:'#F9B62A'},{name:'Organic Social',value:10032,color:'#A8D8FF'},
+      {name:'Referral',value:8653,color:'#CE93D8'},{name:'Paid Social',value:7921,color:'#FFB74D'},
+      {name:'Unassigned',value:1311,color:'#B0BEC5'},{name:'Email',value:733,color:'#80CBC4'},
     ],
-    timeData: [
-      {d:'1 Apr',v:9200,v2:8100},{d:'3 Apr',v:8800,v2:8400},{d:'5 Apr',v:9600,v2:8900},
-      {d:'7 Apr',v:10200,v2:9400},{d:'9 Apr',v:9800,v2:9200},{d:'11 Apr',v:10500,v2:9600},
-      {d:'13 Apr',v:8800,v2:9200},{d:'15 Apr',v:11200,v2:10800},{d:'17 Apr',v:9600,v2:8900},
-      {d:'19 Apr',v:10800,v2:10200},{d:'21 Apr',v:12400,v2:11200},{d:'23 Apr',v:11800,v2:10500},
-      {d:'25 Apr',v:10200,v2:9100},{d:'27 Apr',v:8900,v2:7600},{d:'29 Apr',v:7800,v2:7200},
-    ],
+    timeData:TIME_DATA,
   },
   'organic-search': {
-    views: 152300, viewsChange: '5.26%', viewsUp: true,
-    sessions: 68639, sessChange: '7.11%', sessUp: true,
-    users: 44985, usersChange: '7.64%', usersUp: true,
-    engagement: '44d 8h 39m 25s', engChange: '4.75%', engUp: true,
-    keyEvents: 2368, keyChange: '11%', keyUp: false,
-    eventCount: '998.5 K', evtChange: '5.00%', evtUp: true,
-    chartType: 'donut',
-    donutData: [
-      { name: 'google',              value: 143000, color: '#4DA6FF' },
-      { name: 'bing',                value: 5866,   color: '#4CAF82' },
-      { name: 'duckduckgo',          value: 1621,   color: '#F9B62A' },
-      { name: 'yahoo',               value: 1564,   color: '#A8D8FF' },
-      { name: 'ecosia.org',          value: 299,    color: '#CE93D8' },
-      { name: 'br.search.yahoo.com', value: 73,     color: '#FFB74D' },
-      { name: 'msn.com',             value: 53,     color: '#B0BEC5' },
-      { name: 'cn.bing.com',         value: 32,     color: '#80CBC4' },
+    views:152300, viewsChange:'5.26%', viewsUp:true,
+    sessions:68639, sessChange:'7.11%', sessUp:true,
+    users:44985, usersChange:'7.64%', usersUp:true,
+    engagement:'44d 8h 39m 25s', engChange:'4.75%', engUp:true,
+    keyEvents:2368, keyChange:'11%', keyUp:false,
+    eventCount:'998.5 K', evtChange:'5.00%', evtUp:true,
+    chartType:'donut',
+    donutData:[
+      {name:'google',value:143000,color:'#4DA6FF'},{name:'bing',value:5866,color:'#4CAF82'},
+      {name:'duckduckgo',value:1621,color:'#F9B62A'},{name:'yahoo',value:1564,color:'#A8D8FF'},
+      {name:'ecosia.org',value:299,color:'#CE93D8'},{name:'br.search.yahoo.com',value:73,color:'#FFB74D'},
+      {name:'msn.com',value:53,color:'#B0BEC5'},{name:'cn.bing.com',value:32,color:'#80CBC4'},
     ],
-    timeData: [
+    timeData:[
       {d:'1 Apr',v:5200,v2:4800},{d:'3 Apr',v:5600,v2:5000},{d:'5 Apr',v:6000,v2:5400},
       {d:'7 Apr',v:6400,v2:5800},{d:'9 Apr',v:7000,v2:6200},{d:'11 Apr',v:7200,v2:6400},
       {d:'13 Apr',v:6800,v2:7000},{d:'15 Apr',v:7800,v2:7200},{d:'17 Apr',v:6200,v2:6000},
@@ -125,15 +122,15 @@ const CHANNEL_DATA: Record<string, ChannelData> = {
     ],
   },
   'paid-search': {
-    views: 11350, viewsChange: '3.23%', viewsUp: true,
-    sessions: 3874, sessChange: '0.16%', sessUp: true,
-    users: 2931, usersChange: '2.30%', usersUp: false,
-    engagement: '3d 20h 50s', engChange: '8.72%', engUp: true,
-    keyEvents: 163, keyChange: '9.40%', keyUp: true,
-    eventCount: '78,019', evtChange: '3.76%', evtUp: true,
-    chartType: 'donut',
-    donutData: [{ name: 'google', value: 11350, color: '#4DA6FF' }],
-    timeData: [
+    views:11350, viewsChange:'3.23%', viewsUp:true,
+    sessions:3874, sessChange:'0.16%', sessUp:true,
+    users:2931, usersChange:'2.30%', usersUp:false,
+    engagement:'3d 20h 50s', engChange:'8.72%', engUp:true,
+    keyEvents:163, keyChange:'9.40%', keyUp:true,
+    eventCount:'78,019', evtChange:'3.76%', evtUp:true,
+    chartType:'donut',
+    donutData:[{name:'google',value:11350,color:'#4DA6FF'}],
+    timeData:[
       {d:'1 Apr',v:320,v2:300},{d:'3 Apr',v:350,v2:320},{d:'5 Apr',v:380,v2:340},
       {d:'7 Apr',v:420,v2:390},{d:'9 Apr',v:440,v2:410},{d:'11 Apr',v:460,v2:420},
       {d:'13 Apr',v:390,v2:410},{d:'15 Apr',v:580,v2:520},{d:'17 Apr',v:500,v2:480},
@@ -142,24 +139,20 @@ const CHANNEL_DATA: Record<string, ChannelData> = {
     ],
   },
   direct: {
-    views: 50441, viewsChange: '9.86%', viewsUp: false,
-    sessions: 30294, sessChange: '15%', sessUp: false,
-    users: 24614, usersChange: '16%', usersUp: false,
-    engagement: '12d 21h 3m 39s', engChange: '7.43%', engUp: false,
-    keyEvents: 596, keyChange: '26%', keyUp: false,
-    eventCount: '295.9 K', evtChange: '9.10%', evtUp: false,
-    chartType: 'bar',
-    barData: [
-      { name: '/visit/',      value: 7800, color: '#4DA6FF' },
-      { name: '/events/',     value: 5900, color: '#4CAF82' },
-      { name: '/map/',        value: 3800, color: '#F9B62A' },
-      { name: '/blog/atl...', value: 1400, color: '#A8D8FF' },
-      { name: '/parks-t...',  value: 1100, color: '#CE93D8' },
-      { name: '/blog/',       value: 900,  color: '#FFB74D' },
-      { name: '/blog/at2...', value: 700,  color: '#B0BEC5' },
-      { name: '/live/',       value: 500,  color: '#80CBC4' },
+    views:50441, viewsChange:'9.86%', viewsUp:false,
+    sessions:30294, sessChange:'15%', sessUp:false,
+    users:24614, usersChange:'16%', usersUp:false,
+    engagement:'12d 21h 3m 39s', engChange:'7.43%', engUp:false,
+    keyEvents:596, keyChange:'26%', keyUp:false,
+    eventCount:'295.9 K', evtChange:'9.10%', evtUp:false,
+    chartType:'bar',
+    barData:[
+      {name:'/visit/',value:7800,color:'#4DA6FF'},{name:'/events/',value:5900,color:'#4CAF82'},
+      {name:'/map/',value:3800,color:'#F9B62A'},{name:'/blog/atl...',value:1400,color:'#A8D8FF'},
+      {name:'/parks-t...',value:1100,color:'#CE93D8'},{name:'/blog/',value:900,color:'#FFB74D'},
+      {name:'/blog/at2...',value:700,color:'#B0BEC5'},{name:'/live/',value:500,color:'#80CBC4'},
     ],
-    timeData: [
+    timeData:[
       {d:'1 Apr',v:4200,v2:4600},{d:'3 Apr',v:3800,v2:4200},{d:'5 Apr',v:3200,v2:3800},
       {d:'7 Apr',v:2800,v2:3400},{d:'9 Apr',v:2400,v2:3000},{d:'11 Apr',v:2200,v2:2600},
       {d:'13 Apr',v:1800,v2:2200},{d:'15 Apr',v:2000,v2:2400},{d:'17 Apr',v:1600,v2:2000},
@@ -168,24 +161,20 @@ const CHANNEL_DATA: Record<string, ChannelData> = {
     ],
   },
   social: {
-    views: 10032, viewsChange: '7.43%', viewsUp: false,
-    sessions: 6570, sessChange: '24%', sessUp: true,
-    users: 5587, usersChange: '21%', usersUp: true,
-    engagement: '2d 13h 51m 18s', engChange: '11%', engUp: true,
-    keyEvents: 179, keyChange: '25%', keyUp: false,
-    eventCount: '63,071', evtChange: '13%', evtUp: false,
-    chartType: 'bar',
-    barData: [
-      { name: 'later-lin...', value: 1820, color: '#4DA6FF' },
-      { name: 'm.faceb...',   value: 1780, color: '#4CAF82' },
-      { name: 'faceboo...',   value: 1100, color: '#F9B62A' },
-      { name: 'reddit.c...',  value: 1080, color: '#A8D8FF' },
-      { name: 'l.facebo...',  value: 920,  color: '#CE93D8' },
-      { name: 'linkedin...',  value: 860,  color: '#FFB74D' },
-      { name: 'l.instag...',  value: 620,  color: '#B0BEC5' },
-      { name: 't.co',         value: 480,  color: '#80CBC4' },
+    views:10032, viewsChange:'7.43%', viewsUp:false,
+    sessions:6570, sessChange:'24%', sessUp:true,
+    users:5587, usersChange:'21%', usersUp:true,
+    engagement:'2d 13h 51m 18s', engChange:'11%', engUp:true,
+    keyEvents:179, keyChange:'25%', keyUp:false,
+    eventCount:'63,071', evtChange:'13%', evtUp:false,
+    chartType:'bar',
+    barData:[
+      {name:'later-lin...',value:1820,color:'#4DA6FF'},{name:'m.faceb...',value:1780,color:'#4CAF82'},
+      {name:'faceboo...',value:1100,color:'#F9B62A'},{name:'reddit.c...',value:1080,color:'#A8D8FF'},
+      {name:'l.facebo...',value:920,color:'#CE93D8'},{name:'linkedin...',value:860,color:'#FFB74D'},
+      {name:'l.instag...',value:620,color:'#B0BEC5'},{name:'t.co',value:480,color:'#80CBC4'},
     ],
-    timeData: [
+    timeData:[
       {d:'1 Apr',v:280,v2:420},{d:'3 Apr',v:320,v2:460},{d:'5 Apr',v:360,v2:480},
       {d:'7 Apr',v:300,v2:440},{d:'9 Apr',v:260,v2:400},{d:'11 Apr',v:240,v2:380},
       {d:'13 Apr',v:220,v2:340},{d:'15 Apr',v:1200,v2:360},{d:'17 Apr',v:480,v2:340},
@@ -194,246 +183,813 @@ const CHANNEL_DATA: Record<string, ChannelData> = {
     ],
   },
   referral: {
-    views: 8653, viewsChange: '3.00%', viewsUp: false,
-    sessions: 4079, sessChange: '8%', sessUp: false,
-    users: 3200, usersChange: '5%', usersUp: false,
-    engagement: '1d 4h 20m', engChange: '2%', engUp: true,
-    keyEvents: 124, keyChange: '18%', keyUp: false,
-    eventCount: '55,440', evtChange: '4%', evtUp: false,
-    chartType: 'bar',
-    barData: [
-      { name: 'beltline.org', value: 2200, color: '#4DA6FF' },
-      { name: 'atlanta.gov',  value: 1400, color: '#4CAF82' },
-      { name: 'ajc.com',      value: 980,  color: '#F9B62A' },
-      { name: 'yelp.com',     value: 720,  color: '#A8D8FF' },
-      { name: 'tripadvi...',  value: 540,  color: '#CE93D8' },
+    views:8653, viewsChange:'3.00%', viewsUp:false,
+    sessions:4079, sessChange:'8%', sessUp:false,
+    users:3200, usersChange:'5%', usersUp:false,
+    engagement:'1d 4h 20m', engChange:'2%', engUp:true,
+    keyEvents:124, keyChange:'18%', keyUp:false,
+    eventCount:'55,440', evtChange:'4%', evtUp:false,
+    chartType:'bar',
+    barData:[
+      {name:'beltline.org',value:2200,color:'#4DA6FF'},{name:'atlanta.gov',value:1400,color:'#4CAF82'},
+      {name:'ajc.com',value:980,color:'#F9B62A'},{name:'yelp.com',value:720,color:'#A8D8FF'},
+      {name:'tripadvi...',value:540,color:'#CE93D8'},
     ],
-    timeData: [
-      {d:'1 Apr',v:360,v2:400},{d:'3 Apr',v:340,v2:380},{d:'5 Apr',v:320,v2:360},
-      {d:'7 Apr',v:300,v2:340},{d:'9 Apr',v:310,v2:300},{d:'11 Apr',v:290,v2:280},
-      {d:'13 Apr',v:260,v2:280},{d:'15 Apr',v:340,v2:300},{d:'17 Apr',v:290,v2:270},
-      {d:'19 Apr',v:280,v2:270},{d:'21 Apr',v:270,v2:260},{d:'23 Apr',v:250,v2:240},
-      {d:'25 Apr',v:240,v2:250},{d:'27 Apr',v:220,v2:240},{d:'29 Apr',v:200,v2:220},
-    ],
+    timeData:TIME_DATA.map(t=>({...t,v:Math.round(t.v*0.03),v2:Math.round(t.v2*0.035)})),
   },
   display: {
-    views: 2100, viewsChange: '5%', viewsUp: true,
-    sessions: 980, sessChange: '3%', sessUp: true,
-    users: 810, usersChange: '4%', usersUp: true,
-    engagement: '8h 22m', engChange: '2%', engUp: true,
-    keyEvents: 18, keyChange: '10%', keyUp: false,
-    eventCount: '12,400', evtChange: '5%', evtUp: true,
-    chartType: 'donut',
-    donutData: [{ name: 'google', value: 2100, color: '#4DA6FF' }],
-    timeData: [
-      {d:'1 Apr',v:80,v2:70},{d:'3 Apr',v:85,v2:75},{d:'5 Apr',v:90,v2:80},
-      {d:'7 Apr',v:95,v2:85},{d:'9 Apr',v:100,v2:90},{d:'11 Apr',v:95,v2:100},
-      {d:'13 Apr',v:80,v2:90},{d:'15 Apr',v:120,v2:100},{d:'17 Apr',v:100,v2:95},
-      {d:'19 Apr',v:90,v2:92},{d:'21 Apr',v:85,v2:90},{d:'23 Apr',v:75,v2:85},
-      {d:'25 Apr',v:70,v2:80},{d:'27 Apr',v:65,v2:75},{d:'29 Apr',v:60,v2:70},
-    ],
+    views:2100, viewsChange:'5%', viewsUp:true,
+    sessions:980, sessChange:'3%', sessUp:true,
+    users:810, usersChange:'4%', usersUp:true,
+    engagement:'8h 22m', engChange:'2%', engUp:true,
+    keyEvents:18, keyChange:'10%', keyUp:false,
+    eventCount:'12,400', evtChange:'5%', evtUp:true,
+    chartType:'donut',
+    donutData:[{name:'google',value:2100,color:'#4DA6FF'}],
+    timeData:TIME_DATA.map(t=>({...t,v:Math.round(t.v*0.009),v2:Math.round(t.v2*0.01)})),
   },
   email: {
-    views: 733, viewsChange: '38%', viewsUp: true,
-    sessions: 364, sessChange: '32%', sessUp: true,
-    users: 309, usersChange: '76%', usersUp: true,
-    engagement: '3h 30m 40s', engChange: '4.12%', engUp: false,
-    keyEvents: 6, keyChange: '20%', keyUp: true,
-    eventCount: '3,498', evtChange: '21%', evtUp: true,
-    chartType: 'donut',
-    donutData: [
-      { name: 'mailchimp', value: 600, color: '#4DA6FF' },
-      { name: 'other',     value: 133, color: '#4CAF82' },
-    ],
-    timeData: [
-      {d:'1 Apr',v:18,v2:22},{d:'3 Apr',v:20,v2:24},{d:'5 Apr',v:22,v2:26},
-      {d:'7 Apr',v:28,v2:30},{d:'9 Apr',v:30,v2:32},{d:'11 Apr',v:32,v2:30},
-      {d:'13 Apr',v:25,v2:28},{d:'15 Apr',v:38,v2:32},{d:'17 Apr',v:30,v2:28},
-      {d:'19 Apr',v:28,v2:26},{d:'21 Apr',v:26,v2:25},{d:'23 Apr',v:22,v2:24},
-      {d:'25 Apr',v:20,v2:22},{d:'27 Apr',v:18,v2:20},{d:'29 Apr',v:16,v2:18},
-    ],
+    views:733, viewsChange:'38%', viewsUp:true,
+    sessions:364, sessChange:'32%', sessUp:true,
+    users:309, usersChange:'76%', usersUp:true,
+    engagement:'3h 30m 40s', engChange:'4.12%', engUp:false,
+    keyEvents:6, keyChange:'20%', keyUp:true,
+    eventCount:'3,498', evtChange:'21%', evtUp:true,
+    chartType:'donut',
+    donutData:[{name:'mailchimp',value:600,color:'#4DA6FF'},{name:'other',value:133,color:'#4CAF82'}],
+    timeData:TIME_DATA.map(t=>({...t,v:Math.round(t.v*0.003),v2:Math.round(t.v2*0.004)})),
   },
   video: {
-    views: 540, viewsChange: '1%', viewsUp: true,
-    sessions: 290, sessChange: '2%', sessUp: true,
-    users: 240, usersChange: '1%', usersUp: true,
-    engagement: '2h 44m', engChange: '3%', engUp: true,
-    keyEvents: 4, keyChange: '0%', keyUp: true,
-    eventCount: '2,100', evtChange: '1%', evtUp: true,
-    chartType: 'donut',
-    donutData: [{ name: 'youtube', value: 540, color: '#4DA6FF' }],
-    timeData: [
-      {d:'1 Apr',v:18,v2:16},{d:'3 Apr',v:20,v2:18},{d:'5 Apr',v:22,v2:20},
-      {d:'7 Apr',v:24,v2:22},{d:'9 Apr',v:26,v2:24},{d:'11 Apr',v:24,v2:22},
-      {d:'13 Apr',v:20,v2:22},{d:'15 Apr',v:32,v2:28},{d:'17 Apr',v:26,v2:24},
-      {d:'19 Apr',v:24,v2:22},{d:'21 Apr',v:22,v2:20},{d:'23 Apr',v:18,v2:20},
-      {d:'25 Apr',v:16,v2:18},{d:'27 Apr',v:14,v2:16},{d:'29 Apr',v:12,v2:14},
-    ],
+    views:540, viewsChange:'1%', viewsUp:true,
+    sessions:290, sessChange:'2%', sessUp:true,
+    users:240, usersChange:'1%', usersUp:true,
+    engagement:'2h 44m', engChange:'3%', engUp:true,
+    keyEvents:4, keyChange:'0%', keyUp:true,
+    eventCount:'2,100', evtChange:'1%', evtUp:true,
+    chartType:'donut',
+    donutData:[{name:'youtube',value:540,color:'#4DA6FF'}],
+    timeData:TIME_DATA.map(t=>({...t,v:Math.round(t.v*0.002),v2:Math.round(t.v2*0.002)})),
   },
   'paid-social': {
-    views: 7921, viewsChange: '39%', viewsUp: false,
-    sessions: 8288, sessChange: '7.62%', sessUp: true,
-    users: 7972, usersChange: '22%', usersUp: true,
-    engagement: '5h 37m 40s', engChange: '89%', engUp: false,
-    keyEvents: 9, keyChange: '97%', keyUp: false,
-    eventCount: '36,718', evtChange: '53%', evtUp: false,
-    chartType: 'bar',
-    barData: [
-      { name: 'facebook',  value: 4200, color: '#4DA6FF' },
-      { name: 'instagram', value: 2800, color: '#4CAF82' },
-      { name: 'linkedin',  value: 620,  color: '#F9B62A' },
-      { name: 'twitter',   value: 301,  color: '#A8D8FF' },
+    views:7921, viewsChange:'39%', viewsUp:false,
+    sessions:8288, sessChange:'7.62%', sessUp:true,
+    users:7972, usersChange:'22%', usersUp:true,
+    engagement:'5h 37m 40s', engChange:'89%', engUp:false,
+    keyEvents:9, keyChange:'97%', keyUp:false,
+    eventCount:'36,718', evtChange:'53%', evtUp:false,
+    chartType:'bar',
+    barData:[
+      {name:'facebook',value:4200,color:'#4DA6FF'},{name:'instagram',value:2800,color:'#4CAF82'},
+      {name:'linkedin',value:620,color:'#F9B62A'},{name:'twitter',value:301,color:'#A8D8FF'},
     ],
-    timeData: [
-      {d:'1 Apr',v:280,v2:380},{d:'3 Apr',v:300,v2:400},{d:'5 Apr',v:320,v2:420},
-      {d:'7 Apr',v:280,v2:380},{d:'9 Apr',v:300,v2:360},{d:'11 Apr',v:310,v2:360},
-      {d:'13 Apr',v:260,v2:340},{d:'15 Apr',v:380,v2:320},{d:'17 Apr',v:290,v2:300},
-      {d:'19 Apr',v:310,v2:290},{d:'21 Apr',v:340,v2:280},{d:'23 Apr',v:310,v2:260},
-      {d:'25 Apr',v:290,v2:255},{d:'27 Apr',v:260,v2:240},{d:'29 Apr',v:240,v2:220},
-    ],
+    timeData:TIME_DATA.map(t=>({...t,v:Math.round(t.v*0.03),v2:Math.round(t.v2*0.035)})),
   },
 }
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function fmt(n: number) {
   if (n >= 1000000) return (n / 1000000).toFixed(2) + ' M'
   if (n >= 1000) return (n / 1000).toFixed(1) + ' K'
   return n.toLocaleString()
 }
-
 function Change({ val, up }: { val: string; up: boolean }) {
+  return <span style={{ fontSize:11, fontWeight:700, color: up ? '#22c55e' : '#ef4444' }}>{up?'▲':'▼'} {val}</span>
+}
+function KPICards({ cd }: { cd: ChannelData }) {
   return (
-    <span style={{ fontSize: 11, fontWeight: 700, color: up ? '#22c55e' : '#ef4444' }}>
-      {up ? '▲' : '▼'} {val}
-    </span>
+    <>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:12 }}>
+        {[
+          { label:'Sessions',        val: cd.sessions>=1000 ? fmt(cd.sessions) : cd.sessions.toLocaleString(), change:cd.sessChange,  up:cd.sessUp,  hl:false },
+          { label:'Total Users',     val: cd.users>=1000    ? fmt(cd.users)    : cd.users.toLocaleString(),    change:cd.usersChange, up:cd.usersUp, hl:false },
+          { label:'User Engagement', val: cd.engagement,                                                        change:cd.engChange,   up:cd.engUp,   hl:false },
+          { label:'Views',           val: fmt(cd.views),                                                        change:cd.viewsChange, up:cd.viewsUp, hl:true  },
+        ].map(k => (
+          <div key={k.label} style={{ background:'#fff', border:`${k.hl?2:1}px solid ${k.hl?'#48b5ea':'#e5e5e5'}`, borderRadius:8, padding:'16px 20px' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
+              <span style={{ fontSize:13, color:'#555' }}>{k.label}</span>
+              {k.hl ? <button style={{ background:'none', border:'none', cursor:'pointer', color:'#bbb' }}><MoreHorizontal size={14}/></button> : <Change val={k.change} up={k.up}/>}
+            </div>
+            <p style={{ fontSize:28, fontWeight:700, color:'#1a1a1a', letterSpacing:'-0.5px', lineHeight:1.2 }}>{k.val}</p>
+            {k.hl && <div style={{ marginTop:6 }}><Change val={k.change} up={k.up}/></div>}
+          </div>
+        ))}
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12 }}>
+        {[
+          { label:'Key Events',       val: cd.keyEvents>=1000 ? fmt(cd.keyEvents) : cd.keyEvents.toLocaleString(), change:cd.keyChange, up:cd.keyUp, badge:false },
+          { label:'Event Count',      val: cd.eventCount,                                                            change:cd.evtChange, up:cd.evtUp, badge:false },
+          { label:'Total Purchasers', val:'0',                                                                       change:'0%',         up:true,     badge:true  },
+        ].map(k => (
+          <div key={k.label} style={{ background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, padding:'16px 20px' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
+              <span style={{ fontSize:13, color:'#555' }}>{k.label}</span>
+              {k.badge ? <span style={{ fontSize:11, fontWeight:600, color:'#999', background:'#f0f0f0', padding:'2px 6px', borderRadius:4 }}>0%</span> : <Change val={k.change} up={k.up}/>}
+            </div>
+            <p style={{ fontSize:28, fontWeight:700, color:'#1a1a1a', letterSpacing:'-0.5px' }}>{k.val}</p>
+          </div>
+        ))}
+      </div>
+    </>
+  )
+}
+function DataTable({ colLabel, rows, search, onSearch, rowCount, totalCount }: {
+  colLabel: string; rows: any[]; search: string; onSearch: (v:string)=>void; rowCount: number; totalCount: number
+}) {
+  const cols = ['SESSIONS ↓','TOTAL USERS','USER ENGAGEMENT','VIEWS','KEY EVENTS','EVENT COUNT','TOTAL PURCHASERS']
+  const fields = ['sessions','users','engagement','views','keyEvents','eventCount','purchasers']
+  const changes = ['sessChange','usersChange','engChange','viewsChange','keyChange','evtChange']
+  const ups     = ['sessUp','usersUp','engUp','viewsUp','keyUp','evtUp']
+  return (
+    <div style={{ background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, overflow:'hidden', marginTop:16 }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 16px', borderBottom:'1px solid #f0f0f0' }}>
+        <span style={{ fontSize:12, color:'#666' }}>Showing {rowCount} of {totalCount} Rows</span>
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <input value={search} onChange={e=>onSearch(e.target.value)} placeholder="Search"
+            style={{ background:'#fafafa', border:'1px solid #e5e5e5', borderRadius:6, padding:'5px 10px', fontSize:12, outline:'none', width:160 }}/>
+          <button style={{ background:'none', border:'none', cursor:'pointer', color:'#bbb' }}><MoreHorizontal size={14}/></button>
+        </div>
+      </div>
+      <div style={{ overflowX:'auto' as const }}>
+        <table style={{ width:'100%', borderCollapse:'collapse' as const, fontSize:12 }}>
+          <thead>
+            <tr style={{ borderBottom:'1px solid #f0f0f0', background:'#fafafa' }}>
+              <th style={{ padding:'9px 14px', textAlign:'left' as const, fontSize:11, fontWeight:600, color:'#888', whiteSpace:'nowrap' as const }}>{colLabel}</th>
+              {cols.map(h=><th key={h} style={{ padding:'9px 14px', textAlign:'right' as const, fontSize:11, fontWeight:600, color:'#888', whiteSpace:'nowrap' as const }}>{h}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row,i)=>(
+              <tr key={i} style={{ borderBottom:'1px solid #f8f8f8', background: i%2===0 ? '#fff' : '#fafafa' }}>
+                <td style={{ padding:'11px 14px', fontWeight:500, color:'#1a1a1a' }}>{row.label || row.channel}</td>
+                {fields.map((f,fi)=>(
+                  <td key={f} style={{ padding:'11px 14px', textAlign:'right' as const }}>
+                    <div>{typeof row[f]==='number' ? row[f].toLocaleString() : (row[f]||'0.00')}</div>
+                    {fi < changes.length && row[changes[fi]] && <Change val={row[changes[fi]]} up={row[ups[fi]]}/>}
+                    {f==='purchasers' && <span style={{ fontSize:10, fontWeight:600, color:'#999', background:'#f0f0f0', padding:'1px 5px', borderRadius:3 }}>{row.pct||'0%'}</span>}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   )
 }
 
+// ── Audience views ────────────────────────────────────────────────────────────
+const SHARED_KPI = { sessions:120500, sessChange:'0.35%', sessUp:false, users:88069, usersChange:'0.69%', usersUp:true, engagement:'66d 21h 22m 49s', engChange:'1.65%', engUp:false, views:242900, viewsChange:'1.91%', viewsUp:false, keyEvents:3610, keyChange:'21%', keyUp:false, eventCount:'1.54 M', evtChange:'2.67%', evtUp:false } as ChannelData
+
+function AudienceLocation({ search, onSearch }: { search:string; onSearch:(v:string)=>void }) {
+  const [locTab, setLocTab] = useState<'Country'|'Region'|'City'>('Country')
+  const countryBarData = [
+    {name:'United States',v:234751},{name:'Singapore',v:2800},{name:'United King...',v:1890},
+    {name:'Canada',v:1450},{name:'Germany',v:820},{name:'India',v:740},{name:'Netherlands',v:595},{name:'China',v:620},
+  ]
+  const tableRows = [
+    { label:'United States', sessions:115468, users:83759, engagement:'65d 14h 23m 35s', views:234751, keyEvents:3520, eventCount:1490758, purchasers:'0.00', sessChange:'4.11%', sessUp:true, usersChange:'7.88%', usersUp:true, engChange:'1.37%', engUp:false, viewsChange:'0.32%', viewsUp:true, keyChange:'21%', keyUp:false, evtChange:'0.68%', evtUp:true, pct:'0%' },
+    { label:'Singapore',      sessions:1689,  users:1420,  engagement:'18h 12m',          views:3200,  keyEvents:45,   eventCount:9900,    purchasers:'0.00', sessChange:'3%',    sessUp:true, usersChange:'2%',    usersUp:true, engChange:'1%',    engUp:true, viewsChange:'2%',    viewsUp:true, keyChange:'5%',  keyUp:true, evtChange:'3%',    evtUp:true, pct:'0%' },
+    { label:'United Kingdom', sessions:980,   users:820,   engagement:'12h 44m',          views:1890,  keyEvents:32,   eventCount:5400,    purchasers:'0.00', sessChange:'2%',    sessUp:true, usersChange:'1%',    usersUp:true, engChange:'0%',    engUp:true, viewsChange:'1%',    viewsUp:true, keyChange:'3%',  keyUp:true, evtChange:'2%',    evtUp:true, pct:'0%' },
+    { label:'Canada',         sessions:760,   users:640,   engagement:'9h 22m',           views:1450,  keyEvents:28,   eventCount:3900,    purchasers:'0.00', sessChange:'1%',    sessUp:true, usersChange:'1%',    usersUp:true, engChange:'0%',    engUp:true, viewsChange:'1%',    viewsUp:true, keyChange:'2%',  keyUp:true, evtChange:'1%',    evtUp:true, pct:'0%' },
+  ]
+  return (
+    <>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
+        {/* World map */}
+        <div style={{ background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, padding:20 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
+            <span style={{ fontSize:13, color:'#555' }}>Views</span>
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+              <span style={{ fontSize:16, fontWeight:700 }}>243 K</span>
+              <Change val="1.91%" up={false}/>
+            </div>
+          </div>
+          <div style={{ position:'relative', width:'100%', height:220, background:'#f8f9fa', borderRadius:6, overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <svg viewBox="0 0 800 400" style={{ width:'100%', height:'100%' }}>
+              <path d="M 80 80 L 190 70 L 225 105 L 215 185 L 172 225 L 118 205 L 78 162 Z" fill="#4DA6FF" opacity="0.85"/>
+              <path d="M 148 245 L 202 232 L 222 305 L 202 375 L 160 385 L 138 322 Z" fill="#c8e6ff" opacity="0.6"/>
+              <path d="M 338 58 L 422 52 L 444 102 L 402 132 L 350 122 L 330 90 Z" fill="#c8e6ff" opacity="0.5"/>
+              <path d="M 358 148 L 422 138 L 452 222 L 432 325 L 380 335 L 348 252 L 338 182 Z" fill="#c8e6ff" opacity="0.4"/>
+              <path d="M 448 48 L 652 42 L 682 132 L 602 202 L 478 192 L 438 132 Z" fill="#c8e6ff" opacity="0.35"/>
+              <path d="M 598 258 L 682 252 L 702 322 L 662 352 L 598 342 L 578 292 Z" fill="#c8e6ff" opacity="0.4"/>
+            </svg>
+            <div style={{ position:'absolute', bottom:10, right:10, background:'rgba(0,0,0,0.72)', color:'#fff', padding:'3px 8px', borderRadius:4, fontSize:11 }}>
+              United States · Views 234,751
+            </div>
+          </div>
+        </div>
+        {/* Bar by country */}
+        <div style={{ background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, padding:20 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
+            <span style={{ fontSize:13, color:'#555' }}>Views</span>
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+              <span style={{ fontSize:16, fontWeight:700 }}>243 K</span>
+              <Change val="1.91%" up={false}/>
+              <button style={{ background:'none', border:'none', cursor:'pointer', color:'#bbb' }}><MoreHorizontal size={14}/></button>
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={countryBarData} barSize={28}>
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:'#999' }}/>
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'#999' }} tickFormatter={(v:number)=>v>=1000?(v/1000)+'K':String(v)}/>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false}/>
+              <Tooltip contentStyle={{ fontSize:11, borderRadius:6 }} formatter={(v:number)=>[v.toLocaleString(),'Views']}/>
+              <Bar dataKey="v" radius={[3,3,0,0]}>
+                {countryBarData.map((_,i)=><Cell key={i} fill={i===0?'#4DA6FF':'#c8e6ff'}/>)}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+      <KPICards cd={{...SHARED_KPI, chartType:'donut'}}/>
+      {/* Location table */}
+      <div style={{ background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, overflow:'hidden', marginTop:16 }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 16px', borderBottom:'1px solid #f0f0f0' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+            {(['Country','Region','City'] as const).map(t=>(
+              <button key={t} onClick={()=>setLocTab(t)} style={{ padding:'5px 14px', fontSize:12, borderRadius:6, cursor:'pointer', border:'none', background:locTab===t?'#48b5ea':'#f0f0f0', color:locTab===t?'#fff':'#555', fontWeight:locTab===t?600:400 }}>{t}</button>
+            ))}
+            <span style={{ fontSize:12, color:'#999', marginLeft:8 }}>Showing 50 of 133 Rows</span>
+          </div>
+          <input value={search} onChange={e=>onSearch(e.target.value)} placeholder="Search" style={{ background:'#fafafa', border:'1px solid #e5e5e5', borderRadius:6, padding:'5px 10px', fontSize:12, outline:'none', width:160 }}/>
+        </div>
+        <div style={{ overflowX:'auto' as const }}>
+          <table style={{ width:'100%', borderCollapse:'collapse' as const, fontSize:12 }}>
+            <thead><tr style={{ borderBottom:'1px solid #f0f0f0', background:'#fafafa' }}>
+              {[locTab.toUpperCase(),'SESSIONS ↓','TOTAL USERS','USER ENGAGEMENT','VIEWS','KEY EVENTS','EVENT COUNT','TOTAL PURCHASERS'].map(h=>(
+                <th key={h} style={{ padding:'9px 14px', textAlign:h===locTab.toUpperCase()?'left':'right' as any, fontSize:11, fontWeight:600, color:'#888', whiteSpace:'nowrap' as const }}>{h}</th>
+              ))}
+            </tr></thead>
+            <tbody>
+              {tableRows.filter(r=>r.label.toLowerCase().includes(search.toLowerCase())).map((row,i)=>(
+                <tr key={i} style={{ borderBottom:'1px solid #f8f8f8', background:i%2===0?'#fff':'#fafafa' }}>
+                  <td style={{ padding:'11px 14px', fontWeight:500 }}>{row.label}</td>
+                  <td style={{ padding:'11px 14px', textAlign:'right' as const }}><div>{row.sessions.toLocaleString()}</div><Change val={row.sessChange} up={row.sessUp}/></td>
+                  <td style={{ padding:'11px 14px', textAlign:'right' as const }}><div>{row.users.toLocaleString()}</div><Change val={row.usersChange} up={row.usersUp}/></td>
+                  <td style={{ padding:'11px 14px', textAlign:'right' as const, fontSize:12, color:'#555' }}>{row.engagement}</td>
+                  <td style={{ padding:'11px 14px', textAlign:'right' as const }}><div>{row.views.toLocaleString()}</div><Change val={row.viewsChange} up={row.viewsUp}/></td>
+                  <td style={{ padding:'11px 14px', textAlign:'right' as const }}><div>{row.keyEvents.toFixed(2)}</div><Change val={row.keyChange} up={row.keyUp}/></td>
+                  <td style={{ padding:'11px 14px', textAlign:'right' as const }}>{row.eventCount.toLocaleString()}</td>
+                  <td style={{ padding:'11px 14px', textAlign:'right' as const }}><div>{row.purchasers}</div><span style={{ fontSize:10, background:'#f0f0f0', color:'#999', padding:'1px 5px', borderRadius:3 }}>0%</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  )
+}
+
+function AudienceLanguage({ search, onSearch }: { search:string; onSearch:(v:string)=>void }) {
+  const barData = [{name:'en-us',v:235063},{name:'en-gb',v:2385},{name:'es-us',v:625},{name:'zh-cn',v:548},{name:'en-ca',v:496},{name:'de-de',v:385},{name:'en',v:356},{name:'pt-br',v:280}]
+  const rows = [
+    { label:'en-us', sessions:115755, users:85020, engagement:'65d 3h 36m 23s', views:235063, keyEvents:3487, eventCount:1491210, purchasers:'0.00', sessChange:'0.92%', sessUp:false, usersChange:'1.21%', usersUp:true, engChange:'1.43%', engUp:false, viewsChange:'1.81%', viewsUp:false, keyChange:'22%', keyUp:false, evtChange:'2.58%', evtUp:false, pct:'0%' },
+    { label:'en-gb', sessions:1285,   users:854,   engagement:'13h 40m 29s',    views:2385,  keyEvents:36,   eventCount:15097,   purchasers:'0.00', sessChange:'6.34%', sessUp:false, usersChange:'12%',   usersUp:false, engChange:'15%',   engUp:false, viewsChange:'15%',   viewsUp:false, keyChange:'71%', keyUp:true,  evtChange:'16%',   evtUp:false, pct:'0%' },
+    { label:'es-us', sessions:413,    users:362,   engagement:'2h 10m 49s',     views:625,   keyEvents:2,    eventCount:3379,    purchasers:'0.00', sessChange:'115%',  sessUp:true,  usersChange:'145%',  usersUp:true,  engChange:'52%',   engUp:true,  viewsChange:'66%',   viewsUp:true,  keyChange:'80%', keyUp:false, evtChange:'46%',   evtUp:true,  pct:'0%' },
+    { label:'zh-cn', sessions:397,    users:362,   engagement:'1h 45m 5s',      views:548,   keyEvents:22,   eventCount:3565,    purchasers:'0.00', sessChange:'66%',   sessUp:false, usersChange:'68%',   usersUp:false, engChange:'14%',   engUp:true,  viewsChange:'58%',   viewsUp:false, keyChange:'267%',keyUp:true,  evtChange:'48%',   evtUp:false, pct:'0%' },
+    { label:'en-ca', sessions:249,    users:177,   engagement:'2h 26m 15s',     views:496,   keyEvents:2,    eventCount:3045,    purchasers:'0.00', sessChange:'15%',   sessUp:true,  usersChange:'7.93%', usersUp:true,  engChange:'0.14%', engUp:false, viewsChange:'19%',   viewsUp:true,  keyChange:'71%', keyUp:true,  evtChange:'19%',   evtUp:true,  pct:'0%' },
+  ]
+  return (
+    <>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
+        <div style={{ background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, padding:20 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
+            <span style={{ fontSize:13, color:'#555' }}>Views</span>
+          </div>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={barData} barSize={28}>
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:'#999' }}/>
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'#999' }} tickFormatter={(v:number)=>v>=1000?(v/1000)+'K':String(v)}/>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false}/>
+              <Tooltip contentStyle={{ fontSize:11, borderRadius:6 }} formatter={(v:number)=>[v.toLocaleString(),'Views']}/>
+              <Bar dataKey="v" radius={[3,3,0,0]}>
+                {barData.map((_,i)=><Cell key={i} fill={i===0?'#4DA6FF':'#c8e6ff'}/>)}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        <div style={{ background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, padding:20 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
+            <span style={{ fontSize:13, color:'#555' }}>Views</span>
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+              <span style={{ fontSize:16, fontWeight:700 }}>243 K</span>
+              <Change val="1.91%" up={false}/>
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={220}>
+            <AreaChart data={TIME_DATA}>
+              <defs>
+                <linearGradient id="lg1" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#48b5ea" stopOpacity={0.2}/><stop offset="95%" stopColor="#48b5ea" stopOpacity={0}/></linearGradient>
+                <linearGradient id="lg2" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#a8d8ff" stopOpacity={0.15}/><stop offset="95%" stopColor="#a8d8ff" stopOpacity={0}/></linearGradient>
+              </defs>
+              <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:'#999' }}/>
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'#999' }} tickFormatter={(v:number)=>v>=1000?(v/1000)+'K':String(v)}/>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0"/>
+              <Tooltip contentStyle={{ fontSize:11, borderRadius:6 }}/>
+              <Area type="monotone" dataKey="v" stroke="#48b5ea" fill="url(#lg1)" strokeWidth={2} name="Views"/>
+              <Area type="monotone" dataKey="v2" stroke="#a8d8ff" fill="url(#lg2)" strokeWidth={1.5} strokeDasharray="4 2" name="Prev"/>
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+      <KPICards cd={{...SHARED_KPI, chartType:'donut'}}/>
+      <DataTable colLabel="LANGUAGE" rows={rows} search={search} onSearch={onSearch} rowCount={rows.length} totalCount={101}/>
+    </>
+  )
+}
+
+function AudienceAge() {
+  const ageBarData = [
+    {name:'unknown',v:220000,color:'#4DA6FF'},{name:'25-34',v:9800,color:'#4CAF82'},
+    {name:'35-44',v:6200,color:'#F9B62A'},{name:'45-54',v:3100,color:'#FFB74D'},
+    {name:'18-24',v:1800,color:'#A8D8FF'},{name:'55-64',v:1400,color:'#CE93D8'},{name:'65+',v:600,color:'#B0BEC5'},
+  ]
+  const ageLineData = TIME_DATA.map(t=>({
+    d:t.d, views:t.v, '25-34':Math.round(t.v*0.04), '35-44':Math.round(t.v*0.025),
+    '45-54':Math.round(t.v*0.012), '65+':Math.round(t.v*0.003), '18-24':Math.round(t.v*0.008), '55-64':Math.round(t.v*0.006),
+  }))
+  return (
+    <>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
+        <div style={{ background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, padding:20 }}>
+          <span style={{ fontSize:13, color:'#555' }}>Views</span>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={ageBarData} barSize={30}>
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:'#999' }}/>
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'#999' }} tickFormatter={(v:number)=>v>=1000?(v/1000)+'K':String(v)}/>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false}/>
+              <Tooltip contentStyle={{ fontSize:11, borderRadius:6 }} formatter={(v:number)=>[v.toLocaleString(),'Views']}/>
+              <Bar dataKey="v" radius={[3,3,0,0]}>{ageBarData.map((d,i)=><Cell key={i} fill={d.color}/>)}</Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        <div style={{ background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, padding:20 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
+            <span style={{ fontSize:13, color:'#555' }}>Views</span>
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+              <span style={{ fontSize:16, fontWeight:700 }}>243 K</span>
+              <Change val="1.91%" up={false}/>
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={ageLineData}>
+              <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:'#999' }}/>
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'#999' }} tickFormatter={(v:number)=>v>=1000?(v/1000)+'K':String(v)}/>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0"/>
+              <Tooltip contentStyle={{ fontSize:11, borderRadius:6 }}/>
+              <Legend wrapperStyle={{ fontSize:10 }}/>
+              {['views','25-34','35-44','45-54','65+','18-24','55-64'].map((k,i)=>(
+                <Line key={k} type="monotone" dataKey={k} stroke={['#48b5ea','#4CAF82','#F9B62A','#FFB74D','#A8D8FF','#CE93D8','#B0BEC5'][i]} dot={false} strokeWidth={k==='views'?2:1.5}/>
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+      <KPICards cd={{...SHARED_KPI, chartType:'donut'}}/>
+    </>
+  )
+}
+
+function AudienceGender() {
+  const donutData = [{name:'unknown',value:193000,color:'#4DA6FF'},{name:'Female',value:24951,color:'#f06292'},{name:'Male',value:24674,color:'#a8d8ff'}]
+  const lineData = TIME_DATA.map(t=>({d:t.d, Views:t.v, Male:Math.round(t.v*0.1), Female:Math.round(t.v*0.1)}))
+  return (
+    <>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
+        <div style={{ background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, padding:20 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
+            <span style={{ fontSize:13, color:'#555' }}>Views</span>
+            <Change val="1.91%" up={false}/>
+          </div>
+          <div style={{ display:'flex', alignItems:'center', gap:24 }}>
+            <div style={{ position:'relative', width:180, height:180, flexShrink:0 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart><Pie data={donutData} cx="50%" cy="50%" innerRadius={54} outerRadius={82} dataKey="value">{donutData.map((d,i)=><Cell key={i} fill={d.color}/>)}</Pie><Tooltip contentStyle={{ fontSize:11, borderRadius:6 }} formatter={(v:number)=>[v.toLocaleString(),'']}/></PieChart>
+              </ResponsiveContainer>
+              <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
+                <span style={{ fontSize:18, fontWeight:700 }}>242.9 K</span>
+                <span style={{ fontSize:10, color:'#999' }}>Views</span>
+              </div>
+            </div>
+            <div>{donutData.map(d=><div key={d.name} style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}><div style={{ width:10, height:10, borderRadius:'50%', background:d.color }}/><span style={{ fontSize:12, color:'#333', flex:1 }}>{d.name}</span><span style={{ fontSize:12, fontWeight:600 }}>{d.value>=1000?fmt(d.value):d.value.toLocaleString()}</span></div>)}</div>
+          </div>
+        </div>
+        <div style={{ background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, padding:20 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
+            <span style={{ fontSize:13, color:'#555' }}>Views</span>
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}><span style={{ fontSize:16, fontWeight:700 }}>243 K</span><Change val="1.91%" up={false}/></div>
+          </div>
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={lineData}>
+              <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:'#999' }}/>
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'#999' }} tickFormatter={(v:number)=>v>=1000?(v/1000)+'K':String(v)}/>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0"/>
+              <Tooltip contentStyle={{ fontSize:11, borderRadius:6 }}/>
+              <Legend wrapperStyle={{ fontSize:10 }}/>
+              <Line type="monotone" dataKey="Views" stroke="#48b5ea" dot={false} strokeWidth={2}/>
+              <Line type="monotone" dataKey="Male" stroke="#a8d8ff" dot={false} strokeWidth={1.5}/>
+              <Line type="monotone" dataKey="Female" stroke="#f06292" dot={false} strokeWidth={1.5}/>
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+      <KPICards cd={{...SHARED_KPI, chartType:'donut'}}/>
+    </>
+  )
+}
+
+function AudienceDevices({ search, onSearch }: { search:string; onSearch:(v:string)=>void }) {
+  const donutData = [{name:'Mobile',value:148000,color:'#9CCC65'},{name:'Desktop',value:92405,color:'#4DA6FF'},{name:'Tablet',value:2479,color:'#F9B62A'}]
+  const lineData = TIME_DATA.map(t=>({d:t.d, Desktop:Math.round(t.v*0.38), Mobile:Math.round(t.v*0.61), Tablet:Math.round(t.v*0.01)}))
+  const rows = [
+    { label:'(not set)',       sessions:113078, users:81242, engagement:'61d 13h 54m 21s', views:223993, keyEvents:3399, eventCount:1422396, purchasers:'0.00', sessChange:'0.86%', sessUp:false, usersChange:'0.28%', usersUp:false, engChange:'1.99%', engUp:false, viewsChange:'2.30%', viewsUp:false, keyChange:'20%', keyUp:false, evtChange:'2.98%', evtUp:false, pct:'0%' },
+    { label:'Galaxy S25 Ultra',sessions:673,    users:529,   engagement:'9h 52m 50s',      views:1574,  keyEvents:18,   eventCount:9903,    purchasers:'0.00', sessChange:'15%',   sessUp:true,  usersChange:'15%',   usersUp:true,  engChange:'25%',   engUp:true,  viewsChange:'12%',   viewsUp:true,  keyChange:'40%', keyUp:true,  evtChange:'9.80%', evtUp:true,  pct:'0%' },
+    { label:'Galaxy S24 Ultra',sessions:562,    users:426,   engagement:'8h 21m 11s',      views:1306,  keyEvents:18,   eventCount:8286,    purchasers:'0.00', sessChange:'1.26%', sessUp:false, usersChange:'1.84%', usersUp:false, engChange:'4.35%', engUp:true,  viewsChange:'0.85%', viewsUp:true,  keyChange:'18%', keyUp:false, evtChange:'2.27%', evtUp:true,  pct:'0%' },
+  ]
+  return (
+    <>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
+        <div style={{ background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, padding:20 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
+            <span style={{ fontSize:13, color:'#555' }}>Views</span>
+            <Change val="1.91%" up={false}/>
+          </div>
+          <div style={{ display:'flex', alignItems:'center', gap:24 }}>
+            <div style={{ position:'relative', width:180, height:180, flexShrink:0 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart><Pie data={donutData} cx="50%" cy="50%" innerRadius={54} outerRadius={82} dataKey="value">{donutData.map((d,i)=><Cell key={i} fill={d.color}/>)}</Pie><Tooltip contentStyle={{ fontSize:11, borderRadius:6 }} formatter={(v:number)=>[v.toLocaleString(),'']}/></PieChart>
+              </ResponsiveContainer>
+              <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
+                <span style={{ fontSize:18, fontWeight:700 }}>242.9 K</span>
+                <span style={{ fontSize:10, color:'#999' }}>Views</span>
+              </div>
+            </div>
+            <div>{donutData.map(d=><div key={d.name} style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}><div style={{ width:10, height:10, borderRadius:'50%', background:d.color }}/><span style={{ fontSize:12, color:'#333', flex:1 }}>{d.name}</span><span style={{ fontSize:12, fontWeight:600 }}>{d.value>=1000?fmt(d.value):d.value.toLocaleString()}</span></div>)}</div>
+          </div>
+        </div>
+        <div style={{ background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, padding:20 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
+            <span style={{ fontSize:13, color:'#555' }}>Views</span>
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}><span style={{ fontSize:16, fontWeight:700 }}>243 K</span><Change val="1.91%" up={false}/></div>
+          </div>
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={lineData}>
+              <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:'#999' }}/>
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'#999' }} tickFormatter={(v:number)=>v>=1000?(v/1000)+'K':String(v)}/>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0"/>
+              <Tooltip contentStyle={{ fontSize:11, borderRadius:6 }}/>
+              <Legend wrapperStyle={{ fontSize:10 }}/>
+              <Line type="monotone" dataKey="Desktop" stroke="#4DA6FF" dot={false} strokeWidth={2}/>
+              <Line type="monotone" dataKey="Mobile" stroke="#9CCC65" dot={false} strokeWidth={2}/>
+              <Line type="monotone" dataKey="Tablet" stroke="#F9B62A" dot={false} strokeWidth={1.5}/>
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+      <KPICards cd={{...SHARED_KPI, chartType:'donut'}}/>
+      <DataTable colLabel="MOBILE DEVICE INFO" rows={rows} search={search} onSearch={onSearch} rowCount={rows.length} totalCount={291}/>
+    </>
+  )
+}
+
+function AudienceBrowser({ search, onSearch }: { search:string; onSearch:(v:string)=>void }) {
+  const barData = [
+    {name:'Safari',v:114365,color:'#9CCC65'},{name:'Chrome',v:107687,color:'#4DA6FF'},
+    {name:'Edge',v:12179,color:'#A8D8FF'},{name:'Android Webv...',v:5200,color:'#F9B62A'},
+    {name:'Firefox',v:2100,color:'#CE93D8'},{name:'Safari (in-app)',v:1800,color:'#FFB74D'},
+    {name:'Samsung Inter...',v:1200,color:'#B0BEC5'},{name:'Opera',v:800,color:'#80CBC4'},
+  ]
+  const rows = [
+    { label:'Safari', sessions:59329, users:43480, engagement:'26d 2h 18m 33s', views:114365, keyEvents:1101, eventCount:695247, purchasers:'0.00', sessChange:'4.31%', sessUp:true, usersChange:'11%', usersUp:true, engChange:'3.38%', engUp:false, viewsChange:'0.03%', viewsUp:false, keyChange:'30%', keyUp:false, evtChange:'2.56%', evtUp:false, pct:'0%' },
+    { label:'Chrome', sessions:51872, users:36755, engagement:'33d 5h 46m 24s', views:107687, keyEvents:1993, eventCount:701552, purchasers:'0.00', sessChange:'5.26%', sessUp:false, usersChange:'9.38%', usersUp:false, engChange:'0.80%', engUp:true, viewsChange:'2.66%', viewsUp:false, keyChange:'16%', keyUp:false, evtChange:'1.75%', evtUp:false, pct:'0%' },
+    { label:'Edge',   sessions:5385,  users:3434,  engagement:'5d 13h 42m 34s', views:12179,  keyEvents:408,  eventCount:90926,  purchasers:'0.00', sessChange:'0.79%', sessUp:false, usersChange:'0.50%', usersUp:true, engChange:'10%',   engUp:true, viewsChange:'2.71%', viewsUp:true, keyChange:'13%',  keyUp:true, evtChange:'5.47%',  evtUp:true, pct:'0%' },
+  ]
+  return (
+    <>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
+        <div style={{ background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, padding:20 }}>
+          <span style={{ fontSize:13, color:'#555', marginBottom:8, display:'block' }}>Views</span>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={barData} barSize={26}>
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:'#999' }}/>
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'#999' }} tickFormatter={(v:number)=>v>=1000?(v/1000)+'K':String(v)}/>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false}/>
+              <Tooltip contentStyle={{ fontSize:11, borderRadius:6 }} formatter={(v:number)=>[v.toLocaleString(),'Views']}/>
+              <Bar dataKey="v" radius={[3,3,0,0]}>{barData.map((d,i)=><Cell key={i} fill={d.color}/>)}</Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        <div style={{ background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, padding:20 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
+            <span style={{ fontSize:13, color:'#555' }}>Views</span>
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}><span style={{ fontSize:16, fontWeight:700 }}>243 K</span><Change val="1.91%" up={false}/></div>
+          </div>
+          <ResponsiveContainer width="100%" height={220}>
+            <AreaChart data={TIME_DATA}>
+              <defs>
+                <linearGradient id="bg1" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#48b5ea" stopOpacity={0.2}/><stop offset="95%" stopColor="#48b5ea" stopOpacity={0}/></linearGradient>
+                <linearGradient id="bg2" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#a8d8ff" stopOpacity={0.15}/><stop offset="95%" stopColor="#a8d8ff" stopOpacity={0}/></linearGradient>
+              </defs>
+              <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:'#999' }}/>
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'#999' }} tickFormatter={(v:number)=>v>=1000?(v/1000)+'K':String(v)}/>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0"/>
+              <Tooltip contentStyle={{ fontSize:11, borderRadius:6 }}/>
+              <Area type="monotone" dataKey="v" stroke="#48b5ea" fill="url(#bg1)" strokeWidth={2} name="This period"/>
+              <Area type="monotone" dataKey="v2" stroke="#a8d8ff" fill="url(#bg2)" strokeWidth={1.5} strokeDasharray="4 2" name="Prev period"/>
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+      <KPICards cd={{...SHARED_KPI, chartType:'donut'}}/>
+      <DataTable colLabel="BROWSER" rows={rows} search={search} onSearch={onSearch} rowCount={rows.length} totalCount={16}/>
+    </>
+  )
+}
+
+function AudienceOS({ search, onSearch }: { search:string; onSearch:(v:string)=>void }) {
+  const barData = [
+    {name:'iOS',v:122069,color:'#CE93D8'},{name:'Windows',v:55444,color:'#9CCC65'},
+    {name:'Macintosh',v:33924,color:'#F9B62A'},{name:'Android',v:28000,color:'#4DA6FF'},
+    {name:'Chrome OS',v:2100,color:'#A8D8FF'},{name:'Linux',v:1200,color:'#FFB74D'},
+    {name:'(not set)',v:800,color:'#B0BEC5'},{name:'Tizen',v:200,color:'#80CBC4'},
+  ]
+  const rows = [
+    { label:'iOS',       sessions:64158, users:46886, engagement:'25d 19h 2m 44s', views:122069, keyEvents:1026, eventCount:732802, purchasers:'0.00', sessChange:'6.03%', sessUp:true, usersChange:'13%',   usersUp:true, engChange:'2.35%', engUp:false, viewsChange:'0.97%', viewsUp:true, keyChange:'33%', keyUp:false, evtChange:'1.47%', evtUp:false, pct:'0%' },
+    { label:'Windows',   sessions:26964, users:19400, engagement:'20d 12h 12m 11s',views:55444,  keyEvents:1473, eventCount:378826, purchasers:'0.00', sessChange:'17%',   sessUp:false, usersChange:'21%',   usersUp:false, engChange:'0.46%', engUp:true, viewsChange:'9.17%', viewsUp:false, keyChange:'7.47%',keyUp:false, evtChange:'6.86%', evtUp:false, pct:'0%' },
+    { label:'Macintosh', sessions:15353, users:10683, engagement:'11d 15h 18m 39s',views:33924,  keyEvents:753,  eventCount:232357, purchasers:'0.00', sessChange:'6.13%', sessUp:false, usersChange:'0.87%', usersUp:true, engChange:'5.07%', engUp:false, viewsChange:'1.59%', viewsUp:false, keyChange:'21%', keyUp:true, evtChange:'0.97%', evtUp:true, pct:'0%' },
+  ]
+  return (
+    <>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
+        <div style={{ background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, padding:20 }}>
+          <span style={{ fontSize:13, color:'#555', marginBottom:8, display:'block' }}>Views</span>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={barData} barSize={26}>
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:'#999' }}/>
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'#999' }} tickFormatter={(v:number)=>v>=1000?(v/1000)+'K':String(v)}/>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false}/>
+              <Tooltip contentStyle={{ fontSize:11, borderRadius:6 }} formatter={(v:number)=>[v.toLocaleString(),'Views']}/>
+              <Bar dataKey="v" radius={[3,3,0,0]}>{barData.map((d,i)=><Cell key={i} fill={d.color}/>)}</Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        <div style={{ background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, padding:20 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
+            <span style={{ fontSize:13, color:'#555' }}>Views</span>
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}><span style={{ fontSize:16, fontWeight:700 }}>243 K</span><Change val="1.91%" up={false}/></div>
+          </div>
+          <ResponsiveContainer width="100%" height={220}>
+            <AreaChart data={TIME_DATA}>
+              <defs>
+                <linearGradient id="og1" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#48b5ea" stopOpacity={0.2}/><stop offset="95%" stopColor="#48b5ea" stopOpacity={0}/></linearGradient>
+                <linearGradient id="og2" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#a8d8ff" stopOpacity={0.15}/><stop offset="95%" stopColor="#a8d8ff" stopOpacity={0}/></linearGradient>
+              </defs>
+              <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:'#999' }}/>
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'#999' }} tickFormatter={(v:number)=>v>=1000?(v/1000)+'K':String(v)}/>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0"/>
+              <Tooltip contentStyle={{ fontSize:11, borderRadius:6 }}/>
+              <Area type="monotone" dataKey="v" stroke="#48b5ea" fill="url(#og1)" strokeWidth={2} name="This period"/>
+              <Area type="monotone" dataKey="v2" stroke="#a8d8ff" fill="url(#og2)" strokeWidth={1.5} strokeDasharray="4 2" name="Prev period"/>
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+      <KPICards cd={{...SHARED_KPI, chartType:'donut'}}/>
+      <DataTable colLabel="OPERATING SYSTEM" rows={rows} search={search} onSearch={onSearch} rowCount={rows.length} totalCount={8}/>
+    </>
+  )
+}
+
+function AudienceInterests({ search, onSearch }: { search:string; onSearch:(v:string)=>void }) {
+  const barData = [
+    {name:'News & Politic...',v:256,color:'#4DA6FF'},{name:'News & Politic...',v:204,color:'#9CCC65'},
+    {name:'News & Politic...',v:162,color:'#F9B62A'},{name:'Sports & Fitne...',v:140,color:'#A8D8FF'},
+    {name:'Media & Enter...',v:120,color:'#CE93D8'},{name:'Food & Dining/...',v:98,color:'#FFB74D'},
+    {name:'Technology/Te...',v:85,color:'#B0BEC5'},{name:'Media & Enter...',v:72,color:'#80CBC4'},
+  ]
+  const rows = [
+    { label:'News & Politics/Avid News Readers/Entertainment News En', sessions:119, users:79, engagement:'2h 32m 39s', views:256, keyEvents:6, eventCount:1681, purchasers:'0.00', sessChange:'93%', sessUp:false, usersChange:'93%', usersUp:false, engChange:'92%', engUp:false, viewsChange:'93%', viewsUp:false, keyChange:'93%', keyUp:false, evtChange:'93%', evtUp:false, pct:'0%' },
+    { label:'News & Politics/Avid News Readers',                       sessions:93,  users:72, engagement:'1h 59m 30s', views:204, keyEvents:9, eventCount:1405, purchasers:'0.00', sessChange:'94%', sessUp:false, usersChange:'93%', usersUp:false, engChange:'94%', engUp:false, viewsChange:'95%', viewsUp:false, keyChange:'91%', keyUp:false, evtChange:'95%', evtUp:false, pct:'0%' },
+    { label:'News & Politics/Avid News Readers/Avid Local News Read',  sessions:89,  users:53, engagement:'1h 37m 39s', views:162, keyEvents:5, eventCount:1141, purchasers:'0.00', sessChange:'93%', sessUp:false, usersChange:'93%', usersUp:false, engChange:'93%', engUp:false, viewsChange:'95%', viewsUp:false, keyChange:'93%', keyUp:false, evtChange:'93%', evtUp:false, pct:'0%' },
+  ]
+  const interestKPI: ChannelData = {
+    views:4067, viewsChange:'96%', viewsUp:false,
+    sessions:377, sessChange:'94%', sessUp:false,
+    users:262, usersChange:'93%', usersUp:false,
+    engagement:'1d 10h 19m 15s', engChange:'96%', engUp:false,
+    keyEvents:119, keyChange:'94%', keyUp:false,
+    eventCount:'27,385', evtChange:'96%', evtUp:false,
+    chartType:'donut', timeData:[],
+  }
+  return (
+    <>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
+        <div style={{ background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, padding:20 }}>
+          <span style={{ fontSize:13, color:'#555', marginBottom:8, display:'block' }}>Views</span>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={barData} barSize={26}>
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:'#999' }}/>
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'#999' }}/>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false}/>
+              <Tooltip contentStyle={{ fontSize:11, borderRadius:6 }} formatter={(v:number)=>[v.toLocaleString(),'Views']}/>
+              <Bar dataKey="v" radius={[3,3,0,0]}>{barData.map((d,i)=><Cell key={i} fill={d.color}/>)}</Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        <div style={{ background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, padding:20 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
+            <span style={{ fontSize:13, color:'#555' }}>Views</span>
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}><span style={{ fontSize:16, fontWeight:700 }}>243 K</span><Change val="1.91%" up={false}/></div>
+          </div>
+          <ResponsiveContainer width="100%" height={220}>
+            <AreaChart data={TIME_DATA}>
+              <defs>
+                <linearGradient id="ig1" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#48b5ea" stopOpacity={0.2}/><stop offset="95%" stopColor="#48b5ea" stopOpacity={0}/></linearGradient>
+                <linearGradient id="ig2" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#a8d8ff" stopOpacity={0.15}/><stop offset="95%" stopColor="#a8d8ff" stopOpacity={0}/></linearGradient>
+              </defs>
+              <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:'#999' }}/>
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'#999' }} tickFormatter={(v:number)=>v>=1000?(v/1000)+'K':String(v)}/>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0"/>
+              <Tooltip contentStyle={{ fontSize:11, borderRadius:6 }}/>
+              <Area type="monotone" dataKey="v" stroke="#48b5ea" fill="url(#ig1)" strokeWidth={2} name="This period"/>
+              <Area type="monotone" dataKey="v2" stroke="#a8d8ff" fill="url(#ig2)" strokeWidth={1.5} strokeDasharray="4 2" name="Prev period"/>
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+      <KPICards cd={interestKPI}/>
+      <DataTable colLabel="INTEREST" rows={rows} search={search} onSearch={onSearch} rowCount={rows.length} totalCount={57}/>
+    </>
+  )
+}
+
+function AudienceNewReturning({ search, onSearch }: { search:string; onSearch:(v:string)=>void }) {
+  const donutData = [{name:'New',value:172000,color:'#4DA6FF'},{name:'Returning',value:62925,color:'#9CCC65'},{name:'Unknown',value:7821,color:'#F9B62A'}]
+  const lineData = TIME_DATA.map(t=>({d:t.d, Views:t.v, New:Math.round(t.v*0.7), Returning:Math.round(t.v*0.25), Unknown:Math.round(t.v*0.03)}))
+  const rows = [
+    { label:'New',       sessions:80602, users:81502, engagement:'48d 14h 6m 59m 26s', views:172155, keyEvents:2019, eventCount:1122311, purchasers:'0.00', sessChange:'0.58%', sessUp:true, usersChange:'0.14%', usersUp:true, engChange:'1.11%', engUp:false, viewsChange:'2.85%', viewsUp:false, keyChange:'25%', keyUp:false, evtChange:'3.48%', evtUp:false, pct:'0%' },
+    { label:'Returning', sessions:31994, users:17693, engagement:'18d 14h 23m 23s',    views:62925,  keyEvents:1591, eventCount:390273,  purchasers:'0.00', sessChange:'1.20%', sessUp:true, usersChange:'2.22%', usersUp:true, engChange:'3.03%', engUp:false, viewsChange:'0.00%', viewsUp:false, keyChange:'14%', keyUp:false, evtChange:'0.73%', evtUp:false, pct:'0%' },
+    { label:'Unknown',   sessions:9422,  users:7099,  engagement:'—',                  views:7821,   keyEvents:0,    eventCount:27390,   purchasers:'0.00', sessChange:'4.16%', sessUp:false, usersChange:'7.64%', usersUp:true, engChange:'0%',    engUp:true, viewsChange:'4.46%', viewsUp:true, keyChange:'100%',keyUp:false, evtChange:'4.11%', evtUp:true, pct:'0%' },
+  ]
+  return (
+    <>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
+        <div style={{ background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, padding:20 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
+            <span style={{ fontSize:13, color:'#555' }}>Views</span>
+            <Change val="1.91%" up={false}/>
+          </div>
+          <div style={{ display:'flex', alignItems:'center', gap:24 }}>
+            <div style={{ position:'relative', width:180, height:180, flexShrink:0 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart><Pie data={donutData} cx="50%" cy="50%" innerRadius={54} outerRadius={82} dataKey="value">{donutData.map((d,i)=><Cell key={i} fill={d.color}/>)}</Pie><Tooltip contentStyle={{ fontSize:11, borderRadius:6 }} formatter={(v:number)=>[v.toLocaleString(),'']}/></PieChart>
+              </ResponsiveContainer>
+              <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
+                <span style={{ fontSize:18, fontWeight:700 }}>242.9 K</span>
+                <span style={{ fontSize:10, color:'#999' }}>Views</span>
+              </div>
+            </div>
+            <div>{donutData.map(d=><div key={d.name} style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}><div style={{ width:10, height:10, borderRadius:'50%', background:d.color }}/><span style={{ fontSize:12, color:'#333', flex:1 }}>{d.name}</span><span style={{ fontSize:12, fontWeight:600 }}>{d.value>=1000?fmt(d.value):d.value.toLocaleString()}</span></div>)}</div>
+          </div>
+        </div>
+        <div style={{ background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, padding:20 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
+            <span style={{ fontSize:13, color:'#555' }}>Views</span>
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}><span style={{ fontSize:16, fontWeight:700 }}>243 K</span><Change val="1.91%" up={false}/></div>
+          </div>
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={lineData}>
+              <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:'#999' }}/>
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'#999' }} tickFormatter={(v:number)=>v>=1000?(v/1000)+'K':String(v)}/>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0"/>
+              <Tooltip contentStyle={{ fontSize:11, borderRadius:6 }}/>
+              <Legend wrapperStyle={{ fontSize:10 }}/>
+              <Line type="monotone" dataKey="Views" stroke="#48b5ea" dot={false} strokeWidth={2}/>
+              <Line type="monotone" dataKey="New" stroke="#4DA6FF" dot={false} strokeWidth={1.5}/>
+              <Line type="monotone" dataKey="Returning" stroke="#9CCC65" dot={false} strokeWidth={1.5}/>
+              <Line type="monotone" dataKey="Unknown" stroke="#F9B62A" dot={false} strokeWidth={1.5}/>
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+      <KPICards cd={{...SHARED_KPI, chartType:'donut'}}/>
+      <DataTable colLabel="NEW VS RETURNING" rows={rows} search={search} onSearch={onSearch} rowCount={rows.length} totalCount={3}/>
+    </>
+  )
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
 export default function DrillDownPanel({ clientName = 'Atlanta BeltLine Website', onClose }: DrillDownPanelProps) {
-  const [activeChannel, setActiveChannel] = useState('all')
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['ga4', 'Acquisition']))
+  const [activeNav, setActiveNav] = useState('all')
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['ga4','Acquisition']))
   const [tableSearch, setTableSearch] = useState('')
 
   function toggleGroup(key: string) {
-    setExpandedGroups(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n })
+    setExpandedGroups(prev => { const n = new Set(prev); n.has(key)?n.delete(key):n.add(key); return n })
   }
 
-  const cd = CHANNEL_DATA[activeChannel] || CHANNEL_DATA['all']
-  const activeLabel = CHANNELS.find(c => c.id === activeChannel)?.label || 'All Channels'
-  const isAll = activeChannel === 'all'
+  const isChannel = CHANNELS.some(c=>c.id===activeNav)
+  const isAudience = AUDIENCE_ITEMS.some(a=>a.id===activeNav)
+  const cd = CHANNEL_DATA[activeNav] || CHANNEL_DATA['all']
+  const activeLabel = [...CHANNELS,...AUDIENCE_ITEMS].find(c=>c.id===activeNav)?.label || 'All Channels'
 
-  // ── Left nav ────────────────────────────────────────────────────────────────
   function LeftNav() {
     return (
-      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 16 }}>
-        <button onClick={() => toggleGroup('ga4')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' as const }}>
-          <span style={{ fontSize: 14 }}>📊</span>
-          <span style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a', flex: 1 }}>Google Analytics 4</span>
-          <ChevronDown size={12} style={{ color: '#999', transform: expandedGroups.has('ga4') ? 'rotate(0deg)' : 'rotate(-90deg)', transition: '0.15s' }}/>
+      <div style={{ flex:1, overflowY:'auto', paddingBottom:16 }}>
+        <button onClick={()=>toggleGroup('ga4')} style={{ width:'100%', display:'flex', alignItems:'center', gap:8, padding:'10px 16px', background:'none', border:'none', cursor:'pointer', textAlign:'left' as const }}>
+          <span style={{ fontSize:14 }}>📊</span>
+          <span style={{ fontSize:13, fontWeight:600, color:'#1a1a1a', flex:1 }}>Google Analytics 4</span>
+          <ChevronDown size={12} style={{ color:'#999', transform:expandedGroups.has('ga4')?'rotate(0deg)':'rotate(-90deg)', transition:'0.15s' }}/>
         </button>
-
         {expandedGroups.has('ga4') && <>
-          <button onClick={() => toggleGroup('Acquisition')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px 7px 28px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' as const }}>
-            <ChevronDown size={11} style={{ color: '#888', transform: expandedGroups.has('Acquisition') ? 'rotate(0deg)' : 'rotate(-90deg)', transition: '0.15s' }}/>
-            <span style={{ fontSize: 13, fontWeight: 500, color: '#333' }}>Acquisition</span>
+          {/* Acquisition */}
+          <button onClick={()=>toggleGroup('Acquisition')} style={{ width:'100%', display:'flex', alignItems:'center', gap:6, padding:'7px 16px 7px 28px', background:'none', border:'none', cursor:'pointer', textAlign:'left' as const }}>
+            <ChevronDown size={11} style={{ color:'#888', transform:expandedGroups.has('Acquisition')?'rotate(0deg)':'rotate(-90deg)', transition:'0.15s' }}/>
+            <span style={{ fontSize:13, fontWeight:500, color:'#333' }}>Acquisition</span>
           </button>
-          {expandedGroups.has('Acquisition') && CHANNELS.map(ch => (
-            <button key={ch.id} onClick={() => setActiveChannel(ch.id)} style={{ width: '100%', textAlign: 'left' as const, padding: '7px 16px 7px 44px', fontSize: 13, cursor: 'pointer', border: 'none', borderLeft: activeChannel === ch.id ? '2px solid #48b5ea' : '2px solid transparent', background: activeChannel === ch.id ? '#f0f7ff' : 'transparent', color: activeChannel === ch.id ? '#1a85c8' : '#555', fontWeight: activeChannel === ch.id ? 600 : 400 }}>
+          {expandedGroups.has('Acquisition') && CHANNELS.map(ch=>(
+            <button key={ch.id} onClick={()=>setActiveNav(ch.id)} style={{ width:'100%', textAlign:'left' as const, padding:'7px 16px 7px 44px', fontSize:13, cursor:'pointer', border:'none', borderLeft:activeNav===ch.id?'2px solid #48b5ea':'2px solid transparent', background:activeNav===ch.id?'#f0f7ff':'transparent', color:activeNav===ch.id?'#1a85c8':'#555', fontWeight:activeNav===ch.id?600:400 }}>
               {ch.label}
             </button>
           ))}
-
-          <button onClick={() => toggleGroup('Audience')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px 7px 28px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' as const }}>
-            <ChevronRight size={11} style={{ color: '#888', transform: expandedGroups.has('Audience') ? 'rotate(90deg)' : 'none', transition: '0.15s' }}/>
-            <span style={{ fontSize: 13, fontWeight: 500, color: '#333' }}>Audience</span>
+          {/* Audience */}
+          <button onClick={()=>toggleGroup('Audience')} style={{ width:'100%', display:'flex', alignItems:'center', gap:6, padding:'7px 16px 7px 28px', background:'none', border:'none', cursor:'pointer', textAlign:'left' as const }}>
+            <ChevronDown size={11} style={{ color:'#888', transform:expandedGroups.has('Audience')?'rotate(0deg)':'rotate(-90deg)', transition:'0.15s' }}/>
+            <span style={{ fontSize:13, fontWeight:500, color:'#333' }}>Audience</span>
           </button>
-          {expandedGroups.has('Audience') && AUDIENCE_ITEMS.map(item => (
-            <button key={item.id} onClick={() => setActiveChannel(item.id)} style={{ width: '100%', textAlign: 'left' as const, padding: '7px 16px 7px 44px', fontSize: 13, cursor: 'pointer', border: 'none', background: 'transparent', color: '#555' }}>
+          {expandedGroups.has('Audience') && AUDIENCE_ITEMS.map(item=>(
+            <button key={item.id} onClick={()=>setActiveNav(item.id)} style={{ width:'100%', textAlign:'left' as const, padding:'7px 16px 7px 44px', fontSize:13, cursor:'pointer', border:'none', borderLeft:activeNav===item.id?'2px solid #48b5ea':'2px solid transparent', background:activeNav===item.id?'#f0f7ff':'transparent', color:activeNav===item.id?'#1a85c8':'#555', fontWeight:activeNav===item.id?600:400 }}>
               {item.label}
             </button>
           ))}
-
-          <button onClick={() => toggleGroup('Conversions')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px 7px 28px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' as const }}>
-            <ChevronRight size={11} style={{ color: '#888' }}/><span style={{ fontSize: 13, fontWeight: 500, color: '#333' }}>Conversions</span>
+          {/* Conversions */}
+          <button onClick={()=>toggleGroup('Conversions')} style={{ width:'100%', display:'flex', alignItems:'center', gap:6, padding:'7px 16px 7px 28px', background:'none', border:'none', cursor:'pointer', textAlign:'left' as const }}>
+            <ChevronRight size={11} style={{ color:'#888' }}/><span style={{ fontSize:13, fontWeight:500, color:'#333' }}>Conversions</span>
           </button>
-          <button onClick={() => toggleGroup('Pages')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px 7px 28px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' as const }}>
-            <ChevronRight size={11} style={{ color: '#888' }}/><span style={{ fontSize: 13, fontWeight: 500, color: '#333' }}>Pages</span>
+          <button onClick={()=>toggleGroup('Pages')} style={{ width:'100%', display:'flex', alignItems:'center', gap:6, padding:'7px 16px 7px 28px', background:'none', border:'none', cursor:'pointer', textAlign:'left' as const }}>
+            <ChevronRight size={11} style={{ color:'#888' }}/><span style={{ fontSize:13, fontWeight:500, color:'#333' }}>Pages</span>
           </button>
-          <button onClick={() => toggleGroup('Events')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px 7px 28px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' as const }}>
-            <ChevronRight size={11} style={{ color: '#888' }}/><span style={{ fontSize: 13, fontWeight: 500, color: '#333' }}>Events</span>
+          <button onClick={()=>toggleGroup('Events')} style={{ width:'100%', display:'flex', alignItems:'center', gap:6, padding:'7px 16px 7px 28px', background:'none', border:'none', cursor:'pointer', textAlign:'left' as const }}>
+            <ChevronRight size={11} style={{ color:'#888' }}/><span style={{ fontSize:13, fontWeight:500, color:'#333' }}>Events</span>
           </button>
         </>}
-
-        <button style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', background: 'none', border: 'none', cursor: 'pointer' }}>
-          <span style={{ fontSize: 14 }}>📱</span><span style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a', flex: 1 }}>Social</span><ChevronRight size={12} style={{ color: '#999' }}/>
+        <button style={{ width:'100%', display:'flex', alignItems:'center', gap:8, padding:'10px 16px', background:'none', border:'none', cursor:'pointer' }}>
+          <span style={{ fontSize:14 }}>📱</span><span style={{ fontSize:13, fontWeight:600, color:'#1a1a1a', flex:1 }}>Social</span><ChevronRight size={12} style={{ color:'#999' }}/>
         </button>
-        <button style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', background: 'none', border: 'none', cursor: 'pointer' }}>
-          <span style={{ fontSize: 14 }}>💰</span><span style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a', flex: 1 }}>Paid Ads</span><ChevronRight size={12} style={{ color: '#999' }}/>
+        <button style={{ width:'100%', display:'flex', alignItems:'center', gap:8, padding:'10px 16px', background:'none', border:'none', cursor:'pointer' }}>
+          <span style={{ fontSize:14 }}>💰</span><span style={{ fontSize:13, fontWeight:600, color:'#1a1a1a', flex:1 }}>Paid Ads</span><ChevronRight size={12} style={{ color:'#999' }}/>
         </button>
       </div>
     )
   }
 
-  // ── Right chart ─────────────────────────────────────────────────────────────
-  function RightChart() {
-    if (cd.chartType === 'donut' && cd.donutData) {
-      const total = cd.donutData.reduce((s, d) => s + d.value, 0)
+  // ── Acquisition channel right chart ────────────────────────────────────────
+  function AcqRightChart() {
+    if (cd.chartType==='donut' && cd.donutData) {
+      const total = cd.donutData.reduce((s,d)=>s+d.value,0)
       return (
-        <div style={{ background: '#fff', border: '1px solid #e5e5e5', borderRadius: 8, padding: 20 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-            <span style={{ fontSize: 13, color: '#555' }}>Views</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 16, fontWeight: 700 }}>{fmt(cd.views)}</span>
-              <Change val={cd.viewsChange} up={cd.viewsUp}/>
-            </div>
+        <div style={{ background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, padding:20 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:16 }}>
+            <span style={{ fontSize:13, color:'#555' }}>Views</span>
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}><span style={{ fontSize:16, fontWeight:700 }}>{fmt(cd.views)}</span><Change val={cd.viewsChange} up={cd.viewsUp}/></div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-            <div style={{ position: 'relative', width: 170, height: 170, flexShrink: 0 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:20 }}>
+            <div style={{ position:'relative', width:170, height:170, flexShrink:0 }}>
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={cd.donutData} cx="50%" cy="50%" innerRadius={52} outerRadius={80} dataKey="value">
-                    {cd.donutData.map((d, i) => <Cell key={i} fill={d.color}/>)}
-                  </Pie>
-                  <Tooltip contentStyle={{ fontSize: 11, borderRadius: 6 }} formatter={(v: number) => [v.toLocaleString(), '']}/>
-                </PieChart>
+                <PieChart><Pie data={cd.donutData} cx="50%" cy="50%" innerRadius={52} outerRadius={80} dataKey="value">{cd.donutData.map((d,i)=><Cell key={i} fill={d.color}/>)}</Pie><Tooltip contentStyle={{ fontSize:11, borderRadius:6 }} formatter={(v:number)=>[v.toLocaleString(),'']}/></PieChart>
               </ResponsiveContainer>
-              <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontSize: 18, fontWeight: 700 }}>{fmt(total)}</span>
-                <span style={{ fontSize: 10, color: '#999' }}>Views</span>
+              <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
+                <span style={{ fontSize:18, fontWeight:700 }}>{fmt(total)}</span>
+                <span style={{ fontSize:10, color:'#999' }}>Views</span>
               </div>
             </div>
-            <div style={{ flex: 1 }}>
-              {cd.donutData.map(d => (
-                <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7 }}>
-                  <div style={{ width: 9, height: 9, borderRadius: '50%', background: d.color, flexShrink: 0 }}/>
-                  <span style={{ fontSize: 12, color: '#333', flex: 1 }}>{d.name}</span>
-                  <span style={{ fontSize: 12, fontWeight: 600 }}>{d.value >= 1000 ? fmt(d.value) : d.value.toLocaleString()}</span>
-                </div>
-              ))}
-            </div>
+            <div style={{ flex:1 }}>{cd.donutData.map(d=>(
+              <div key={d.name} style={{ display:'flex', alignItems:'center', gap:8, marginBottom:7 }}>
+                <div style={{ width:9, height:9, borderRadius:'50%', background:d.color, flexShrink:0 }}/>
+                <span style={{ fontSize:12, color:'#333', flex:1 }}>{d.name}</span>
+                <span style={{ fontSize:12, fontWeight:600 }}>{d.value>=1000?fmt(d.value):d.value.toLocaleString()}</span>
+              </div>
+            ))}</div>
           </div>
         </div>
       )
     }
-    if (cd.chartType === 'bar' && cd.barData) {
+    if (cd.chartType==='bar' && cd.barData) {
       return (
-        <div style={{ background: '#fff', border: '1px solid #e5e5e5', borderRadius: 8, padding: 20 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-            <span style={{ fontSize: 13, color: '#555' }}>Views</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 16, fontWeight: 700 }}>{fmt(cd.views)}</span>
-              <Change val={cd.viewsChange} up={cd.viewsUp}/>
-              <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#bbb' }}><MoreHorizontal size={14}/></button>
-            </div>
+        <div style={{ background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, padding:20 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:16 }}>
+            <span style={{ fontSize:13, color:'#555' }}>Views</span>
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}><span style={{ fontSize:16, fontWeight:700 }}>{fmt(cd.views)}</span><Change val={cd.viewsChange} up={cd.viewsUp}/><button style={{ background:'none', border:'none', cursor:'pointer', color:'#bbb' }}><MoreHorizontal size={14}/></button></div>
           </div>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={cd.barData} barSize={26}>
-              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#999' }}/>
-              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#999' }} tickFormatter={(v: number) => v >= 1000 ? (v/1000)+'K' : String(v)}/>
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:'#999' }}/>
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'#999' }} tickFormatter={(v:number)=>v>=1000?(v/1000)+'K':String(v)}/>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false}/>
-              <Tooltip contentStyle={{ fontSize: 11, borderRadius: 6 }} formatter={(v: number) => [v.toLocaleString(), 'Views']}/>
-              <Bar dataKey="value" radius={[3, 3, 0, 0]}>
-                {cd.barData.map((d, i) => <Cell key={i} fill={d.color}/>)}
-              </Bar>
+              <Tooltip contentStyle={{ fontSize:11, borderRadius:6 }} formatter={(v:number)=>[v.toLocaleString(),'Views']}/>
+              <Bar dataKey="value" radius={[3,3,0,0]}>{cd.barData.map((d,i)=><Cell key={i} fill={d.color}/>)}</Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -442,174 +998,108 @@ export default function DrillDownPanel({ clientName = 'Atlanta BeltLine Website'
     return null
   }
 
-  // ── Channel breakdown table (only shown when activeChannel === 'all') ────────
-  function ChannelTable() {
-    const filtered = ALL_CHANNEL_ROWS.filter(r =>
-      r.channel.toLowerCase().includes(tableSearch.toLowerCase())
-    )
+  function AcquisitionContent() {
     return (
-      <div style={{ background: '#fff', border: '1px solid #e5e5e5', borderRadius: 8, overflow: 'hidden', marginTop: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderBottom: '1px solid #f0f0f0' }}>
-          <span style={{ fontSize: 12, color: '#666' }}>Showing {filtered.length} of {ALL_CHANNEL_ROWS.length} Rows</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <input value={tableSearch} onChange={e => setTableSearch(e.target.value)} placeholder="Search"
-              style={{ background: '#fafafa', border: '1px solid #e5e5e5', borderRadius: 6, padding: '5px 10px', fontSize: 12, outline: 'none', width: 160 }}/>
-            <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#bbb' }}><MoreHorizontal size={14}/></button>
+      <>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
+          <div style={{ background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, padding:20 }}>
+            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:4 }}>
+              <span style={{ fontSize:13, color:'#555' }}>Views</span>
+              <div style={{ display:'flex', alignItems:'center', gap:8 }}><span style={{ fontSize:16, fontWeight:700 }}>{fmt(cd.views)}</span><Change val={cd.viewsChange} up={cd.viewsUp}/></div>
+            </div>
+            <ResponsiveContainer width="100%" height={220}>
+              <AreaChart data={cd.timeData}>
+                <defs>
+                  <linearGradient id="aq1" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#48b5ea" stopOpacity={0.2}/><stop offset="95%" stopColor="#48b5ea" stopOpacity={0}/></linearGradient>
+                  <linearGradient id="aq2" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#a8d8ff" stopOpacity={0.15}/><stop offset="95%" stopColor="#a8d8ff" stopOpacity={0}/></linearGradient>
+                </defs>
+                <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'#999' }}/>
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'#999' }} tickFormatter={(v:number)=>v>=1000?(v/1000)+'K':String(v)}/>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0"/>
+                <Tooltip contentStyle={{ fontSize:11, borderRadius:6 }}/>
+                <Area type="monotone" dataKey="v" stroke="#48b5ea" fill="url(#aq1)" strokeWidth={2} name="This period"/>
+                <Area type="monotone" dataKey="v2" stroke="#a8d8ff" fill="url(#aq2)" strokeWidth={1.5} strokeDasharray="4 2" name="Prev period"/>
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
+          <AcqRightChart/>
         </div>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid #f0f0f0', background: '#fafafa' }}>
-                {['CHANNEL','SESSIONS ↓','TOTAL USERS','USER ENGAGEMENT','VIEWS','KEY EVENTS','EVENT COUNT','TOTAL PURCHASERS'].map(h => (
-                  <th key={h} style={{ padding: '9px 14px', textAlign: h === 'CHANNEL' ? 'left' : 'right', fontSize: 11, fontWeight: 600, color: '#888', whiteSpace: 'nowrap' as const }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((row, i) => (
-                <tr key={row.channel} style={{ borderBottom: '1px solid #f8f8f8', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
-                  <td style={{ padding: '11px 14px', fontWeight: 500, color: '#1a1a1a', whiteSpace: 'nowrap' as const }}>{row.channel}</td>
-                  <td style={{ padding: '11px 14px', textAlign: 'right' as const }}>
-                    <div style={{ fontWeight: 500 }}>{row.sessions.toLocaleString()}</div>
-                    <Change val={row.sessChange} up={row.sessUp}/>
-                  </td>
-                  <td style={{ padding: '11px 14px', textAlign: 'right' as const }}>
-                    <div>{row.users.toLocaleString()}</div>
-                    <Change val={row.usersChange} up={row.usersUp}/>
-                  </td>
-                  <td style={{ padding: '11px 14px', textAlign: 'right' as const }}>
-                    <div style={{ fontSize: 12, color: '#333' }}>{row.engagement}</div>
-                    <Change val={row.engChange} up={row.engUp}/>
-                  </td>
-                  <td style={{ padding: '11px 14px', textAlign: 'right' as const }}>
-                    <div>{row.views.toLocaleString()}</div>
-                    <Change val={row.viewsChange} up={row.viewsUp}/>
-                  </td>
-                  <td style={{ padding: '11px 14px', textAlign: 'right' as const }}>
-                    <div>{row.keyEvents.toFixed(2)}</div>
-                    <Change val={row.keyChange} up={row.keyUp}/>
-                  </td>
-                  <td style={{ padding: '11px 14px', textAlign: 'right' as const }}>
-                    <div>{row.eventCount.toLocaleString()}</div>
-                    <Change val={row.evtChange} up={row.evtUp}/>
-                  </td>
-                  <td style={{ padding: '11px 14px', textAlign: 'right' as const }}>
-                    <div>{row.purchasers}</div>
-                    <span style={{ fontSize: 10, fontWeight: 600, color: '#999', background: '#f0f0f0', padding: '1px 5px', borderRadius: 3 }}>{row.pctBadge}</span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+        <KPICards cd={cd}/>
+        {activeNav==='all' && (
+          <div style={{ background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, overflow:'hidden', marginTop:16 }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 16px', borderBottom:'1px solid #f0f0f0' }}>
+              <span style={{ fontSize:12, color:'#666' }}>Showing {ALL_CHANNEL_ROWS.filter(r=>r.channel.toLowerCase().includes(tableSearch.toLowerCase())).length} of {ALL_CHANNEL_ROWS.length} Rows</span>
+              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                <input value={tableSearch} onChange={e=>setTableSearch(e.target.value)} placeholder="Search" style={{ background:'#fafafa', border:'1px solid #e5e5e5', borderRadius:6, padding:'5px 10px', fontSize:12, outline:'none', width:160 }}/>
+                <button style={{ background:'none', border:'none', cursor:'pointer', color:'#bbb' }}><MoreHorizontal size={14}/></button>
+              </div>
+            </div>
+            <div style={{ overflowX:'auto' as const }}>
+              <table style={{ width:'100%', borderCollapse:'collapse' as const, fontSize:12 }}>
+                <thead><tr style={{ borderBottom:'1px solid #f0f0f0', background:'#fafafa' }}>
+                  {['CHANNEL','SESSIONS ↓','TOTAL USERS','USER ENGAGEMENT','VIEWS','KEY EVENTS','EVENT COUNT','TOTAL PURCHASERS'].map(h=>(
+                    <th key={h} style={{ padding:'9px 14px', textAlign:h==='CHANNEL'?'left':'right' as any, fontSize:11, fontWeight:600, color:'#888', whiteSpace:'nowrap' as const }}>{h}</th>
+                  ))}
+                </tr></thead>
+                <tbody>
+                  {ALL_CHANNEL_ROWS.filter(r=>r.channel.toLowerCase().includes(tableSearch.toLowerCase())).map((row,i)=>(
+                    <tr key={row.channel} style={{ borderBottom:'1px solid #f8f8f8', background:i%2===0?'#fff':'#fafafa' }}>
+                      <td style={{ padding:'11px 14px', fontWeight:500, color:'#1a1a1a', whiteSpace:'nowrap' as const }}>{row.channel}</td>
+                      <td style={{ padding:'11px 14px', textAlign:'right' as const }}><div style={{ fontWeight:500 }}>{row.sessions.toLocaleString()}</div><Change val={row.sessChange} up={row.sessUp}/></td>
+                      <td style={{ padding:'11px 14px', textAlign:'right' as const }}><div>{row.users.toLocaleString()}</div><Change val={row.usersChange} up={row.usersUp}/></td>
+                      <td style={{ padding:'11px 14px', textAlign:'right' as const }}><div style={{ fontSize:12, color:'#333' }}>{row.engagement}</div><Change val={row.engChange} up={row.engUp}/></td>
+                      <td style={{ padding:'11px 14px', textAlign:'right' as const }}><div>{row.views.toLocaleString()}</div><Change val={row.viewsChange} up={row.viewsUp}/></td>
+                      <td style={{ padding:'11px 14px', textAlign:'right' as const }}><div>{row.keyEvents.toFixed(2)}</div><Change val={row.keyChange} up={row.keyUp}/></td>
+                      <td style={{ padding:'11px 14px', textAlign:'right' as const }}><div>{row.eventCount.toLocaleString()}</div><Change val={row.evtChange} up={row.evtUp}/></td>
+                      <td style={{ padding:'11px 14px', textAlign:'right' as const }}><div>{row.purchasers}</div><span style={{ fontSize:10, fontWeight:600, color:'#999', background:'#f0f0f0', padding:'1px 5px', borderRadius:3 }}>{row.pct}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </>
     )
   }
 
+  function renderContent() {
+    if (isAudience) {
+      switch(activeNav) {
+        case 'aud-location':      return <AudienceLocation search={tableSearch} onSearch={setTableSearch}/>
+        case 'aud-language':      return <AudienceLanguage search={tableSearch} onSearch={setTableSearch}/>
+        case 'aud-age':           return <AudienceAge/>
+        case 'aud-gender':        return <AudienceGender/>
+        case 'aud-devices':       return <AudienceDevices search={tableSearch} onSearch={setTableSearch}/>
+        case 'aud-browser':       return <AudienceBrowser search={tableSearch} onSearch={setTableSearch}/>
+        case 'aud-os':            return <AudienceOS search={tableSearch} onSearch={setTableSearch}/>
+        case 'aud-interests':     return <AudienceInterests search={tableSearch} onSearch={setTableSearch}/>
+        case 'aud-new-returning': return <AudienceNewReturning search={tableSearch} onSearch={setTableSearch}/>
+        default: return <AudienceLocation search={tableSearch} onSearch={setTableSearch}/>
+      }
+    }
+    return <AcquisitionContent/>
+  }
+
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 200, display: 'flex', alignItems: 'stretch', justifyContent: 'flex-end' }} onClick={onClose}>
-      <div style={{ width: '88%', background: '#fff', display: 'flex', flexDirection: 'column', overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
-
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:200, display:'flex', alignItems:'stretch', justifyContent:'flex-end' }} onClick={onClose}>
+      <div style={{ width:'88%', background:'#fff', display:'flex', flexDirection:'column', overflow:'hidden' }} onClick={e=>e.stopPropagation()}>
         {/* Header */}
-        <div style={{ padding: '12px 20px', borderBottom: '1px solid #e5e5e5', display: 'flex', alignItems: 'center', gap: 12, background: '#fff', flexShrink: 0 }}>
-          <span style={{ fontSize: 14 }}>📊</span>
-          <span style={{ fontSize: 15, fontWeight: 700, color: '#1a1a1a' }}>{activeLabel}</span>
-          <div style={{ background: '#f0f0f0', border: '1px solid #e5e5e5', borderRadius: 6, padding: '4px 12px', fontSize: 12, color: '#333' }}>
-            Account is <strong>{clientName}</strong>
-          </div>
-          <button style={{ background: '#f5f5f5', border: '1px solid #e5e5e5', borderRadius: 6, padding: '4px 12px', fontSize: 12, color: '#333', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-            <Plus size={11}/> Add Filter
-          </button>
-          <button style={{ background: 'none', border: 'none', fontSize: 12, color: '#999', cursor: 'pointer' }}>Clear All</button>
-          <button onClick={onClose} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#999' }}><X size={18}/></button>
+        <div style={{ padding:'12px 20px', borderBottom:'1px solid #e5e5e5', display:'flex', alignItems:'center', gap:12, background:'#fff', flexShrink:0 }}>
+          <span style={{ fontSize:14 }}>📊</span>
+          <span style={{ fontSize:15, fontWeight:700, color:'#1a1a1a' }}>{activeLabel}</span>
+          <div style={{ background:'#f0f0f0', border:'1px solid #e5e5e5', borderRadius:6, padding:'4px 12px', fontSize:12, color:'#333' }}>Account is <strong>{clientName}</strong></div>
+          <button style={{ background:'#f5f5f5', border:'1px solid #e5e5e5', borderRadius:6, padding:'4px 12px', fontSize:12, color:'#333', cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}><Plus size={11}/> Add Filter</button>
+          <button style={{ background:'none', border:'none', fontSize:12, color:'#999', cursor:'pointer' }}>Clear All</button>
+          <button onClick={onClose} style={{ marginLeft:'auto', background:'none', border:'none', cursor:'pointer', color:'#999' }}><X size={18}/></button>
         </div>
-
         {/* Body */}
-        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-          <div style={{ width: 220, minWidth: 220, borderRight: '1px solid #e5e5e5', background: '#fff', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
+          <div style={{ width:220, minWidth:220, borderRight:'1px solid #e5e5e5', background:'#fff', display:'flex', flexDirection:'column', overflow:'hidden' }}>
             <LeftNav/>
           </div>
-
-          {/* Main scrollable content */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: 20, background: '#f8f9fa' }}>
-
-            {/* Top two charts */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
-              <div style={{ background: '#fff', border: '1px solid #e5e5e5', borderRadius: 8, padding: 20 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <span style={{ fontSize: 13, color: '#555' }}>Views</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 16, fontWeight: 700 }}>{fmt(cd.views)}</span>
-                    <Change val={cd.viewsChange} up={cd.viewsUp}/>
-                  </div>
-                </div>
-                <ResponsiveContainer width="100%" height={220}>
-                  <AreaChart data={cd.timeData}>
-                    <defs>
-                      <linearGradient id="ag1" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#48b5ea" stopOpacity={0.2}/><stop offset="95%" stopColor="#48b5ea" stopOpacity={0}/>
-                      </linearGradient>
-                      <linearGradient id="ag2" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#a8d8ff" stopOpacity={0.15}/><stop offset="95%" stopColor="#a8d8ff" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#999' }}/>
-                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#999' }} tickFormatter={(v: number) => v >= 1000 ? (v/1000)+'K' : String(v)}/>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0"/>
-                    <Tooltip contentStyle={{ fontSize: 11, borderRadius: 6 }}/>
-                    <Area type="monotone" dataKey="v"  stroke="#48b5ea" fill="url(#ag1)" strokeWidth={2} name="This period"/>
-                    <Area type="monotone" dataKey="v2" stroke="#a8d8ff" fill="url(#ag2)" strokeWidth={1.5} strokeDasharray="4 2" name="Prev period"/>
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-              <RightChart/>
-            </div>
-
-            {/* KPI row 1 — 4 cards: Sessions, Total Users, User Engagement, Views */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 12 }}>
-              {[
-                { label: 'Sessions',        val: cd.sessions >= 1000 ? fmt(cd.sessions) : cd.sessions.toLocaleString(), change: cd.sessChange,  up: cd.sessUp,  hl: false },
-                { label: 'Total Users',     val: cd.users >= 1000    ? fmt(cd.users)    : cd.users.toLocaleString(),    change: cd.usersChange, up: cd.usersUp, hl: false },
-                { label: 'User Engagement', val: cd.engagement,                                                          change: cd.engChange,   up: cd.engUp,   hl: false },
-                { label: 'Views',           val: fmt(cd.views),                                                          change: cd.viewsChange, up: cd.viewsUp, hl: true  },
-              ].map(k => (
-                <div key={k.label} style={{ background: '#fff', border: `${k.hl ? 2 : 1}px solid ${k.hl ? '#48b5ea' : '#e5e5e5'}`, borderRadius: 8, padding: '16px 20px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <span style={{ fontSize: 13, color: '#555' }}>{k.label}</span>
-                    {k.hl
-                      ? <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#bbb' }}><MoreHorizontal size={14}/></button>
-                      : <Change val={k.change} up={k.up}/>
-                    }
-                  </div>
-                  <p style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a', letterSpacing: '-0.5px', lineHeight: 1.2 }}>{k.val}</p>
-                  {k.hl && <div style={{ marginTop: 6 }}><Change val={k.change} up={k.up}/></div>}
-                </div>
-              ))}
-            </div>
-
-            {/* KPI row 2 — Key Events, Event Count, Total Purchasers */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-              {[
-                { label: 'Key Events',       val: cd.keyEvents >= 1000 ? fmt(cd.keyEvents) : cd.keyEvents.toLocaleString(), change: cd.keyChange, up: cd.keyUp, badge: false },
-                { label: 'Event Count',      val: cd.eventCount,                                                              change: cd.evtChange, up: cd.evtUp, badge: false },
-                { label: 'Total Purchasers', val: '0',                                                                        change: '0%',         up: true,     badge: true  },
-              ].map(k => (
-                <div key={k.label} style={{ background: '#fff', border: '1px solid #e5e5e5', borderRadius: 8, padding: '16px 20px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <span style={{ fontSize: 13, color: '#555' }}>{k.label}</span>
-                    {k.badge
-                      ? <span style={{ fontSize: 11, fontWeight: 600, color: '#999', background: '#f0f0f0', padding: '2px 6px', borderRadius: 4 }}>0%</span>
-                      : <Change val={k.change} up={k.up}/>
-                    }
-                  </div>
-                  <p style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a', letterSpacing: '-0.5px' }}>{k.val}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Channel breakdown table — only for "All" */}
-            {isAll && <ChannelTable/>}
+          <div style={{ flex:1, overflowY:'auto', padding:20, background:'#f8f9fa' }}>
+            {renderContent()}
           </div>
         </div>
       </div>
