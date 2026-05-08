@@ -456,29 +456,45 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
         </div>
 
         {/* Canvas */}
-        <div style={{ flex:1, overflowY:'auto', background:'#f8f9fa' }}>
+        <div style={{ flex:1, overflowY:'auto', background:'#f8f9fa', position:'relative' }}>
           <div style={{ padding:'14px 20px', borderBottom:'1px solid #e5e5e5', background:'#fff', display:'flex', alignItems:'center', gap:8 }}>
             <div style={{ width:16, height:16, border:'2px solid #333', borderRadius:2 }}/>
             <span style={{ fontSize:14, fontWeight:700, color:'#1a1a1a' }}>{activeDash}</span>
             {loadingData && <span style={{ fontSize:11, color:'#48b5ea', marginLeft:8 }}>↻ Loading...</span>}
             {connection?.connected && !loadingData && <span style={{ fontSize:11, color:'#20BB71', marginLeft:8 }}>● Live GA4 data</span>}
           </div>
-          <div style={{ padding:16 }}>
+          <div style={{ padding: activeDash.startsWith('Untitled') ? 0 : 16, height: activeDash.startsWith('Untitled') ? '100%' : 'auto' }}>
             {activeDash.startsWith('Untitled') ? (
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:500, flexDirection:'column', gap:8 }}>
-                <p style={{ fontSize:14, color:'#999', marginBottom:4 }}>Start building by dragging widgets</p>
-                <p style={{ fontSize:13, color:'#bbb', marginBottom:20 }}>or</p>
-                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, maxWidth:560 }}>
-                  {ADD_DASHBOARD_OPTIONS.map(opt => (
+              <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:6 }}>
+                <p style={{ fontSize:15, fontWeight:400, color:'#555', marginBottom:2 }}>Start building by dragging widgets</p>
+                <p style={{ fontSize:13, color:'#aaa', marginBottom:16 }}>or</p>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, width:520 }}>
+                  {[
+                    { icon:(
+                        <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><rect x="4" y="4" width="10" height="10" rx="2" fill="#ccc"/><rect x="18" y="4" width="10" height="10" rx="2" fill="#ccc"/><rect x="4" y="18" width="10" height="6" rx="1" fill="#e0e0e0"/><rect x="18" y="18" width="10" height="6" rx="1" fill="#e0e0e0"/><circle cx="9" cy="26" r="2" fill="#48b5ea"/></svg>
+                      ), title:'Add a page template', desc:'Choose from a ready-made template
+or one of your saved pages' },
+                    { icon:(
+                        <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="10" stroke="#ccc" strokeWidth="2" fill="none"/><path d="M12 16 L15 19 L20 13" stroke="#48b5ea" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 6 L18 10 L22 8" stroke="#ccc" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                      ), title:'Build a page using AI', desc:"Tell AI what you're trying to achieve,
+and watch it build your page" },
+                    { icon:(
+                        <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><rect x="5" y="7" width="16" height="20" rx="2" stroke="#ccc" strokeWidth="2" fill="none"/><rect x="11" y="5" width="16" height="20" rx="2" stroke="#ccc" strokeWidth="2" fill="white"/><path d="M15 12 h8 M15 16 h6 M15 20 h7" stroke="#e0e0e0" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                      ), title:'Clone existing page', desc:'Copy a page from another page' },
+                    { icon:(
+                        <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><rect x="4" y="8" width="24" height="16" rx="2" stroke="#ccc" strokeWidth="2" fill="none"/><path d="M4 13 h24" stroke="#ccc" strokeWidth="1.5"/><rect x="8" y="17" width="6" height="4" rx="1" fill="#e0e0e0"/><rect x="18" y="17" width="6" height="4" rx="1" fill="#48b5ea" opacity="0.4"/></svg>
+                      ), title:'Smart Dashboard', desc:'Generate a dashboard from your
+connected integrations' },
+                  ].map(opt => (
                     <button key={opt.title}
-                      style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:10, padding:'24px 20px', background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, cursor:'pointer', textAlign:'center' as const }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor='#48b5ea'; (e.currentTarget as HTMLButtonElement).style.background='#f8fcff' }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor='#e5e5e5'; (e.currentTarget as HTMLButtonElement).style.background='#fff' }}
+                      style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:14, padding:'30px 24px', background:'#fff', border:'1px solid #e8e8e8', borderRadius:8, cursor:'pointer', textAlign:'center' as const, transition:'all 0.12s' }}
+                      onMouseEnter={e => { const b=e.currentTarget as HTMLButtonElement; b.style.borderColor='#d0d0d0'; b.style.boxShadow='0 2px 8px rgba(0,0,0,0.06)' }}
+                      onMouseLeave={e => { const b=e.currentTarget as HTMLButtonElement; b.style.borderColor='#e8e8e8'; b.style.boxShadow='none' }}
                     >
-                      <div style={{ width:48, height:48, borderRadius:8, background:'#f8f9fa', border:'1px solid #e5e5e5', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20 }}>{opt.icon}</div>
+                      <div style={{ width:52, height:52, display:'flex', alignItems:'center', justifyContent:'center' }}>{opt.icon}</div>
                       <div>
-                        <p style={{ fontSize:13, fontWeight:600, color:'#1a1a1a', marginBottom:4 }}>{opt.title}</p>
-                        <p style={{ fontSize:11, color:'#999', lineHeight:1.5 }}>{opt.desc}</p>
+                        <p style={{ fontSize:14, fontWeight:500, color:'#1a1a1a', marginBottom:6 }}>{opt.title}</p>
+                        <p style={{ fontSize:12, color:'#aaa', lineHeight:1.6, whiteSpace:'pre-line' as const }}>{opt.desc}</p>
                       </div>
                     </button>
                   ))}
