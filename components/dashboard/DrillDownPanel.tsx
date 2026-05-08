@@ -883,6 +883,143 @@ function PagesContentGroup({search,onSearch}:{search:string;onSearch:(v:string)=
   return <PagesGeneric subLabel="Content Group" rightItems={[{label:'(not set)',value:242901,maxVal}]} tableColLabel="CONTENT GROUP" tableRows={contentRows} totalRows={1} search={search} onSearch={onSearch} hlCard="key-events"/>
 }
 
+
+// ── EVENTS: Event Name ────────────────────────────────────────────────────────
+const EVENT_ROWS = [
+  {name:'page_view',      users:86610, usersChange:'0.45%', usersUp:false, engagement:'6s',              engChange:'100%', engUp:false, conversions:0, convChange:'0%', convUp:true, eventCount:242901, evtChange:'1.91%', evtUp:false},
+  {name:'10% Scroll',     users:74794, usersChange:'4.49%', usersUp:false, engagement:'2d 18h 50m 15s',  engChange:'3.18%',engUp:false, conversions:0, convChange:'0%', convUp:true, eventCount:212058, evtChange:'2.73%', evtUp:false},
+  {name:'25% Scroll',     users:62887, usersChange:'7.10%', usersUp:false, engagement:'8d 7h 40m 36s',   engChange:'2.47%',engUp:false, conversions:0, convChange:'0%', convUp:true, eventCount:166203, evtChange:'3.79%', evtUp:false},
+  {name:'session_start',  users:87756, usersChange:'0.66%', usersUp:true,  engagement:'—',               engChange:'0%',   engUp:true,  conversions:0, convChange:'0%', convUp:true, eventCount:123408, evtChange:'1.09%', evtUp:true},
+  {name:'link_click',     users:33644, usersChange:'1.07%', usersUp:false, engagement:'—',               engChange:'0%',   engUp:true,  conversions:0, convChange:'0%', convUp:true, eventCount:119652, evtChange:'3.22%', evtUp:false},
+  {name:'internal_click', users:29800, usersChange:'2.10%', usersUp:false, engagement:'—',               engChange:'0%',   engUp:true,  conversions:0, convChange:'0%', convUp:true, eventCount:98400,  evtChange:'2.50%', evtUp:false},
+  {name:'50% Scroll',     users:47200, usersChange:'5.80%', usersUp:false, engagement:'5d 12h 22m 10s',  engChange:'1.90%',engUp:false, conversions:0, convChange:'0%', convUp:true, eventCount:87300,  evtChange:'4.10%', evtUp:false},
+  {name:'all_clicks_non_interaction',users:22100,usersChange:'1.50%',usersUp:false,engagement:'—',engChange:'0%',engUp:true,conversions:0,convChange:'0%',convUp:true,eventCount:74200,evtChange:'2.10%',evtUp:false},
+  {name:'75% Scroll',     users:38600, usersChange:'6.20%', usersUp:false, engagement:'3d 9h 15m 42s',   engChange:'2.10%',engUp:false, conversions:0, convChange:'0%', convUp:true, eventCount:68900,  evtChange:'4.30%', evtUp:false},
+  {name:'scroll',         users:41200, usersChange:'3.40%', usersUp:false, engagement:'—',               engChange:'0%',   engUp:true,  conversions:0, convChange:'0%', convUp:true, eventCount:62100,  evtChange:'1.80%', evtUp:false},
+  {name:'user_engagement',users:35800, usersChange:'1.20%', usersUp:false, engagement:'—',               engChange:'0%',   engUp:true,  conversions:0, convChange:'0%', convUp:true, eventCount:54300,  evtChange:'1.40%', evtUp:false},
+  {name:'click',          users:18900, usersChange:'2.80%', usersUp:false, engagement:'—',               engChange:'0%',   engUp:true,  conversions:0, convChange:'0%', convUp:true, eventCount:48700,  evtChange:'2.20%', evtUp:false},
+  {name:'first_visit',    users:63200, usersChange:'0.80%', usersUp:true,  engagement:'—',               engChange:'0%',   engUp:true,  conversions:0, convChange:'0%', convUp:true, eventCount:46800,  evtChange:'0.90%', evtUp:true},
+  {name:'100% Scroll',    users:26400, usersChange:'8.10%', usersUp:false, engagement:'2d 1h 8m 22s',    engChange:'1.80%',engUp:false, conversions:0, convChange:'0%', convUp:true, eventCount:38200,  evtChange:'5.20%', evtUp:false},
+  {name:'view_item_list', users:12300, usersChange:'3.10%', usersUp:false, engagement:'—',               engChange:'0%',   engUp:true,  conversions:0, convChange:'0%', convUp:true, eventCount:32100,  evtChange:'2.40%', evtUp:false},
+]
+
+const EVENT_BAR_COLORS = ['#4DA6FF','#9CCC65','#F9B62A','#A8D8FF','#CE93D8','#FFB74D','#B0BEC5','#80CBC4']
+
+function EventsEventName({search,onSearch}:{search:string;onSearch:(v:string)=>void}){
+  const eventBarData=EVENT_ROWS.slice(0,8).map((r,i)=>({name:r.name,v:r.eventCount,color:EVENT_BAR_COLORS[i]}))
+  // time data scaled to event counts
+  const evtTimeData=TIME_DATA.map(t=>({d:t.d,v:Math.round(t.v*5.8),v2:Math.round(t.v2*5.6)}))
+  const filtered=EVENT_ROWS.filter(r=>r.name.toLowerCase().includes(search.toLowerCase()))
+
+  return(
+    <>
+      {/* Top two charts */}
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
+        {/* Area chart */}
+        <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
+            <span style={{fontSize:13,color:'#555'}}>Event Count</span>
+            <div style={{display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:16,fontWeight:700}}>1.54 M</span><Change val="2.67%" up={false}/></div>
+          </div>
+          <ResponsiveContainer width="100%" height={220}>
+            <AreaChart data={evtTimeData}>
+              <defs>
+                <linearGradient id="ev1" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#48b5ea" stopOpacity={0.2}/><stop offset="95%" stopColor="#48b5ea" stopOpacity={0}/></linearGradient>
+                <linearGradient id="ev2" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#a8d8ff" stopOpacity={0.15}/><stop offset="95%" stopColor="#a8d8ff" stopOpacity={0}/></linearGradient>
+              </defs>
+              <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{fontSize:9,fill:'#999'}}/>
+              <YAxis axisLine={false} tickLine={false} tick={{fontSize:10,fill:'#999'}} tickFormatter={(v:number)=>v>=1000?(v/1000)+'K':String(v)}/>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0"/>
+              <Tooltip contentStyle={{fontSize:11,borderRadius:6}}/>
+              <Area type="monotone" dataKey="v"  stroke="#48b5ea" fill="url(#ev1)" strokeWidth={2} name="This period"/>
+              <Area type="monotone" dataKey="v2" stroke="#a8d8ff" fill="url(#ev2)" strokeWidth={1.5} strokeDasharray="4 2" name="Prev period"/>
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+        {/* Bar chart by event */}
+        <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+            <span style={{fontSize:13,color:'#555'}}>Event Count</span>
+            <div style={{display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:16,fontWeight:700}}>1.54 M</span><Change val="2.67%" up={false}/></div>
+          </div>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={eventBarData} barSize={26}>
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize:9,fill:'#999'}}/>
+              <YAxis axisLine={false} tickLine={false} tick={{fontSize:10,fill:'#999'}} tickFormatter={(v:number)=>v>=1000?(v/1000)+'K':String(v)}/>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false}/>
+              <Tooltip contentStyle={{fontSize:11,borderRadius:6}} formatter={(v:number)=>[v.toLocaleString(),'Event Count']}/>
+              <Bar dataKey="v" radius={[3,3,0,0]}>{eventBarData.map((d,i)=><Cell key={i} fill={d.color}/>)}</Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* KPI cards — 4 cards: Total Users, User Engagement, Conversions, Event Count (highlighted) */}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12,marginBottom:16}}>
+        {[
+          {label:'Total Users',     val:'88,069', change:'0.69%', up:true,  hl:false},
+          {label:'User Engagement', val:'66d 21h 22m 49s', change:'1.65%', up:false, hl:false},
+          {label:'Conversions',     val:'3,610',  change:'21%',   up:false, hl:false},
+          {label:'Event Count',     val:'1.54 M', change:'2.67%', up:false, hl:true},
+        ].map(k=>(
+          <div key={k.label} style={{background:'#fff',border:`${k.hl?2:1}px solid ${k.hl?'#48b5ea':'#e5e5e5'}`,borderRadius:8,padding:'16px 20px'}}>
+            <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+              <span style={{fontSize:13,color:'#555'}}>{k.label}</span>
+              {k.hl?<button style={{background:'none',border:'none',cursor:'pointer',color:'#bbb'}}><MoreHorizontal size={14}/></button>:<Change val={k.change} up={k.up}/>}
+            </div>
+            <p style={{fontSize:28,fontWeight:700,color:'#1a1a1a',letterSpacing:'-0.5px',lineHeight:1.2}}>{k.val}</p>
+            {k.hl&&<div style={{marginTop:6}}><Change val={k.change} up={k.up}/></div>}
+          </div>
+        ))}
+      </div>
+
+      {/* Table */}
+      <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,overflow:'hidden'}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 16px',borderBottom:'1px solid #f0f0f0'}}>
+          <span style={{fontSize:12,color:'#666'}}>Showing {filtered.length} of 45 Rows</span>
+          <div style={{display:'flex',alignItems:'center',gap:8}}>
+            <input value={search} onChange={e=>onSearch(e.target.value)} placeholder="Search" style={{background:'#fafafa',border:'1px solid #e5e5e5',borderRadius:6,padding:'5px 10px',fontSize:12,outline:'none',width:160}}/>
+            <button style={{background:'none',border:'none',cursor:'pointer',color:'#bbb'}}><MoreHorizontal size={14}/></button>
+          </div>
+        </div>
+        <div style={{overflowX:'auto' as const}}>
+          <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:12}}>
+            <thead><tr style={{borderBottom:'1px solid #f0f0f0',background:'#fafafa'}}>
+              {['EVENT NAME','TOTAL USERS','USER ENGAGEMENT','CONVERSIONS','EVENT COUNT ↓'].map(h=>(
+                <th key={h} style={{padding:'9px 14px',textAlign:h==='EVENT NAME'?'left':'right' as any,fontSize:11,fontWeight:600,color:'#888',whiteSpace:'nowrap' as const}}>{h}</th>
+              ))}
+            </tr></thead>
+            <tbody>
+              {filtered.map((row,i)=>(
+                <tr key={row.name} style={{borderBottom:'1px solid #f8f8f8',background:i%2===0?'#fff':'#fafafa'}}>
+                  <td style={{padding:'11px 14px',fontWeight:500,color:'#1a1a1a'}}>{row.name}</td>
+                  <td style={{padding:'11px 14px',textAlign:'right' as const}}>
+                    <div>{row.users.toLocaleString()}</div>
+                    <Change val={row.usersChange} up={row.usersUp}/>
+                  </td>
+                  <td style={{padding:'11px 14px',textAlign:'right' as const,fontSize:12}}>
+                    <div style={{color:'#333'}}>{row.engagement}</div>
+                    {row.engagement!=='—'&&<Change val={row.engChange} up={row.engUp}/>}
+                    {row.engagement==='—'&&<span style={{fontSize:10,fontWeight:600,color:'#999',background:'#f0f0f0',padding:'1px 5px',borderRadius:3}}>0%</span>}
+                  </td>
+                  <td style={{padding:'11px 14px',textAlign:'right' as const}}>
+                    <div>{row.conversions.toFixed(2)}</div>
+                    <span style={{fontSize:10,fontWeight:600,color:'#999',background:'#f0f0f0',padding:'1px 5px',borderRadius:3}}>0%</span>
+                  </td>
+                  <td style={{padding:'11px 14px',textAlign:'right' as const}}>
+                    <div>{row.eventCount.toLocaleString()}</div>
+                    <Change val={row.evtChange} up={row.evtUp}/>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  )
+}
+
 // ── Main export ───────────────────────────────────────────────────────────────
 export default function DrillDownPanel({clientName='Atlanta BeltLine Website',onClose}:DrillDownPanelProps){
   const [activeNav,setActiveNav]=useState('all')
@@ -894,8 +1031,9 @@ export default function DrillDownPanel({clientName='Atlanta BeltLine Website',on
   const isAudience=AUDIENCE_ITEMS.some(a=>a.id===activeNav)
   const isConversion=CONVERSION_ITEMS.some(c=>c.id===activeNav)
   const isPages=PAGES_ITEMS.some(p=>p.id===activeNav)
+  const isEvents=activeNav==='events-name'
   const cd=CHANNEL_DATA[activeNav]||CHANNEL_DATA['all']
-  const activeLabel=[...CHANNELS,...AUDIENCE_ITEMS,...CONVERSION_ITEMS,...PAGES_ITEMS].find(c=>c.id===activeNav)?.label||'All Channels'
+  const activeLabel=[...CHANNELS,...AUDIENCE_ITEMS,...CONVERSION_ITEMS,...PAGES_ITEMS,{id:'events-name',label:'Event Name'}].find(c=>c.id===activeNav)?.label||'All Channels'
 
   function LeftNav(){
     return(
@@ -935,8 +1073,11 @@ export default function DrillDownPanel({clientName='Atlanta BeltLine Website',on
           ))}
           {/* Events */}
           <button onClick={()=>toggleGroup('Events')} style={{width:'100%',display:'flex',alignItems:'center',gap:6,padding:'7px 16px 7px 28px',background:'none',border:'none',cursor:'pointer',textAlign:'left' as const}}>
-            <ChevronRight size={11} style={{color:'#888'}}/><span style={{fontSize:13,fontWeight:500,color:'#333'}}>Events</span>
+            <ChevronDown size={11} style={{color:'#888',transform:expandedGroups.has('Events')?'rotate(0deg)':'rotate(-90deg)',transition:'0.15s'}}/><span style={{fontSize:13,fontWeight:500,color:'#333'}}>Events</span>
           </button>
+          {expandedGroups.has('Events')&&(
+            <button onClick={()=>setActiveNav('events-name')} style={{width:'100%',textAlign:'left' as const,padding:'7px 16px 7px 44px',fontSize:13,cursor:'pointer',border:'none',borderLeft:activeNav==='events-name'?'2px solid #48b5ea':'2px solid transparent',background:activeNav==='events-name'?'#f0f7ff':'transparent',color:activeNav==='events-name'?'#1a85c8':'#555',fontWeight:activeNav==='events-name'?600:400}}>Event Name</button>
+          )}
         </>}
         <button style={{width:'100%',display:'flex',alignItems:'center',gap:8,padding:'10px 16px',background:'none',border:'none',cursor:'pointer'}}>
           <span style={{fontSize:14}}>📱</span><span style={{fontSize:13,fontWeight:600,color:'#1a1a1a',flex:1}}>Social</span><ChevronRight size={12} style={{color:'#999'}}/>
@@ -993,6 +1134,9 @@ export default function DrillDownPanel({clientName='Atlanta BeltLine Website',on
   }
 
   function renderContent(){
+    if(isEvents){
+      return <EventsEventName search={tableSearch} onSearch={setTableSearch}/>
+    }
     if(isPages){
       switch(activeNav){
         case 'pages-all':     return <PagesAll search={tableSearch} onSearch={setTableSearch}/>
