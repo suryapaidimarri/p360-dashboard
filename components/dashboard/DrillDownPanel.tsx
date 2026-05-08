@@ -2120,6 +2120,523 @@ function GaConversions({search,onSearch}:{search:string;onSearch:(v:string)=>voi
 }
 
 
+// ── Demographics: Age ─────────────────────────────────────────────────────────
+function GaDemoAge({search,onSearch}:{search:string;onSearch:(v:string)=>void}){
+  const ageBarData=[
+    {name:'18-24',v:237,color:'#F9B62A'},{name:'25-34',v:661,color:'#4DA6FF'},
+    {name:'35-44',v:552,color:'#9CCC65'},{name:'45-54',v:500,color:'#FFB74D'},
+    {name:'55-64',v:280,color:'#A8D8FF'},{name:'65+',v:50,color:'#CE93D8'},
+    {name:'Unknown',v:1166,color:'#E0E0E0'},
+  ]
+  const ageLineData=GA_CLICKS_DATA.map(t=>({
+    d:t.d,'18-24':Math.round(t.v*0.07),'25-34':Math.round(t.v*0.19),'35-44':Math.round(t.v*0.16),
+    '45-54':Math.round(t.v*0.14),'55-64':Math.round(t.v*0.08),'65+':Math.round(t.v*0.015),'Unknown':Math.round(t.v*0.34),
+  }))
+  const rows=[
+    {age:'18-24',vtc_badge:true,avg_cpc:'$1.85',cpc_ch:'0.74%',cpc_up:false,clicks:237,cl_ch:'1.66%',cl_up:false,cr:'4.64%',cr_ch:'63%',cr_up:false,convs:'11.00',cv_ch:'63%',cv_up:false,cost:'$439.60',co_ch:'0.93%',co_up:false,cpc2:'$39.96',c2_ch:'171%',c2_up:true,imps:2436,im_ch:'10%',im_up:false},
+    {age:'25-34',vtc_badge:true,avg_cpc:'$1.78',cpc_ch:'2.20%',cpc_up:false,clicks:661,cl_ch:'3.08%',cl_up:false,cr:'6.47%',cr_ch:'1.89%',cr_up:true,convs:'42.75',cv_ch:'1.26%',cv_up:false,cost:'$1,173.52',co_ch:'5.21%',co_up:false,cpc2:'$27.45',c2_ch:'3.99%',c2_up:false,imps:5933,im_ch:'5.92%',im_up:false},
+    {age:'35-44',vtc_badge:true,avg_cpc:'$1.75',cpc_ch:'3.24%',cpc_up:false,clicks:552,cl_ch:'3.83%',cl_up:false,cr:'6.75%',cr_ch:'115%',cr_up:true,convs:'37.28',cv_ch:'107%',cv_up:true,cost:'$964.29',co_ch:'6.95%',co_up:false,cpc2:'$25.87',c2_ch:'55%',c2_up:false,imps:5082,im_ch:'5.98%',im_up:false},
+    {age:'45-54',vtc_badge:true,avg_cpc:'$1.78',cpc_ch:'1.40%',cpc_up:false,clicks:500,cl_ch:'2.50%',cl_up:true,cr:'7.20%',cr_ch:'1.10%',cr_up:true,convs:'36.00',cv_ch:'0.80%',cv_up:true,cost:'$890.00',co_ch:'4.20%',co_up:false,cpc2:'$24.72',c2_ch:'2.20%',c2_up:false,imps:4800,im_ch:'4.10%',im_up:false},
+    {age:'55-64',vtc_badge:true,avg_cpc:'$1.72',cpc_ch:'0.90%',cpc_up:false,clicks:280,cl_ch:'2.10%',cl_up:false,cr:'5.36%',cr_ch:'3.20%',cr_up:false,convs:'15.00',cv_ch:'2.80%',cv_up:false,cost:'$481.60',co_ch:'3.10%',co_up:false,cpc2:'$32.11',c2_ch:'0.30%',c2_up:false,imps:3200,im_ch:'6.80%',im_up:false},
+    {age:'65+',vtc_badge:true,avg_cpc:'$1.69',cpc_ch:'1.50%',cpc_up:false,clicks:50,cl_ch:'4.00%',cl_up:false,cr:'8.00%',cr_ch:'2.60%',cr_up:true,convs:'4.00',cv_ch:'1.40%',cv_up:true,cost:'$84.50',co_ch:'2.60%',co_up:false,cpc2:'$21.13',c2_ch:'1.00%',c2_up:false,imps:620,im_ch:'7.20%',im_up:false},
+    {age:'Unknown',vtc_badge:true,avg_cpc:'$1.80',cpc_ch:'1.10%',cpc_up:false,clicks:1166,cl_ch:'1.80%',cl_up:false,cr:'5.83%',cr_ch:'1.20%',cr_up:false,convs:'68.00',cv_ch:'0.90%',cv_up:false,cost:'$2,099.38',co_ch:'2.80%',co_up:false,cpc2:'$30.87',c2_ch:'1.90%',c2_up:false,imps:9756,im_ch:'3.50%',im_up:false},
+  ]
+  return(
+    <>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
+        <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+            <span style={{fontSize:13,color:'#555'}}>Clicks</span>
+            <div style={{display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:16,fontWeight:700}}>3,446</span><Change val="2.16%" up={false}/></div>
+          </div>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={ageBarData} barSize={30}>
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize:9,fill:'#999'}}/>
+              <YAxis axisLine={false} tickLine={false} tick={{fontSize:10,fill:'#999'}} tickFormatter={(v:number)=>v>=1000?(v/1000)+'K':String(v)}/>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false}/>
+              <Tooltip contentStyle={{fontSize:11,borderRadius:6}} formatter={(v:number)=>[v.toLocaleString(),'Clicks']}/>
+              <Bar dataKey="v" radius={[3,3,0,0]}>{ageBarData.map((d,i)=><Cell key={i} fill={d.color}/>)}</Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+            <span style={{fontSize:13,color:'#555'}}>Clicks</span>
+            <div style={{display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:16,fontWeight:700}}>3,446</span><Change val="2.16%" up={false}/></div>
+          </div>
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={ageLineData}>
+              <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{fontSize:9,fill:'#999'}}/>
+              <YAxis axisLine={false} tickLine={false} tick={{fontSize:10,fill:'#999'}}/>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0"/>
+              <Tooltip contentStyle={{fontSize:11,borderRadius:6}}/>
+              <Legend wrapperStyle={{fontSize:9}} iconSize={8}/>
+              {['18-24','25-34','35-44','45-54','55-64','65+','Unknown'].map((k,i)=>(
+                <Line key={k} type="monotone" dataKey={k} stroke={['#F9B62A','#4DA6FF','#9CCC65','#FFB74D','#A8D8FF','#CE93D8','#E0E0E0'][i]} dot={false} strokeWidth={1.5}/>
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+      <GaKpiCards hlCard="Clicks" rows1={[
+        {label:'View-Through Conv.',val:'0',change:'0%',up:true},
+        {label:'Avg CPC',val:'$1.78',change:'1.42%',up:true},
+        {label:'Clicks',val:'3,446',change:'2.16%',up:false},
+        {label:'Conversion Rate',val:'6.17%',change:'0.32%',up:false},
+      ]} rows2={[
+        {label:'Conversions',val:'212.53',change:'2.44%',up:false},
+        {label:'Cost',val:'$6,119.06',change:'3.55%',up:true},
+        {label:'Cost / Conversion',val:'$28.79',change:'1.14%',up:true},
+        {label:'Impressions',val:'31,827',change:'8.93%',up:false},
+      ]}/>
+      <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,overflow:'hidden',marginTop:16}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 16px',borderBottom:'1px solid #f0f0f0'}}>
+          <span style={{fontSize:12,color:'#666'}}>Showing 7 of 7 Rows</span>
+          <input value={search} onChange={e=>onSearch(e.target.value)} placeholder="Search" style={{background:'#fafafa',border:'1px solid #e5e5e5',borderRadius:6,padding:'5px 10px',fontSize:12,outline:'none',width:160}}/>
+        </div>
+        <div style={{overflowX:'auto' as const}}>
+          <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:12}}>
+            <thead><tr style={{borderBottom:'1px solid #f0f0f0',background:'#fafafa'}}>
+              {['AGE ↑','VIEW-THROUGH CONV.','AVG CPC','CLICKS','CONVERSION RATE','CONVERSIONS','COST','COST / CONVERSION','IMPRESSIONS'].map(h=>(
+                <th key={h} style={{padding:'9px 12px',textAlign:h==='AGE ↑'?'left':'right' as any,fontSize:11,fontWeight:600,color:'#888',whiteSpace:'nowrap' as const}}>{h}</th>
+              ))}
+            </tr></thead>
+            <tbody>{rows.filter(r=>r.age.toLowerCase().includes(search.toLowerCase())).map((row,i)=>(
+              <tr key={i} style={{borderBottom:'1px solid #f8f8f8',background:i%2===0?'#fff':'#fafafa'}}>
+                <td style={{padding:'11px 12px',fontWeight:500,color:'#333'}}>{row.age}</td>
+                <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>0</div><span style={{fontSize:10,background:'#f0f0f0',color:'#999',padding:'1px 5px',borderRadius:3}}>0%</span></td>
+                <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.avg_cpc}</div><Change val={row.cpc_ch} up={row.cpc_up}/></td>
+                <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.clicks.toLocaleString()}</div><Change val={row.cl_ch} up={row.cl_up}/></td>
+                <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.cr}</div><Change val={row.cr_ch} up={row.cr_up}/></td>
+                <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.convs}</div><Change val={row.cv_ch} up={row.cv_up}/></td>
+                <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.cost}</div><Change val={row.co_ch} up={row.co_up}/></td>
+                <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.cpc2}</div><Change val={row.c2_ch} up={row.c2_up}/></td>
+                <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.imps.toLocaleString()}</div><Change val={row.im_ch} up={row.im_up}/></td>
+              </tr>
+            ))}</tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  )
+}
+
+// ── Demographics: Gender ──────────────────────────────────────────────────────
+function GaDemoGender({search,onSearch}:{search:string;onSearch:(v:string)=>void}){
+  const donutData=[{name:'Female',value:1250,color:'#f06292'},{name:'Unknown',value:1111,color:'#E0E0E0'},{name:'Male',value:1085,color:'#48b5ea'}]
+  const genderLineData=GA_CLICKS_DATA.map(t=>({d:t.d,Female:Math.round(t.v*0.36),Male:Math.round(t.v*0.31),Unknown:Math.round(t.v*0.32)}))
+  const rows=[
+    {gender:'Female',vtc_badge:true,avg_cpc:'$1.76',cpc_ch:'3.35%',cpc_up:false,clicks:1250,cl_ch:'6.72%',cl_up:false,cr:'6.82%',cr_ch:'14%',cr_up:true,convs:'85.25',cv_ch:'6.73%',cv_up:true,cost:'$2,197.15',co_ch:'9.84%',co_up:false,cpc2:'$25.77',c2_ch:'16%',c2_up:false,imps:11437,im_ch:'8.88%',im_up:false},
+    {gender:'Male',vtc_badge:true,avg_cpc:'$1.76',cpc_ch:'0.11%',cpc_up:false,clicks:1085,cl_ch:'7.96%',cl_up:true,cr:'6.11%',cr_ch:'16%',cr_up:false,convs:'66.28',cv_ch:'9.16%',cv_up:false,cost:'$1,913.62',co_ch:'7.84%',co_up:true,cpc2:'$28.87',c2_ch:'19%',c2_up:false,imps:9055,im_ch:'8.65%',im_up:false},
+    {gender:'Unknown',vtc_badge:true,avg_cpc:'$1.81',cpc_ch:'0.24%',cpc_up:false,clicks:1111,cl_ch:'5.61%',cl_up:false,cr:'5.49%',cr_ch:'0.54%',cr_up:true,convs:'61.00',cv_ch:'6.15%',cv_up:false,cost:'$2,008.29',co_ch:'5.83%',co_up:false,cpc2:'$32.92',c2_ch:'0.34%',c2_up:false,imps:11335,im_ch:'9.04%',im_up:false},
+  ]
+  return(
+    <>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
+        <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}><span style={{fontSize:13,color:'#555'}}>Clicks</span><Change val="2.16%" up={false}/></div>
+          <div style={{display:'flex',alignItems:'center',gap:24}}>
+            <div style={{position:'relative',width:180,height:180,flexShrink:0}}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart><Pie data={donutData} cx="50%" cy="50%" innerRadius={54} outerRadius={82} dataKey="value">{donutData.map((d,i)=><Cell key={i} fill={d.color}/>)}</Pie><Tooltip contentStyle={{fontSize:11,borderRadius:6}} formatter={(v:number)=>[v.toLocaleString(),'Clicks']}/></PieChart>
+              </ResponsiveContainer>
+              <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
+                <span style={{fontSize:18,fontWeight:700}}>3,446</span><span style={{fontSize:10,color:'#999'}}>Clicks</span>
+              </div>
+            </div>
+            <div>{donutData.map(d=><div key={d.name} style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}><div style={{width:10,height:10,borderRadius:'50%',background:d.color}}/><span style={{fontSize:12,color:'#333',flex:1}}>{d.name}</span><span style={{fontSize:12,fontWeight:600}}>{d.value.toLocaleString()}</span></div>)}</div>
+          </div>
+        </div>
+        <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}><span style={{fontSize:13,color:'#555'}}>Clicks</span><div style={{display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:16,fontWeight:700}}>3,446</span><Change val="2.16%" up={false}/></div></div>
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={genderLineData}>
+              <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{fontSize:9,fill:'#999'}}/>
+              <YAxis axisLine={false} tickLine={false} tick={{fontSize:10,fill:'#999'}}/>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0"/>
+              <Tooltip contentStyle={{fontSize:11,borderRadius:6}}/>
+              <Legend wrapperStyle={{fontSize:10}} iconSize={10}/>
+              <Line type="monotone" dataKey="Female" stroke="#f06292" dot={false} strokeWidth={2}/>
+              <Line type="monotone" dataKey="Male" stroke="#48b5ea" dot={false} strokeWidth={2}/>
+              <Line type="monotone" dataKey="Unknown" stroke="#E0E0E0" dot={false} strokeWidth={1.5}/>
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+      <GaKpiCards hlCard="Clicks" rows1={[
+        {label:'View-Through Conv.',val:'0',change:'0%',up:true},
+        {label:'Avg CPC',val:'$1.78',change:'1.42%',up:true},
+        {label:'Clicks',val:'3,446',change:'2.16%',up:false},
+        {label:'Conversion Rate',val:'6.17%',change:'0.32%',up:false},
+      ]} rows2={[
+        {label:'Conversions',val:'212.53',change:'2.44%',up:false},
+        {label:'Cost',val:'$6,119.06',change:'3.55%',up:true},
+        {label:'Cost / Conversion',val:'$28.79',change:'1.14%',up:true},
+        {label:'Impressions',val:'31,827',change:'8.93%',up:false},
+      ]}/>
+      <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,overflow:'hidden',marginTop:16}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 16px',borderBottom:'1px solid #f0f0f0'}}>
+          <span style={{fontSize:12,color:'#666'}}>Showing 3 of 3 Rows</span>
+          <div style={{display:'flex',alignItems:'center',gap:8}}>
+            <input value={search} onChange={e=>onSearch(e.target.value)} placeholder="Search" style={{background:'#fafafa',border:'1px solid #e5e5e5',borderRadius:6,padding:'5px 10px',fontSize:12,outline:'none',width:160}}/>
+            <button style={{background:'none',border:'none',cursor:'pointer',color:'#bbb'}}><MoreHorizontal size={14}/></button>
+          </div>
+        </div>
+        <div style={{overflowX:'auto' as const}}>
+          <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:12}}>
+            <thead><tr style={{borderBottom:'1px solid #f0f0f0',background:'#fafafa'}}>
+              {['GENDER','VIEW-THROUGH CONV.','AVG CPC','CLICKS','CONVERSION RATE','CONVERSIONS','COST','COST / CONVERSION','IMPRESSIONS'].map(h=>(
+                <th key={h} style={{padding:'9px 12px',textAlign:h==='GENDER'?'left':'right' as any,fontSize:11,fontWeight:600,color:'#888',whiteSpace:'nowrap' as const}}>{h}</th>
+              ))}
+            </tr></thead>
+            <tbody>{rows.filter(r=>r.gender.toLowerCase().includes(search.toLowerCase())).map((row,i)=>(
+              <tr key={i} style={{borderBottom:'1px solid #f8f8f8',background:i%2===0?'#fff':'#fafafa'}}>
+                <td style={{padding:'11px 12px',fontWeight:500,color:'#333'}}>{row.gender}</td>
+                <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>0</div><span style={{fontSize:10,background:'#f0f0f0',color:'#999',padding:'1px 5px',borderRadius:3}}>0%</span></td>
+                <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.avg_cpc}</div><Change val={row.cpc_ch} up={row.cpc_up}/></td>
+                <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.clicks.toLocaleString()}</div><Change val={row.cl_ch} up={row.cl_up}/></td>
+                <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.cr}</div><Change val={row.cr_ch} up={row.cr_up}/></td>
+                <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.convs}</div><Change val={row.cv_ch} up={row.cv_up}/></td>
+                <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.cost}</div><Change val={row.co_ch} up={row.co_up}/></td>
+                <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.cpc2}</div><Change val={row.c2_ch} up={row.c2_up}/></td>
+                <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.imps.toLocaleString()}</div><Change val={row.im_ch} up={row.im_up}/></td>
+              </tr>
+            ))}</tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  )
+}
+
+// ── Demographics: Location ────────────────────────────────────────────────────
+function GaDemoLocation({search,onSearch}:{search:string;onSearch:(v:string)=>void}){
+  const [locTab,setLocTab]=useState<'Country'|'Region'|'City'>('Country')
+  return(
+    <>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
+        <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}><span style={{fontSize:13,color:'#555'}}>Clicks</span><div style={{display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:16,fontWeight:700}}>3,446</span><Change val="2.16%" up={false}/></div></div>
+          <div style={{position:'relative',width:'100%',height:220,background:'#f8f9fa',borderRadius:6,overflow:'hidden',display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <svg viewBox="0 0 800 400" style={{width:'100%',height:'100%'}}>
+              <path d="M 80 80 L 190 70 L 225 105 L 215 185 L 172 225 L 118 205 L 78 162 Z" fill="#4DA6FF" opacity="0.85"/>
+              <path d="M 148 245 L 202 232 L 222 305 L 202 375 L 160 385 L 138 322 Z" fill="#c8e6ff" opacity="0.5"/>
+              <path d="M 338 58 L 422 52 L 444 102 L 402 132 L 350 122 L 330 90 Z" fill="#c8e6ff" opacity="0.4"/>
+              <path d="M 448 48 L 652 42 L 682 132 L 602 202 L 478 192 L 438 132 Z" fill="#c8e6ff" opacity="0.3"/>
+            </svg>
+          </div>
+        </div>
+        <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}><span style={{fontSize:13,color:'#555'}}>Clicks</span><div style={{display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:16,fontWeight:700}}>3,446</span><Change val="2.16%" up={false}/></div></div>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={[{name:'United States',v:3446,color:'#4DA6FF'}]} barSize={60}>
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize:9,fill:'#999'}}/>
+              <YAxis axisLine={false} tickLine={false} tick={{fontSize:10,fill:'#999'}} tickFormatter={(v:number)=>v>=1000?(v/1000)+'K':String(v)}/>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false}/>
+              <Tooltip contentStyle={{fontSize:11,borderRadius:6}}/>
+              <Bar dataKey="v" radius={[3,3,0,0]}><Cell fill="#4DA6FF"/></Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+      <GaKpiCards hlCard="Clicks" rows1={[
+        {label:'View-Through Conv.',val:'0',change:'0%',up:true},
+        {label:'Avg CPC',val:'$1.78',change:'1.42%',up:true},
+        {label:'Clicks',val:'3,446',change:'2.16%',up:false},
+        {label:'Conversion Rate',val:'6.17%',change:'0.32%',up:false},
+      ]} rows2={[
+        {label:'Conversions',val:'212.53',change:'2.44%',up:false},
+        {label:'Cost',val:'$6,119.06',change:'3.55%',up:true},
+        {label:'Cost / Conversion',val:'$28.79',change:'1.14%',up:true},
+        {label:'Impressions',val:'31,827',change:'8.93%',up:false},
+      ]}/>
+      <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,overflow:'hidden',marginTop:16}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 16px',borderBottom:'1px solid #f0f0f0'}}>
+          <div style={{display:'flex',alignItems:'center',gap:6}}>
+            {(['Country','Region','City'] as const).map(t=>(
+              <button key={t} onClick={()=>setLocTab(t)} style={{padding:'5px 12px',fontSize:12,borderRadius:6,cursor:'pointer',border:'none',background:locTab===t?'#48b5ea':'#f0f0f0',color:locTab===t?'#fff':'#555',fontWeight:locTab===t?600:400}}>{t}</button>
+            ))}
+            <span style={{fontSize:12,color:'#999',marginLeft:8}}>Showing 1 of 1 Rows</span>
+          </div>
+          <input value={search} onChange={e=>onSearch(e.target.value)} placeholder="Search" style={{background:'#fafafa',border:'1px solid #e5e5e5',borderRadius:6,padding:'5px 10px',fontSize:12,outline:'none',width:160}}/>
+        </div>
+        <div style={{overflowX:'auto' as const}}>
+          <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:12}}>
+            <thead><tr style={{borderBottom:'1px solid #f0f0f0',background:'#fafafa'}}>
+              {[locTab.toUpperCase(),'VIEW-THROUGH CONV.','AVG CPC','CLICKS','CONVERSION RATE','CONVERSIONS','COST','COST / CONVERSION','IMPRESSIONS'].map(h=>(
+                <th key={h} style={{padding:'9px 12px',textAlign:h===locTab.toUpperCase()?'left':'right' as any,fontSize:11,fontWeight:600,color:'#888',whiteSpace:'nowrap' as const}}>{h}</th>
+              ))}
+            </tr></thead>
+            <tbody>
+              <tr style={{borderBottom:'1px solid #f8f8f8'}}>
+                <td style={{padding:'11px 12px',fontWeight:500,color:'#333',display:'flex',alignItems:'center',gap:6}}><span>🇺🇸</span> United States</td>
+                <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>0</div><span style={{fontSize:10,background:'#f0f0f0',color:'#999',padding:'1px 5px',borderRadius:3}}>0%</span></td>
+                <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>$1.78</div><Change val="1.42%" up={true}/></td>
+                <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>3,446</div><Change val="2.16%" up={false}/></td>
+                <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>6.17%</div><Change val="2.15%" up={true}/></td>
+                <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>212.53</div><Change val="0.14%" up={true}/></td>
+                <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>$6,119.06</div><Change val="3.55%" up:={true}/></td>
+                <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>$28.79</div><Change val="3.41%" up={false}/></td>
+                <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>31,827</div><Change val="8.93%" up={false}/></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  )
+}
+
+// ── Demographics: Devices ─────────────────────────────────────────────────────
+function GaDemoDevices({search,onSearch}:{search:string;onSearch:(v:string)=>void}){
+  const donutData=[{name:'Desktop',value:2683,color:'#9CCC65'},{name:'Mobile',value:752,color:'#4DA6FF'},{name:'Tablet',value:11,color:'#F9B62A'}]
+  const deviceLineData=GA_CLICKS_DATA.map(t=>({d:t.d,Desktop:Math.round(t.v*0.78),Mobile:Math.round(t.v*0.22),Tablet:Math.round(t.v*0.003)}))
+  const rows=[
+    {device:'Desktop',vtc_badge:true,avg_cpc:'$1.78',cpc_ch:'1.38%',cpc_up:false,clicks:2683,cl_ch:'3.91%',cl_up:true,cr:'7.33%',cr_ch:'7.10%',cr_up:true,convs:'196.53',cv_ch:'3.58%',cv_up:false,cost:'$4,772.68',co_ch:'2.48%',co_up:true,cpc2:'$24.28',c2_ch:'6.29%',c2_up:false,imps:23185,im_ch:'3.04%',im_up:false},
+    {device:'Mobile',vtc_badge:true,avg_cpc:'$1.77',cpc_ch:'1.83%',cpc_up:false,clicks:752,cl_ch:'18%',cl_up:true,cr:'2.13%',cr_ch:'40%',cr_up:false,convs:'16.00',cv_ch:'14%',cv_up:false,cost:'$1,328.11',co_ch:'20%',co_up:false,cpc2:'$83.01',c2_ch:'30%',c2_up:false,imps:8433,im_ch:'22%',im_up:false},
+    {device:'Tablet',vtc_badge:true,avg_cpc:'$1.66',cpc_ch:'3.80%',cpc_up:false,clicks:11,cl_ch:'45%',cl_up:true,cr:'0.00%',cr_ch:'0%',cr_up:true,convs:'0.00',cv_ch:'0%',cv_up:true,cost:'$18.27',co_ch:'43%',co_up:false,cpc2:'$0.00',c2_ch:'0%',c2_up:true,imps:209,im_ch:'6.28%',im_up:false},
+  ]
+  return(
+    <>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
+        <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}><span style={{fontSize:13,color:'#555'}}>Clicks</span><Change val="2.16%" up={false}/></div>
+          <div style={{display:'flex',alignItems:'center',gap:24}}>
+            <div style={{position:'relative',width:180,height:180,flexShrink:0}}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart><Pie data={donutData} cx="50%" cy="50%" innerRadius={54} outerRadius={82} dataKey="value">{donutData.map((d,i)=><Cell key={i} fill={d.color}/>)}</Pie><Tooltip contentStyle={{fontSize:11,borderRadius:6}} formatter={(v:number)=>[v.toLocaleString(),'Clicks']}/></PieChart>
+              </ResponsiveContainer>
+              <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
+                <span style={{fontSize:18,fontWeight:700}}>3,446</span><span style={{fontSize:10,color:'#999'}}>Clicks</span>
+              </div>
+            </div>
+            <div>{donutData.map(d=><div key={d.name} style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}><div style={{width:10,height:10,borderRadius:'50%',background:d.color}}/><span style={{fontSize:12,color:'#333',flex:1}}>{d.name}</span><span style={{fontSize:12,fontWeight:600}}>{d.value.toLocaleString()}</span></div>)}</div>
+          </div>
+        </div>
+        <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}><span style={{fontSize:13,color:'#555'}}>Clicks</span><div style={{display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:16,fontWeight:700}}>3,446</span><Change val="2.16%" up={false}/></div></div>
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={deviceLineData}>
+              <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{fontSize:9,fill:'#999'}}/>
+              <YAxis axisLine={false} tickLine={false} tick={{fontSize:10,fill:'#999'}}/>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0"/>
+              <Tooltip contentStyle={{fontSize:11,borderRadius:6}}/>
+              <Legend wrapperStyle={{fontSize:10}} iconSize={10}/>
+              <Line type="monotone" dataKey="Desktop" stroke="#9CCC65" dot={false} strokeWidth={2}/>
+              <Line type="monotone" dataKey="Mobile" stroke="#4DA6FF" dot={false} strokeWidth={2}/>
+              <Line type="monotone" dataKey="Tablet" stroke="#F9B62A" dot={false} strokeWidth={1.5}/>
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+      <GaKpiCards hlCard="Clicks" rows1={[
+        {label:'View-Through Conv.',val:'0',change:'0%',up:true},
+        {label:'Avg CPC',val:'$1.78',change:'1.42%',up:true},
+        {label:'Clicks',val:'3,446',change:'2.16%',up:false},
+        {label:'Conversion Rate',val:'6.17%',change:'0.32%',up:false},
+      ]} rows2={[
+        {label:'Conversions',val:'212.53',change:'2.44%',up:false},
+        {label:'Cost',val:'$6,119.06',change:'3.55%',up:true},
+        {label:'Cost / Conversion',val:'$28.79',change:'1.14%',up:true},
+        {label:'Impressions',val:'31,827',change:'8.93%',up:false},
+      ]}/>
+      <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,overflow:'hidden',marginTop:16}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 16px',borderBottom:'1px solid #f0f0f0'}}>
+          <span style={{fontSize:12,color:'#666'}}>Showing 3 of 3 Rows</span>
+          <div style={{display:'flex',alignItems:'center',gap:8}}>
+            <input value={search} onChange={e=>onSearch(e.target.value)} placeholder="Search" style={{background:'#fafafa',border:'1px solid #e5e5e5',borderRadius:6,padding:'5px 10px',fontSize:12,outline:'none',width:160}}/>
+            <button style={{background:'none',border:'none',cursor:'pointer',color:'#bbb'}}><MoreHorizontal size={14}/></button>
+          </div>
+        </div>
+        <div style={{overflowX:'auto' as const}}>
+          <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:12}}>
+            <thead><tr style={{borderBottom:'1px solid #f0f0f0',background:'#fafafa'}}>
+              {['DEVICE','VIEW-THROUGH CONV.','AVG CPC','CLICKS','CONVERSION RATE','CONVERSIONS','COST','COST / CONVERSION','IMPRESSIONS'].map(h=>(
+                <th key={h} style={{padding:'9px 12px',textAlign:h==='DEVICE'?'left':'right' as any,fontSize:11,fontWeight:600,color:'#888',whiteSpace:'nowrap' as const}}>{h}</th>
+              ))}
+            </tr></thead>
+            <tbody>{rows.filter(r=>r.device.toLowerCase().includes(search.toLowerCase())).map((row,i)=>(
+              <tr key={i} style={{borderBottom:'1px solid #f8f8f8',background:i%2===0?'#fff':'#fafafa'}}>
+                <td style={{padding:'11px 12px',fontWeight:500,color:'#333'}}>{row.device}</td>
+                <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>0</div><span style={{fontSize:10,background:'#f0f0f0',color:'#999',padding:'1px 5px',borderRadius:3}}>0%</span></td>
+                <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.avg_cpc}</div><Change val={row.cpc_ch} up={row.cpc_up}/></td>
+                <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.clicks.toLocaleString()}</div><Change val={row.cl_ch} up={row.cl_up}/></td>
+                <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.cr}</div><Change val={row.cr_ch} up={row.cr_up}/></td>
+                <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.convs}</div><Change val={row.cv_ch} up={row.cv_up}/></td>
+                <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.cost}</div><Change val={row.co_ch} up={row.co_up}/></td>
+                <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.cpc2}</div><Change val={row.c2_ch} up={row.c2_up}/></td>
+                <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.imps.toLocaleString()}</div><Change val={row.im_ch} up={row.im_up}/></td>
+              </tr>
+            ))}</tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  )
+}
+
+// ── Calls ─────────────────────────────────────────────────────────────────────
+function GaCalls(){
+  return(
+    <>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
+        {[{title:'Calls'},{title:'Top Call Types'}].map(({title},i)=>(
+          <div key={i} style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+            <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+              <span style={{fontSize:13,color:'#555'}}>{title}</span>
+              <div style={{display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:16,fontWeight:700}}>0</span><span style={{fontSize:11,fontWeight:600,color:'#999',background:'#f0f0f0',padding:'2px 6px',borderRadius:4}}>0%</span></div>
+            </div>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:190,color:'#bbb',fontSize:13}}>No Calls found for your date range</div>
+          </div>
+        ))}
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12,marginBottom:16}}>
+        {[
+          {label:'Calls',val:'0',hl:true},{label:'Missed',val:'0',hl:false},
+          {label:'Received',val:'0',hl:false},{label:'Unknown',val:'0',hl:false},
+        ].map(k=>(
+          <div key={k.label} style={{background:'#fff',border:`${k.hl?2:1}px solid ${k.hl?'#48b5ea':'#e5e5e5'}`,borderRadius:8,padding:'16px 20px'}}>
+            <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+              <span style={{fontSize:13,color:'#555'}}>{k.label}</span>
+              <span style={{fontSize:11,fontWeight:600,color:'#999',background:'#f0f0f0',padding:'2px 6px',borderRadius:4}}>0%</span>
+            </div>
+            <p style={{fontSize:28,fontWeight:700,color:'#1a1a1a',letterSpacing:'-0.5px'}}>{k.val}</p>
+          </div>
+        ))}
+      </div>
+      <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,overflow:'hidden'}}>
+        <div style={{padding:'10px 16px',borderBottom:'1px solid #f0f0f0'}}><span style={{fontSize:12,color:'#666'}}>No results</span></div>
+        <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:12}}>
+          <thead><tr style={{borderBottom:'1px solid #f0f0f0',background:'#fafafa'}}>
+            {['DATE','STATUS','CALL DURATION','START TIME','END TIME','CALL TYPE','CALL SOURCE'].map(h=>(
+              <th key={h} style={{padding:'9px 12px',textAlign:'left' as const,fontSize:11,fontWeight:600,color:'#888',whiteSpace:'nowrap' as const}}>{h}</th>
+            ))}
+          </tr></thead>
+          <tbody><tr><td colSpan={7} style={{padding:'50px 20px',textAlign:'center' as const}}>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:10,color:'#bbb'}}>
+              <div style={{width:40,height:40,borderRadius:'50%',background:'#f0f0f0',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18}}>📄</div>
+              <span style={{fontSize:13}}>No data available in the table</span>
+            </div>
+          </td></tr></tbody>
+        </table>
+      </div>
+    </>
+  )
+}
+
+// ── Placements ────────────────────────────────────────────────────────────────
+function GaPlacements(){
+  return(
+    <>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
+        <GaAreaChart metric="Clicks" value="3,446" change="2.16%" up={false} data={GA_CLICKS_DATA}/>
+        <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}><span style={{fontSize:13,color:'#555'}}>Top Placements</span></div>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:190,color:'#bbb',fontSize:13}}>No Clicks found for your date range</div>
+        </div>
+      </div>
+      <GaKpiCards hlCard="Clicks" rows1={[
+        {label:'View-Through Conv.',val:'0',change:'0%',up:true},
+        {label:'Avg CPC',val:'$1.78',change:'1.42%',up:true},
+        {label:'Clicks',val:'3,446',change:'2.16%',up:false},
+        {label:'Conversion Rate',val:'6.17%',change:'0.32%',up:false},
+      ]} rows2={[
+        {label:'Conversions',val:'212.53',change:'2.44%',up:false},
+        {label:'Cost',val:'$6,119.06',change:'3.55%',up:true},
+        {label:'Cost / Conversion',val:'$28.79',change:'1.14%',up:true},
+        {label:'Impressions',val:'31,827',change:'8.93%',up:false},
+      ]}/>
+      <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,overflow:'hidden',marginTop:16}}>
+        <div style={{padding:'10px 16px',borderBottom:'1px solid #f0f0f0',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <span style={{fontSize:12,color:'#666'}}>No results</span>
+          <input placeholder="Search" style={{background:'#fafafa',border:'1px solid #e5e5e5',borderRadius:6,padding:'5px 10px',fontSize:12,outline:'none',width:160}}/>
+        </div>
+        <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:12}}>
+          <thead><tr style={{borderBottom:'1px solid #f0f0f0',background:'#fafafa'}}>
+            {['PLACEMENT','VIEW-THROUGH CONV.','AVG CPC','CLICKS ↓','CONVERSION RATE','CONVERSIONS','COST','COST / CONVERSION','IMPRESSIONS'].map(h=>(
+              <th key={h} style={{padding:'9px 12px',textAlign:h==='PLACEMENT'?'left':'right' as any,fontSize:11,fontWeight:600,color:'#888',whiteSpace:'nowrap' as const}}>{h}</th>
+            ))}
+          </tr></thead>
+          <tbody><tr><td colSpan={9} style={{padding:'50px 20px',textAlign:'center' as const}}>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:10,color:'#bbb'}}>
+              <div style={{width:40,height:40,borderRadius:'50%',background:'#f0f0f0',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18}}>📄</div>
+              <span style={{fontSize:13}}>No data available in the table</span>
+            </div>
+          </td></tr></tbody>
+        </table>
+      </div>
+    </>
+  )
+}
+
+// ── Videos ────────────────────────────────────────────────────────────────────
+function GaVideos(){
+  return(
+    <>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
+        {[{title:'Clicks'},{title:'Top Videos'}].map(({title},i)=>(
+          <div key={i} style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+            <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+              <span style={{fontSize:13,color:'#555'}}>{title}</span>
+              <div style={{display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:16,fontWeight:700}}>0</span><span style={{fontSize:11,fontWeight:600,color:'#999',background:'#f0f0f0',padding:'2px 6px',borderRadius:4}}>0%</span></div>
+            </div>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:190,color:'#bbb',fontSize:13}}>No Clicks found for your date range</div>
+          </div>
+        ))}
+      </div>
+      {/* Videos has different KPI layout: 4 top + 4 bottom, Clicks highlighted in bottom row */}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12,marginBottom:12}}>
+        {[
+          {label:'Avg CPC',val:'$0.00',badge:true},{label:'Impressions',val:'0',badge:true},
+          {label:'Cost / Conversion',val:'$0.00',badge:true},{label:'Cost',val:'$0.00',badge:true},
+        ].map(k=>(
+          <div key={k.label} style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:'16px 20px'}}>
+            <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+              <span style={{fontSize:13,color:'#555'}}>{k.label}</span>
+              <span style={{fontSize:11,fontWeight:600,color:'#999',background:'#f0f0f0',padding:'2px 6px',borderRadius:4}}>0%</span>
+            </div>
+            <p style={{fontSize:28,fontWeight:700,color:'#1a1a1a',letterSpacing:'-0.5px'}}>{k.val}</p>
+          </div>
+        ))}
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12,marginBottom:16}}>
+        {[
+          {label:'Conversions',val:'0',badge:true,hl:false},{label:'Conversion Rate',val:'0%',badge:true,hl:false},
+          {label:'Clicks',val:'0',badge:true,hl:true},{label:'View-Through Conv.',val:'0',badge:true,hl:false},
+        ].map(k=>(
+          <div key={k.label} style={{background:'#fff',border:`${k.hl?2:1}px solid ${k.hl?'#48b5ea':'#e5e5e5'}`,borderRadius:8,padding:'16px 20px'}}>
+            <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+              <span style={{fontSize:13,color:'#555'}}>{k.label}</span>
+              <span style={{fontSize:11,fontWeight:600,color:'#999',background:'#f0f0f0',padding:'2px 6px',borderRadius:4}}>0%</span>
+            </div>
+            <p style={{fontSize:28,fontWeight:700,color:'#1a1a1a',letterSpacing:'-0.5px'}}>{k.val}</p>
+          </div>
+        ))}
+      </div>
+      <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,overflow:'hidden'}}>
+        <div style={{padding:'10px 16px',borderBottom:'1px solid #f0f0f0',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <span style={{fontSize:12,color:'#666'}}>No results</span>
+          <input placeholder="Search" style={{background:'#fafafa',border:'1px solid #e5e5e5',borderRadius:6,padding:'5px 10px',fontSize:12,outline:'none',width:160}}/>
+        </div>
+        <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:12}}>
+          <thead><tr style={{borderBottom:'1px solid #f0f0f0',background:'#fafafa'}}>
+            {['VIDEO TITLE','VIDEO DURATION','AVG CPC','IMPRESSIONS','COST / CONVERSION','COST','CONVERSIONS','CONVERSION RATE','CLICKS ↓','VIEW-THROUGH CONV.'].map(h=>(
+              <th key={h} style={{padding:'9px 12px',textAlign:h==='VIDEO TITLE'?'left':'right' as any,fontSize:11,fontWeight:600,color:'#888',whiteSpace:'nowrap' as const}}>{h}</th>
+            ))}
+          </tr></thead>
+          <tbody><tr><td colSpan={10} style={{padding:'50px 20px',textAlign:'center' as const}}>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:10,color:'#bbb'}}>
+              <div style={{width:40,height:40,borderRadius:'50%',background:'#f0f0f0',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18}}>📄</div>
+              <span style={{fontSize:13}}>No data available in the table</span>
+            </div>
+          </td></tr></tbody>
+        </table>
+      </div>
+    </>
+  )
+}
+
+
 // ── Main export ───────────────────────────────────────────────────────────────
 export default function DrillDownPanel({clientName='Atlanta BeltLine Website',onClose}:DrillDownPanelProps){
   const [activeNav,setActiveNav]=useState('all')
@@ -2133,9 +2650,10 @@ export default function DrillDownPanel({clientName='Atlanta BeltLine Website',on
   const isPages=PAGES_ITEMS.some(p=>p.id===activeNav)
   const isEvents=activeNav==='events-name'
   const isSocial=FACEBOOK_ITEMS.some(f=>f.id===activeNav)
-  const isPaidAds=[...GOOGLE_ADS_ITEMS,...KEYWORD_ITEMS].some(g=>g.id===activeNav)
+  const GA_ALL_IDS=[...GOOGLE_ADS_ITEMS,...KEYWORD_ITEMS,'ga-demo-age','ga-demo-gender','ga-demo-location','ga-demo-devices']
+  const isPaidAds=GA_ALL_IDS.some(g=>(typeof g==='string'?g:g.id)===activeNav)
   const cd=CHANNEL_DATA[activeNav]||CHANNEL_DATA['all']
-  const activeLabel=[...CHANNELS,...AUDIENCE_ITEMS,...CONVERSION_ITEMS,...PAGES_ITEMS,{id:'events-name',label:'Event Name'},...FACEBOOK_ITEMS,...GOOGLE_ADS_ITEMS,...KEYWORD_ITEMS].find(c=>c.id===activeNav)?.label||'All Channels'
+  const activeLabel=[...CHANNELS,...AUDIENCE_ITEMS,...CONVERSION_ITEMS,...PAGES_ITEMS,{id:'events-name',label:'Event Name'},...FACEBOOK_ITEMS,...GOOGLE_ADS_ITEMS,...KEYWORD_ITEMS,{id:'ga-demo-age',label:'Age'},{id:'ga-demo-gender',label:'Gender'},{id:'ga-demo-location',label:'Locale'},{id:'ga-demo-devices',label:'Devices'}].find(c=>c.id===activeNav)?.label||'All Channels'
 
   function LeftNav(){
     return(
@@ -2233,8 +2751,11 @@ export default function DrillDownPanel({clientName='Atlanta BeltLine Website',on
               <button onClick={()=>setActiveNav('ga-conversions')} style={{width:'100%',textAlign:'left' as const,padding:'6px 16px 6px 52px',fontSize:13,cursor:'pointer',border:'none',borderLeft:activeNav==='ga-conversions'?'2px solid #48b5ea':'2px solid transparent',background:activeNav==='ga-conversions'?'#f0f7ff':'transparent',color:activeNav==='ga-conversions'?'#1a85c8':'#555',fontWeight:activeNav==='ga-conversions'?600:400}}>Conversions</button>
               {/* Demographics - expandable */}
               <button onClick={()=>toggleGroup('GADemo')} style={{width:'100%',display:'flex',alignItems:'center',gap:6,padding:'6px 16px 6px 40px',background:'none',border:'none',cursor:'pointer',textAlign:'left' as const}}>
-                <ChevronRight size={10} style={{color:'#888'}}/><span style={{fontSize:13,color:'#555'}}>Demographics</span>
+                <ChevronDown size={10} style={{color:'#888',transform:expandedGroups.has('GADemo')?'rotate(0deg)':'rotate(-90deg)',transition:'0.15s'}}/><span style={{fontSize:13,color:'#555'}}>Demographics</span>
               </button>
+              {expandedGroups.has('GADemo')&&['ga-demo-age','ga-demo-gender','ga-demo-location','ga-demo-devices'].map((id,i)=>(
+                <button key={id} onClick={()=>setActiveNav(id)} style={{width:'100%',textAlign:'left' as const,padding:'6px 16px 6px 64px',fontSize:13,cursor:'pointer',border:'none',borderLeft:activeNav===id?'2px solid #48b5ea':'2px solid transparent',background:activeNav===id?'#f0f7ff':'transparent',color:activeNav===id?'#1a85c8':'#555',fontWeight:activeNav===id?600:400}}>{['Age','Gender','Location','Devices'][i]}</button>
+              ))}
               {/* Calls, Placements, Videos */}
               {['ga-calls','ga-placements','ga-videos'].map(id=>(
                 <button key={id} onClick={()=>setActiveNav(id)} style={{width:'100%',textAlign:'left' as const,padding:'6px 16px 6px 52px',fontSize:13,cursor:'pointer',border:'none',borderLeft:activeNav===id?'2px solid #48b5ea':'2px solid transparent',background:activeNav===id?'#f0f7ff':'transparent',color:activeNav===id?'#1a85c8':'#555',fontWeight:activeNav===id?600:400}}>{id==='ga-calls'?'Calls':id==='ga-placements'?'Placements':'Videos'}</button>
@@ -2308,7 +2829,14 @@ export default function DrillDownPanel({clientName='Atlanta BeltLine Website',on
         case 'ga-kw-terms':    return <GaSearchTerms search={tableSearch} onSearch={setTableSearch}/>
         case 'ga-shopping':    return <GaEmptyView metric="shopping"/>
         case 'ga-ads':         return <GaAds search={tableSearch} onSearch={setTableSearch}/>
-        case 'ga-conversions': return <GaConversions search={tableSearch} onSearch={setTableSearch}/>
+        case 'ga-conversions':    return <GaConversions search={tableSearch} onSearch={setTableSearch}/>
+        case 'ga-demo-age':        return <GaDemoAge search={tableSearch} onSearch={setTableSearch}/>
+        case 'ga-demo-gender':     return <GaDemoGender search={tableSearch} onSearch={setTableSearch}/>
+        case 'ga-demo-location':   return <GaDemoLocation search={tableSearch} onSearch={setTableSearch}/>
+        case 'ga-demo-devices':    return <GaDemoDevices search={tableSearch} onSearch={setTableSearch}/>
+        case 'ga-calls':           return <GaCalls/>
+        case 'ga-placements':      return <GaPlacements/>
+        case 'ga-videos':          return <GaVideos/>
         default: return <GaCampaigns search={tableSearch} onSearch={setTableSearch}/>
       }})()
       return <div style={{flex:1,overflowY:'auto',padding:20,background:'#f8f9fa'}}>{inner}</div>
