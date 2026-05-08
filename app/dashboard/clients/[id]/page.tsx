@@ -21,6 +21,41 @@ const CHART_TYPES = [
   {id:'map',label:'Map',icon:'🌐'},{id:'pie',label:'Pie',icon:'🥧'},
   {id:'sparkline',label:'Sparkline',icon:'〰'},{id:'area',label:'Area',icon:'📉'},
 ]
+
+const ALL_INTEGRATIONS = [
+  { name:'Bing Webmaster Tools', icon:'🔷', bg:'#e3f2fd', connected:true },
+  { name:'Facebook',             icon:'📘', bg:'#e3f2fd', connected:true },
+  { name:'Facebook Ads',         icon:'📘', bg:'#e3f2fd', connected:true },
+  { name:'Google Ads',           icon:'🎯', bg:'#fce4ec', connected:true },
+  { name:'Google Analytics 4',   icon:'📊', bg:'#fff3e0', connected:true },
+  { name:'Google Lighthouse',    icon:'🌐', bg:'#e8f5e9', connected:true },
+  { name:'Google Search Console',icon:'🔍', bg:'#e3f2fd', connected:true },
+  { name:'Google Sheets',        icon:'📗', bg:'#e8f5e9', connected:true },
+  { name:'LinkedIn Ads',         icon:'💼', bg:'#e3f2fd', connected:true },
+  { name:'Semrush - Backlinks',  icon:'🔴', bg:'#fce4ec', connected:true },
+  { name:'Semrush - Projects',   icon:'🔴', bg:'#fce4ec', connected:true },
+  { name:'ActiveCampaign',       icon:'✉', bg:'#f3f4f6', connected:false },
+  { name:'AdRoll',               icon:'⬡', bg:'#f3f4f6', connected:false },
+  { name:'Adform',               icon:'Ⓐ', bg:'#f3f4f6', connected:false },
+  { name:'Ahrefs',               icon:'🅰', bg:'#f3f4f6', connected:false },
+  { name:'Amazon Ads',           icon:'🅰', bg:'#f3f4f6', connected:false },
+  { name:'Apple Search Ads',     icon:'🍎', bg:'#f3f4f6', connected:false },
+  { name:'Appsflyer',            icon:'📱', bg:'#f3f4f6', connected:false },
+  { name:'Capterra',             icon:'⚑', bg:'#f3f4f6', connected:false },
+  { name:'Criteo',               icon:'Ⓒ', bg:'#f3f4f6', connected:false },
+  { name:'DV360',                icon:'📺', bg:'#f3f4f6', connected:false },
+  { name:'HubSpot',              icon:'🟠', bg:'#f3f4f6', connected:false },
+  { name:'Instagram',            icon:'📷', bg:'#f3f4f6', connected:false },
+  { name:'Klaviyo',              icon:'✉', bg:'#f3f4f6', connected:false },
+  { name:'Mailchimp',            icon:'🐒', bg:'#f3f4f6', connected:false },
+  { name:'Pinterest',            icon:'📌', bg:'#f3f4f6', connected:false },
+  { name:'Shopify',              icon:'🛍', bg:'#f3f4f6', connected:false },
+  { name:'Snapchat',             icon:'👻', bg:'#f3f4f6', connected:false },
+  { name:'TikTok',               icon:'🎵', bg:'#f3f4f6', connected:false },
+  { name:'Twitter/X Ads',        icon:'𝕏', bg:'#f3f4f6', connected:false },
+  { name:'YouTube',              icon:'▶', bg:'#fce4ec', connected:false },
+]
+
 const INTEGRATIONS = [
   {name:'Bing Webmaster Tools',connected:true},{name:'Facebook Ads',connected:true},
   {name:'Google Ads',connected:true},{name:'Google Analytics 4',connected:true},
@@ -84,7 +119,6 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [mappingSite, setMappingSite] = useState('')
   const [savingMapping, setSavingMapping] = useState(false)
   const [mappingSaved, setMappingSaved] = useState(false)
-  const [showAddDashModal, setShowAddDashModal] = useState(false)
   const [dashboards, setDashboards] = useState(DASHBOARDS)
   const [widgets, setWidgets] = useState<Widget[]>([
     {id:'w1',title:'Total Sessions',dataSource:'google-analytics-4 / traffic-analytics',chartType:'sparkline',tooltip:'Total sessions during the selected period.',color:'white',value:'120.5 K',change:'29%',up:true},
@@ -389,7 +423,14 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
         {/* Left panel */}
         <div style={{ width:220, minWidth:220, borderRight:'1px solid #e5e5e5', display:'flex', flexDirection:'column', background:'#fff' }}>
           <div style={{ padding:12 }}>
-            <button onClick={() => setShowAddDashModal(true)}
+            <button onClick={() => {
+                const newName = 'Untitled Dashboard'
+                setDashboards(prev => [...prev, newName])
+                setActiveDash(newName)
+                setEditMode(true)
+                setActiveRightPanel('integrations')
+                setEditingWidget(null)
+              }}
               style={{ width:'100%', display:'flex', alignItems:'center', gap:6, background:'#48b5ea', border:'none', borderRadius:6, padding:'8px 12px', color:'#fff', fontSize:12, fontWeight:600, cursor:'pointer' }}>
               <Plus size={13}/> {editMode ? 'Add blank dashboard' : 'Add Dashboard'}
             </button>
@@ -423,7 +464,28 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
             {connection?.connected && !loadingData && <span style={{ fontSize:11, color:'#20BB71', marginLeft:8 }}>● Live GA4 data</span>}
           </div>
           <div style={{ padding:16 }}>
-            <div style={{ background:'#48b5ea', borderRadius:8, padding:'18px 24px', marginBottom:12 }}>
+            {activeDash.startsWith('Untitled') ? (
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:500, flexDirection:'column', gap:8 }}>
+                <p style={{ fontSize:14, color:'#999', marginBottom:4 }}>Start building by dragging widgets</p>
+                <p style={{ fontSize:13, color:'#bbb', marginBottom:20 }}>or</p>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, maxWidth:560 }}>
+                  {ADD_DASHBOARD_OPTIONS.map(opt => (
+                    <button key={opt.title}
+                      style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:10, padding:'24px 20px', background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, cursor:'pointer', textAlign:'center' as const }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor='#48b5ea'; (e.currentTarget as HTMLButtonElement).style.background='#f8fcff' }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor='#e5e5e5'; (e.currentTarget as HTMLButtonElement).style.background='#fff' }}
+                    >
+                      <div style={{ width:48, height:48, borderRadius:8, background:'#f8f9fa', border:'1px solid #e5e5e5', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20 }}>{opt.icon}</div>
+                      <div>
+                        <p style={{ fontSize:13, fontWeight:600, color:'#1a1a1a', marginBottom:4 }}>{opt.title}</p>
+                        <p style={{ fontSize:11, color:'#999', lineHeight:1.5 }}>{opt.desc}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+            <><div style={{ background:'#48b5ea', borderRadius:8, padding:'18px 24px', marginBottom:12 }}>
               <h2 style={{ fontSize:20, fontWeight:700, color:'#fff' }}>Website Performance</h2>
               {connection?.connected && <p style={{ fontSize:11, color:'rgba(255,255,255,0.8)', marginTop:4 }}>Real-time data from {connection.email}</p>}
             </div>
@@ -518,6 +580,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                 <AreaChart data={sessionData}><defs><linearGradient id="vg" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#48b5ea" stopOpacity={0.3}/><stop offset="95%" stopColor="#48b5ea" stopOpacity={0}/></linearGradient></defs><XAxis dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'#999' }}/><YAxis axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'#999' }}/><CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0"/><Tooltip contentStyle={{ fontSize:10, borderRadius:4 }}/><Area type="monotone" dataKey="v" stroke="#48b5ea" fill="url(#vg)" strokeWidth={2}/></AreaChart>
               </ResponsiveContainer>
             </ChartCard>
+            </>)}
           </div>
         </div>
 
@@ -620,19 +683,24 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                 )}
                 {activeRightPanel==='integrations' && (
                   <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
-                    <div style={{ padding:12, borderBottom:'1px solid #f0f0f0' }}>
-                      <div style={{ display:'flex', alignItems:'center', gap:8, background:'#f5f5f5', border:'1px solid #e5e5e5', borderRadius:6, padding:'8px 12px' }}>
-                        <span style={{ color:'#999' }}>🔍</span>
+                    <div style={{ padding:'10px 12px', borderBottom:'1px solid #f0f0f0' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:8, background:'#f5f5f5', border:'1px solid #e5e5e5', borderRadius:6, padding:'7px 10px', marginBottom:8 }}>
+                        <span style={{ color:'#999', fontSize:13 }}>🔍</span>
                         <input value={integrationSearch} onChange={e => setIntegrationSearch(e.target.value)} placeholder="Search" style={{ background:'transparent', border:'none', outline:'none', fontSize:13, color:'#333', width:'100%' }}/>
+                      </div>
+                      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                        <span style={{ fontSize:12, fontWeight:600, color:'#333' }}>All Integrations</span>
+                        <span style={{ color:'#999', fontSize:16 }}>⌄</span>
                       </div>
                     </div>
                     <div style={{ flex:1, overflowY:'auto' }}>
-                      {INTEGRATIONS.filter(i => i.name.toLowerCase().includes(integrationSearch.toLowerCase())).map(i => (
-                        <div key={i.name} style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px', borderBottom:'1px solid #f5f5f5', cursor:'pointer' }}>
-                          <div style={{ width:28, height:28, borderRadius:'50%', background:i.connected?'#e3f2fd':'#f0f0f0', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:700, color:i.connected?'#1565c0':'#999', flexShrink:0 }}>{i.name[0]}</div>
-                          <span style={{ flex:1, fontSize:13, color:i.connected?'#1a1a1a':'#999' }}>{i.name}</span>
-                          {!i.connected && <span style={{ fontSize:12, color:'#48b5ea', fontWeight:600 }}>Connect</span>}
-                          <span style={{ color:'#ccc' }}>›</span>
+                      {ALL_INTEGRATIONS.filter((i:any) => i.name.toLowerCase().includes(integrationSearch.toLowerCase())).map((i:any) => (
+                        <div key={i.name} style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 14px', borderBottom:'1px solid #f5f5f5', cursor:'pointer' }}
+                          onMouseEnter={e=>(e.currentTarget as HTMLDivElement).style.background='#f8f9fa'}
+                          onMouseLeave={e=>(e.currentTarget as HTMLDivElement).style.background='transparent'}>
+                          <div style={{ width:22, height:22, borderRadius:4, background:i.bg||'#f0f0f0', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, flexShrink:0 }}>{i.icon}</div>
+                          <span style={{ flex:1, fontSize:13, color:i.connected?'#1a1a1a':'#888' }}>{i.name}</span>
+                          <span style={{ color:'#ccc', fontSize:14 }}>›</span>
                         </div>
                       ))}
                     </div>
@@ -728,53 +796,6 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
         </div>
       )}
 
-      {/* ── Add Dashboard Modal ── */}
-      {showAddDashModal && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:300, padding:16 }}
-          onClick={() => setShowAddDashModal(false)}>
-          <div style={{ background:'#fff', borderRadius:12, width:'100%', maxWidth:560, overflow:'hidden', boxShadow:'0 20px 60px rgba(0,0,0,0.2)' }}
-            onClick={e => e.stopPropagation()}>
-            {/* Header */}
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'18px 24px', borderBottom:'1px solid #e5e5e5' }}>
-              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                <div style={{ width:28, height:28, borderRadius:'50%', overflow:'hidden', background:'#f0f0f0', flexShrink:0 }}>
-                  <img src={`https://logo.clearbit.com/${clientDomain}`} alt="" style={{ width:'100%', height:'100%', objectFit:'contain' }} onError={e=>(e.currentTarget.style.display='none')}/>
-                </div>
-                <div>
-                  <p style={{ fontSize:14, fontWeight:700, color:'#1a1a1a', lineHeight:1.2 }}>{clientName}</p>
-                  <p style={{ fontSize:11, color:'#999' }}>Client</p>
-                </div>
-              </div>
-              <button onClick={() => setShowAddDashModal(false)} style={{ background:'none', border:'none', cursor:'pointer', color:'#999', fontSize:20, lineHeight:1 }}>✕</button>
-            </div>
-            {/* 2×2 options grid */}
-            <div style={{ padding:24 }}>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-                {ADD_DASHBOARD_OPTIONS.map(opt => (
-                  <button key={opt.title}
-                    onClick={() => {
-                      setShowAddDashModal(false)
-                      const newName = 'Untitled Dashboard'
-                      setDashboards(prev => [...prev, newName])
-                      setActiveDash(newName)
-                      setEditMode(true)
-                    }}
-                    style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:12, padding:'28px 20px', background:'#fafafa', border:'2px solid #e5e5e5', borderRadius:10, cursor:'pointer', textAlign:'center' as const, transition:'all 0.15s' }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor='#48b5ea'; (e.currentTarget as HTMLButtonElement).style.background='#f0f9ff' }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor='#e5e5e5'; (e.currentTarget as HTMLButtonElement).style.background='#fafafa' }}
-                  >
-                    <div style={{ width:52, height:52, borderRadius:10, background:'#fff', border:'1px solid #e5e5e5', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>{opt.icon}</div>
-                    <div>
-                      <p style={{ fontSize:14, fontWeight:600, color:'#1a1a1a', marginBottom:6 }}>{opt.title}</p>
-                      <p style={{ fontSize:12, color:'#888', lineHeight:1.5 }}>{opt.desc}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Map Data Sources Modal */}
       {showMappingModal && (
