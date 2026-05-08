@@ -2637,6 +2637,293 @@ function GaVideos(){
 }
 
 
+
+// ── FACEBOOK ADS items ────────────────────────────────────────────────────────
+const FB_ADS_ITEMS = [
+  { id:'fba-campaigns',    label:'Campaigns' },
+  { id:'fba-adsets',       label:'Ad Sets' },
+  { id:'fba-ads',          label:'Ads' },
+  { id:'fba-demographics', label:'Demographics' },
+  { id:'fba-custom-conv',  label:'Custom Conversions' },
+  { id:'fba-custom-events',label:'Custom Events' },
+]
+
+const FBA_ACCOUNT = 'ABP Meta Ads 3'
+
+// Shared empty 3-panel top row for Facebook Ads
+function FbaTopPanels({panel1,panel2,panel3}:{panel1:string;panel2:string;panel3:string}){
+  return(
+    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:16,marginBottom:16}}>
+      {[{title:panel1,val:'—',badge:true},{title:panel2,val:'—',badge:true},{title:panel3,val:'',badge:true}].map((p,i)=>(
+        <div key={i} style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+            <span style={{fontSize:13,color:'#555'}}>{p.title}</span>
+            <div style={{display:'flex',alignItems:'center',gap:8}}>
+              <span style={{fontSize:13,color:'#bbb'}}>—</span>
+              <span style={{fontSize:11,fontWeight:600,color:'#ef4444',background:'#fef2f2',padding:'2px 6px',borderRadius:4}}>▼ 100%</span>
+              <div style={{width:16,height:16,borderRadius:'50%',background:'#48b5ea',display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,color:'#fff',cursor:'pointer'}}>?</div>
+            </div>
+          </div>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:160,color:'#bbb',fontSize:13}}>No Clicks found for your date range</div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// Shared 4 KPI cards for Facebook Ads (Clicks highlighted)
+function FbaKpiCards(){
+  return(
+    <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12,marginBottom:16}}>
+      {[
+        {label:'Clicks',val:'—',hl:true},{label:'Impressions',val:'—',hl:false},
+        {label:'Average CPC',val:'—',hl:false},{label:'CTR',val:'—',hl:false},
+      ].map(k=>(
+        <div key={k.label} style={{background:'#fff',border:`${k.hl?2:1}px solid ${k.hl?'#48b5ea':'#e5e5e5'}`,borderRadius:8,padding:'16px 20px'}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+            <span style={{fontSize:13,color:'#555'}}>{k.label}</span>
+            <div style={{display:'flex',alignItems:'center',gap:6}}>
+              <span style={{fontSize:11,fontWeight:600,color:'#ef4444',background:'#fef2f2',padding:'2px 6px',borderRadius:4}}>▼ 100%</span>
+              {k.hl&&<div style={{width:16,height:16,borderRadius:'50%',background:'#48b5ea',display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,color:'#fff',cursor:'pointer'}}>?</div>}
+            </div>
+          </div>
+          <div style={{display:'flex',alignItems:'center',gap:8,marginTop:4}}>
+            <div style={{width:24,height:2,background:'#bbb',borderRadius:1}}/>
+            {k.hl&&<div style={{width:16,height:16,borderRadius:'50%',background:'#48b5ea',display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,color:'#fff'}}>?</div>}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function FbaEmptyTable({cols,search,onSearch}:{cols:string[];search:string;onSearch:(v:string)=>void}){
+  return(
+    <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,overflow:'hidden'}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 16px',borderBottom:'1px solid #f0f0f0'}}>
+        <span style={{fontSize:12,color:'#666'}}>No results</span>
+        <div style={{display:'flex',alignItems:'center',gap:8}}>
+          <input value={search} onChange={e=>onSearch(e.target.value)} placeholder="Search" style={{background:'#fafafa',border:'1px solid #e5e5e5',borderRadius:6,padding:'5px 10px',fontSize:12,outline:'none',width:160}}/>
+          <button style={{background:'none',border:'none',cursor:'pointer',color:'#bbb'}}><MoreHorizontal size={14}/></button>
+        </div>
+      </div>
+      <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:12}}>
+        <thead><tr style={{borderBottom:'1px solid #f0f0f0',background:'#fafafa'}}>
+          {cols.map(h=>(
+            <th key={h} style={{padding:'9px 14px',textAlign:h===cols[0]?'left':'right' as any,fontSize:11,fontWeight:600,color:'#888',whiteSpace:'nowrap' as const}}>{h}</th>
+          ))}
+        </tr></thead>
+        <tbody><tr><td colSpan={cols.length} style={{padding:'50px 20px',textAlign:'center' as const}}>
+          <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:10,color:'#bbb'}}>
+            <div style={{width:40,height:40,borderRadius:'50%',background:'#f0f0f0',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18}}>📄</div>
+            <span style={{fontSize:13}}>No data available in the table</span>
+          </div>
+        </td></tr></tbody>
+      </table>
+    </div>
+  )
+}
+
+function FbaCampaigns({search,onSearch}:{search:string;onSearch:(v:string)=>void}){
+  return(
+    <>
+      <FbaTopPanels panel1="Clicks" panel2="Clicks" panel3="Publisher Platforms"/>
+      <FbaKpiCards/>
+      <FbaEmptyTable cols={['CAMPAIGN','CLICKS ↓','IMPRESSIONS','AVERAGE CPC','CTR']} search={search} onSearch={onSearch}/>
+    </>
+  )
+}
+
+function FbaAdSets({search,onSearch}:{search:string;onSearch:(v:string)=>void}){
+  return(
+    <>
+      <FbaTopPanels panel1="Clicks" panel2="Clicks" panel3="Publisher Platforms"/>
+      <FbaKpiCards/>
+      <FbaEmptyTable cols={['CAMPAIGN','AD SET','CLICKS ↓','IMPRESSIONS','AVERAGE CPC','CTR']} search={search} onSearch={onSearch}/>
+    </>
+  )
+}
+
+function FbaAds({search,onSearch}:{search:string;onSearch:(v:string)=>void}){
+  return(
+    <>
+      <FbaTopPanels panel1="Clicks" panel2="Clicks" panel3="Publisher Platforms"/>
+      <FbaKpiCards/>
+      <FbaEmptyTable cols={['CAMPAIGN','AD','AD SET','CLICKS ↓','IMPRESSIONS','AVERAGE CPC','CTR']} search={search} onSearch={onSearch}/>
+    </>
+  )
+}
+
+function FbaDemographics({search,onSearch}:{search:string;onSearch:(v:string)=>void}){
+  const [tab,setTab]=useState<'Country'|'Region'>('Country')
+  return(
+    <>
+      <FbaTopPanels panel1="Gender" panel2="Clicks" panel3="Age"/>
+      <FbaKpiCards/>
+      <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,overflow:'hidden'}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 16px',borderBottom:'1px solid #f0f0f0'}}>
+          <div style={{display:'flex',alignItems:'center',gap:6}}>
+            {(['Country','Region'] as const).map(t=>(
+              <button key={t} onClick={()=>setTab(t)} style={{padding:'5px 12px',fontSize:12,borderRadius:6,cursor:'pointer',border:'none',background:tab===t?'#48b5ea':'#f0f0f0',color:tab===t?'#fff':'#555',fontWeight:tab===t?600:400}}>{t}</button>
+            ))}
+            <span style={{fontSize:12,color:'#999',marginLeft:8}}>No results</span>
+          </div>
+          <input value={search} onChange={e=>onSearch(e.target.value)} placeholder="Search" style={{background:'#fafafa',border:'1px solid #e5e5e5',borderRadius:6,padding:'5px 10px',fontSize:12,outline:'none',width:160}}/>
+        </div>
+        <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:12}}>
+          <thead><tr style={{borderBottom:'1px solid #f0f0f0',background:'#fafafa'}}>
+            {[tab.toUpperCase(),'CLICKS ↓','IMPRESSIONS','AVERAGE CPC','CTR'].map(h=>(
+              <th key={h} style={{padding:'9px 14px',textAlign:h===tab.toUpperCase()?'left':'right' as any,fontSize:11,fontWeight:600,color:'#888'}}>{h}</th>
+            ))}
+          </tr></thead>
+          <tbody><tr><td colSpan={5} style={{padding:'50px 20px',textAlign:'center' as const}}>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:10,color:'#bbb'}}>
+              <div style={{width:40,height:40,borderRadius:'50%',background:'#f0f0f0',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18}}>📄</div>
+              <span style={{fontSize:13}}>No data available in the table</span>
+            </div>
+          </td></tr></tbody>
+        </table>
+      </div>
+    </>
+  )
+}
+
+function FbaCustomConversions(){
+  const eventsData=[
+    {d:'1 Apr',v:0},{d:'5 Apr',v:0},{d:'9 Apr',v:2},{d:'13 Apr',v:80},{d:'17 Apr',v:28},
+    {d:'20 Apr',v:45},{d:'22 Apr',v:35},{d:'25 Apr',v:30},{d:'27 Apr',v:20},{d:'29 Apr',v:18},
+  ]
+  return(
+    <>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:16,marginBottom:16}}>
+        {/* Events line chart */}
+        <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
+            <span style={{fontSize:13,color:'#555'}}>Events</span>
+            <div style={{display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:16,fontWeight:700}}>459</span><Change val="100%" up={true}/></div>
+          </div>
+          <ResponsiveContainer width="100%" height={160}>
+            <AreaChart data={eventsData}>
+              <defs><linearGradient id="fbaev1" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#48b5ea" stopOpacity={0.2}/><stop offset="95%" stopColor="#48b5ea" stopOpacity={0}/></linearGradient></defs>
+              <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{fontSize:9,fill:'#999'}}/>
+              <YAxis axisLine={false} tickLine={false} tick={{fontSize:10,fill:'#999'}}/>
+              <Tooltip contentStyle={{fontSize:11,borderRadius:6}}/>
+              <Area type="monotone" dataKey="v" stroke="#48b5ea" fill="url(#fbaev1)" strokeWidth={2}/>
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+        {/* Conversions empty */}
+        <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+            <span style={{fontSize:13,color:'#555'}}>Conversions</span>
+            <div style={{display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:13,color:'#bbb'}}>—</span><span style={{fontSize:11,fontWeight:600,color:'#ef4444',background:'#fef2f2',padding:'2px 6px',borderRadius:4}}>▼ 100%</span><div style={{width:16,height:16,borderRadius:'50%',background:'#48b5ea',display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,color:'#fff'}}>?</div></div>
+          </div>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:150,color:'#bbb',fontSize:13}}>No Conversions found for your date range</div>
+        </div>
+        {/* Events empty */}
+        <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+            <span style={{fontSize:13,color:'#555'}}>Events</span>
+            <div style={{display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:13,fontWeight:700}}>0%</span></div>
+          </div>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:150,color:'#bbb',fontSize:13}}>No Events found for your date range</div>
+        </div>
+      </div>
+      {/* Table */}
+      <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,overflow:'hidden'}}>
+        <div style={{padding:'10px 16px',borderBottom:'1px solid #f0f0f0'}}>
+          <span style={{fontSize:12,color:'#666'}}>Showing 2 of 2 Rows</span>
+        </div>
+        <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:12}}>
+          <thead><tr style={{borderBottom:'1px solid #f0f0f0',background:'#fafafa'}}>
+            {['CONVERSION NAME','EVENT TYPE','SOURCE TYPE','LAST OCCURRED','EVENTS','CONVERSIONS','COST PER CONVERSION'].map(h=>(
+              <th key={h} style={{padding:'9px 14px',textAlign:h==='CONVERSION NAME'?'left':'right' as any,fontSize:11,fontWeight:600,color:'#888',whiteSpace:'nowrap' as const}}>{h}</th>
+            ))}
+          </tr></thead>
+          <tbody>
+            {[
+              {name:'Free Fitness Classes 02',type:'other',src:'pixel',last:'May 8, 2026 12:47 PM',events:0,events_ch:'0%',events_up:true,convs:'—',cost:'—'},
+              {name:'Outbound Resident Workshop Attendance Clicks',type:'other',src:'pixel',last:'May 8, 2026 1:50 PM',events:459,events_ch:'100%',events_up:true,convs:'—',cost:'—'},
+            ].map((row,i)=>(
+              <tr key={i} style={{borderBottom:'1px solid #f8f8f8',background:i%2===0?'#fff':'#fafafa'}}>
+                <td style={{padding:'12px 14px',fontWeight:500,color:'#333'}}>{row.name}</td>
+                <td style={{padding:'12px 14px',textAlign:'right' as const,color:'#555'}}>{row.type}</td>
+                <td style={{padding:'12px 14px',textAlign:'right' as const,color:'#555'}}>{row.src}</td>
+                <td style={{padding:'12px 14px',textAlign:'right' as const,color:'#555'}}>{row.last}</td>
+                <td style={{padding:'12px 14px',textAlign:'right' as const}}>
+                  <div>{row.events}</div>
+                  <span style={{fontSize:10,fontWeight:600,color:row.events_up?'#22c55e':'#ef4444',background:row.events_up?'#f0fdf4':'#fef2f2',padding:'1px 5px',borderRadius:3}}>{row.events_up?'▲':'▼'} {row.events_ch}</span>
+                </td>
+                <td style={{padding:'12px 14px',textAlign:'right' as const,color:'#bbb'}}>{row.convs}</td>
+                <td style={{padding:'12px 14px',textAlign:'right' as const,color:'#bbb'}}>{row.cost}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  )
+}
+
+function FbaCustomEvents(){
+  const evLineData=[
+    {d:'Resident_Workshop_Attendance_Clicks',v:459},{d:'__missing_event',v:0},
+  ]
+  return(
+    <>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
+        {/* Conversions empty */}
+        <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+            <span style={{fontSize:13,color:'#555'}}>Conversions</span>
+            <div style={{display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:13,color:'#bbb'}}>—</span><span style={{fontSize:11,fontWeight:600,color:'#999',background:'#f0f0f0',padding:'2px 6px',borderRadius:4}}>0%</span><div style={{width:16,height:16,borderRadius:'50%',background:'#48b5ea',display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,color:'#fff'}}>?</div></div>
+          </div>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:180,color:'#bbb',fontSize:13}}>No Conversions found for your date range</div>
+        </div>
+        {/* Conversions bar with event names */}
+        <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+            <span style={{fontSize:13,color:'#555'}}>Conversions</span>
+            <div style={{display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:16,fontWeight:700}}>0</span><span style={{fontSize:11,fontWeight:600,color:'#999',background:'#f0f0f0',padding:'2px 6px',borderRadius:4}}>0%</span></div>
+          </div>
+          <div style={{padding:'16px 0'}}>
+            {[{label:'Resident_Workshop_Attendance_Clicks',color:'#48b5ea'},{label:'__missing_event',color:'#F9B62A'}].map((item,i)=>(
+              <div key={i} style={{marginBottom:16}}>
+                <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
+                  <span style={{fontSize:11,color:'#333',flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' as const,paddingRight:8}}>{item.label}</span>
+                </div>
+                <div style={{height:3,background:'#f0f0f0',borderRadius:2}}>
+                  <div style={{height:'100%',width:'2px',background:item.color,borderRadius:2}}/>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      {/* Table */}
+      <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,overflow:'hidden'}}>
+        <div style={{padding:'10px 16px',borderBottom:'1px solid #f0f0f0'}}>
+          <span style={{fontSize:12,color:'#666'}}>No results</span>
+        </div>
+        <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:12}}>
+          <thead><tr style={{borderBottom:'1px solid #f0f0f0',background:'#fafafa'}}>
+            {['CAMPAIGN','CUSTOM EVENT','EVENTS','CONVERSIONS','COST PER CONVERSION'].map(h=>(
+              <th key={h} style={{padding:'9px 14px',textAlign:h==='CAMPAIGN'?'left':'right' as any,fontSize:11,fontWeight:600,color:'#888',whiteSpace:'nowrap' as const}}>{h}</th>
+            ))}
+          </tr></thead>
+          <tbody><tr><td colSpan={5} style={{padding:'50px 20px',textAlign:'center' as const}}>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:10,color:'#bbb'}}>
+              <div style={{width:40,height:40,borderRadius:'50%',background:'#f0f0f0',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18}}>📄</div>
+              <span style={{fontSize:13}}>No data available in the table</span>
+            </div>
+          </td></tr></tbody>
+        </table>
+      </div>
+    </>
+  )
+}
+
+
 // ── Main export ───────────────────────────────────────────────────────────────
 export default function DrillDownPanel({clientName='Atlanta BeltLine Website',onClose}:DrillDownPanelProps){
   const [activeNav,setActiveNav]=useState('all')
@@ -2650,10 +2937,10 @@ export default function DrillDownPanel({clientName='Atlanta BeltLine Website',on
   const isPages=PAGES_ITEMS.some(p=>p.id===activeNav)
   const isEvents=activeNav==='events-name'
   const isSocial=FACEBOOK_ITEMS.some(f=>f.id===activeNav)
-  const GA_ALL_IDS=[...GOOGLE_ADS_ITEMS,...KEYWORD_ITEMS,'ga-demo-age','ga-demo-gender','ga-demo-location','ga-demo-devices']
+  const GA_ALL_IDS=[...GOOGLE_ADS_ITEMS,...KEYWORD_ITEMS,'ga-demo-age','ga-demo-gender','ga-demo-location','ga-demo-devices',...FB_ADS_ITEMS]
   const isPaidAds=GA_ALL_IDS.some(g=>(typeof g==='string'?g:g.id)===activeNav)
   const cd=CHANNEL_DATA[activeNav]||CHANNEL_DATA['all']
-  const activeLabel=[...CHANNELS,...AUDIENCE_ITEMS,...CONVERSION_ITEMS,...PAGES_ITEMS,{id:'events-name',label:'Event Name'},...FACEBOOK_ITEMS,...GOOGLE_ADS_ITEMS,...KEYWORD_ITEMS,{id:'ga-demo-age',label:'Age'},{id:'ga-demo-gender',label:'Gender'},{id:'ga-demo-location',label:'Locale'},{id:'ga-demo-devices',label:'Devices'}].find(c=>c.id===activeNav)?.label||'All Channels'
+  const activeLabel=[...CHANNELS,...AUDIENCE_ITEMS,...CONVERSION_ITEMS,...PAGES_ITEMS,{id:'events-name',label:'Event Name'},...FACEBOOK_ITEMS,...GOOGLE_ADS_ITEMS,...KEYWORD_ITEMS,{id:'ga-demo-age',label:'Age'},{id:'ga-demo-gender',label:'Gender'},{id:'ga-demo-location',label:'Locale'},{id:'ga-demo-devices',label:'Devices'},...FB_ADS_ITEMS].find(c=>c.id===activeNav)?.label||'All Channels'
 
   function LeftNav(){
     return(
@@ -2762,9 +3049,13 @@ export default function DrillDownPanel({clientName='Atlanta BeltLine Website',on
               ))}
             </>}
             {/* Facebook Ads */}
-            <button style={{width:'100%',display:'flex',alignItems:'center',gap:8,padding:'7px 16px 7px 24px',background:'none',border:'none',cursor:'pointer'}}>
-              <span style={{fontSize:12}}>📘</span><span style={{fontSize:13,fontWeight:500,color:'#333',flex:1}}>Facebook Ads</span><ChevronRight size={11} style={{color:'#999'}}/>
+            <button onClick={()=>toggleGroup('FBAds')} style={{width:'100%',display:'flex',alignItems:'center',gap:8,padding:'7px 16px 7px 24px',background:'none',border:'none',cursor:'pointer',textAlign:'left' as const}}>
+              <span style={{fontSize:12}}>📘</span><span style={{fontSize:13,fontWeight:500,color:'#333',flex:1}}>Facebook Ads</span>
+              <ChevronDown size={11} style={{color:'#999',transform:expandedGroups.has('FBAds')?'rotate(0deg)':'rotate(-90deg)',transition:'0.15s'}}/>
             </button>
+            {expandedGroups.has('FBAds')&&FB_ADS_ITEMS.map(item=>(
+              <button key={item.id} onClick={()=>setActiveNav(item.id)} style={{width:'100%',textAlign:'left' as const,padding:'6px 16px 6px 44px',fontSize:13,cursor:'pointer',border:'none',borderLeft:activeNav===item.id?'2px solid #48b5ea':'2px solid transparent',background:activeNav===item.id?'#f0f7ff':'transparent',color:activeNav===item.id?'#1a85c8':'#555',fontWeight:activeNav===item.id?600:400}}>{item.label}</button>
+            ))}
             {/* LinkedIn Ads */}
             <button style={{width:'100%',display:'flex',alignItems:'center',gap:8,padding:'7px 16px 7px 24px',background:'none',border:'none',cursor:'pointer'}}>
               <span style={{fontSize:12}}>💼</span><span style={{fontSize:13,fontWeight:500,color:'#333',flex:1}}>LinkedIn Ads</span><ChevronRight size={11} style={{color:'#999'}}/>
@@ -2837,6 +3128,12 @@ export default function DrillDownPanel({clientName='Atlanta BeltLine Website',on
         case 'ga-calls':           return <GaCalls/>
         case 'ga-placements':      return <GaPlacements/>
         case 'ga-videos':          return <GaVideos/>
+        case 'fba-campaigns':    return <FbaCampaigns search={tableSearch} onSearch={setTableSearch}/>
+        case 'fba-adsets':       return <FbaAdSets search={tableSearch} onSearch={setTableSearch}/>
+        case 'fba-ads':          return <FbaAds search={tableSearch} onSearch={setTableSearch}/>
+        case 'fba-demographics': return <FbaDemographics search={tableSearch} onSearch={setTableSearch}/>
+        case 'fba-custom-conv':  return <FbaCustomConversions/>
+        case 'fba-custom-events':return <FbaCustomEvents/>
         default: return <GaCampaigns search={tableSearch} onSearch={setTableSearch}/>
       }})()
       return <div style={{flex:1,overflowY:'auto',padding:20,background:'#f8f9fa'}}>{inner}</div>
