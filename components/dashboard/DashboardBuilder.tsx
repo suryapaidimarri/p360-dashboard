@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { X, Plus, RotateCcw, RotateCw, Monitor, Smartphone, ChevronDown, ChevronRight, Search } from 'lucide-react'
 
 // ── Data ─────────────────────────────────────────────────────────────────────
@@ -303,9 +303,24 @@ function StepPickName({ template, onContinue }: { template:string; onContinue:(n
 
 // ── Main DashboardBuilder ─────────────────────────────────────────────────────
 
-interface Props { clientName:string; clientDomain:string; onClose:()=>void }
+interface Props { clientName:string; clientDomain:string; clientId?:string; onClose:()=>void }
 
-export default function DashboardBuilder({ clientName, clientDomain, onClose }: Props) {
+export default function DashboardBuilder({ clientName: initialName, clientDomain: initialDomain, clientId, onClose }: Props) {
+  const [clientName, setClientName] = useState(initialName||'')
+  const [clientDomain, setClientDomain] = useState(initialDomain||'')
+
+  // Load client info if name not provided yet
+  useEffect(()=>{
+    if(!clientName&&clientId){
+      import('@/lib/supabase/client').then(({createClient})=>{
+        createClient().from('clients').select('name,domain').eq('id',clientId).single()
+          .then(({data})=>{ if(data){ setClientName(data.name); setClientDomain(data.domain||'') } })
+      }).catch(()=>{})
+    } else {
+      if(initialName) setClientName(initialName)
+      if(initialDomain) setClientDomain(initialDomain)
+    }
+  },[clientId,initialName,initialDomain])
   const [liveData, setLiveData] = useState(true)
   const [activeRight, setActiveRight] = useState('integrations')
   const [intSearch, setIntSearch] = useState('')
@@ -357,13 +372,14 @@ export default function DashboardBuilder({ clientName, clientDomain, onClose }: 
       }}>
         <span style={{fontSize:15,fontWeight:700,color:'#1a1a1a'}}>Dashboard</span>
         <div style={{display:'flex',alignItems:'center',gap:8,marginLeft:4}}>
-          <div style={{width:24,height:24,borderRadius:'50%',overflow:'hidden',background:'#f0f0f0',flexShrink:0,border:'1px solid #e5e5e5'}}>
+          <div style={{width:28,height:28,borderRadius:'50%',overflow:'hidden',background:'#e0e0e0',flexShrink:0,border:'1px solid #d0d0d0',display:'flex',alignItems:'center',justifyContent:'center'}}>
             <img src={`https://logo.clearbit.com/${clientDomain}`} alt=""
               style={{width:'100%',height:'100%',objectFit:'contain'}}
-              onError={e=>(e.currentTarget.style.display='none')}/>
+              onError={e=>{e.currentTarget.style.display='none'}}/>
+            {!clientDomain&&<span style={{fontSize:11,fontWeight:700,color:'#888'}}>{clientName?clientName[0]:''}</span>}
           </div>
-          <span style={{fontSize:14,fontWeight:600,color:'#1a1a1a'}}>{clientName}</span>
-          <span style={{fontSize:11,background:'#e8f4fd',color:'#1a85c8',padding:'2px 10px',borderRadius:12,fontWeight:500}}>Client</span>
+          <span style={{fontSize:14,fontWeight:700,color:'#1a1a1a'}}>{clientName||'Client'}</span>
+          <span style={{fontSize:11,background:'#e8f4fd',color:'#1a85c8',padding:'3px 10px',borderRadius:12,fontWeight:600,letterSpacing:'0.02em'}}>Client</span>
         </div>
         <div style={{display:'flex',alignItems:'center',gap:6,marginLeft:'auto'}}>
           <div style={{display:'flex',gap:1,background:'#f5f5f5',border:'1px solid #e5e5e5',borderRadius:6,padding:2}}>
