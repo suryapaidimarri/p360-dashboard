@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react'
 import { ChevronRight, Sparkles, Settings, Calendar, ChevronDown, Plus, MoreHorizontal, Maximize2, X, Grip, RotateCcw, RotateCw, Monitor, Smartphone, ChevronLeft, RefreshCw, CheckCircle2 } from 'lucide-react'
 import Link from 'next/link'
 import { BarChart, Bar, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
-import DrillDownPanel from '@/components/dashboard/DrillDownPanel'
 
 const DASHBOARDS = ['Website Performance','Paid Media','Organic + AI Search','Donations Trend','oiijuyuh']
 const DATA_SOURCES = ['SEO','Analytics','Social','Paid Ads']
@@ -49,6 +48,13 @@ function formatNum(n: number) {
   return n.toString()
 }
 
+const ADD_DASHBOARD_OPTIONS = [
+  { icon:'🧩', title:'Add a page template', desc:'Choose from a ready-made template or one of your saved pages' },
+  { icon:'✦',  title:'Build a page using AI', desc:"Tell AI what you're trying to achieve, and watch it build your page" },
+  { icon:'⧉',  title:'Clone existing page', desc:'Copy a page from another page' },
+  { icon:'⊞',  title:'Smart Dashboard', desc:'Generate a dashboard from your connected integrations' },
+]
+
 export default function ClientWorkspace({ params }: { params: { id: string } }) {
   const clientId = params.id
   const [activeTab, setActiveTab] = useState('Dashboards')
@@ -59,6 +65,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [editingWidget, setEditingWidget] = useState<Widget|null>(null)
   const [editTab, setEditTab] = useState<'General'|'Data'|'Display'>('General')
   const [drillWidget, setDrillWidget] = useState<Widget|null>(null)
+  const [drillChannel, setDrillChannel] = useState('All')
   const [openMenu, setOpenMenu] = useState<string|null>(null)
   const [activeRightPanel, setActiveRightPanel] = useState<string|null>(null)
   const [integrationSearch, setIntegrationSearch] = useState('')
@@ -77,6 +84,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [mappingSite, setMappingSite] = useState('')
   const [savingMapping, setSavingMapping] = useState(false)
   const [mappingSaved, setMappingSaved] = useState(false)
+  const [showAddDashModal, setShowAddDashModal] = useState(false)
+  const [dashboards, setDashboards] = useState(DASHBOARDS)
   const [widgets, setWidgets] = useState<Widget[]>([
     {id:'w1',title:'Total Sessions',dataSource:'google-analytics-4 / traffic-analytics',chartType:'sparkline',tooltip:'Total sessions during the selected period.',color:'white',value:'120.5 K',change:'29%',up:true},
     {id:'w2',title:'Total Conversions',dataSource:'google-analytics-4 / conversions',chartType:'column',tooltip:'Total conversions tracked.',color:'blue',value:'3,610',change:'16%',up:false},
@@ -179,14 +188,12 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const maxCity = Math.max(...cityData.map((c: any) => c.val), 1)
 
   function startEdit(w: Widget) { setEditingWidget({...w}); setEditTab('General'); setOpenMenu(null); setActiveRightPanel(null) }
-  function openDrill(w: Widget) { if (!editMode) { setDrillWidget(w) } }
+  function openDrill(w: Widget) { if (!editMode) { setDrillWidget(w); setDrillChannel('All') } }
   function saveWidget() {
     if (!editingWidget) return
     setWidgets(prev => prev.map(w => w.id===editingWidget.id ? editingWidget : w))
     setEditingWidget(null)
   }
-
-  // ── Sub-components ──────────────────────────────────────────────────────────
 
   function WidgetDot({ wid, onEdit }: { wid: string; onEdit: () => void }) {
     const isOpen = openMenu === wid
@@ -261,8 +268,6 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       </div>
     )
   }
-
-  // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
     <div style={{ display:'flex', flexDirection:'column', height:'100%', overflow:'hidden', background:'#fff' }}
@@ -384,12 +389,13 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
         {/* Left panel */}
         <div style={{ width:220, minWidth:220, borderRight:'1px solid #e5e5e5', display:'flex', flexDirection:'column', background:'#fff' }}>
           <div style={{ padding:12 }}>
-            <button style={{ width:'100%', display:'flex', alignItems:'center', gap:6, background:'#48b5ea', border:'none', borderRadius:6, padding:'8px 12px', color:'#fff', fontSize:12, fontWeight:600, cursor:'pointer' }}>
+            <button onClick={() => setShowAddDashModal(true)}
+              style={{ width:'100%', display:'flex', alignItems:'center', gap:6, background:'#48b5ea', border:'none', borderRadius:6, padding:'8px 12px', color:'#fff', fontSize:12, fontWeight:600, cursor:'pointer' }}>
               <Plus size={13}/> {editMode ? 'Add blank dashboard' : 'Add Dashboard'}
             </button>
           </div>
           <div style={{ flex:1, overflowY:'auto' }}>
-            {DASHBOARDS.map(d => (
+            {dashboards.map(d => (
               <button key={d} onClick={() => setActiveDash(d)} style={{ width:'100%', textAlign:'left', padding:'9px 12px', fontSize:13, cursor:'pointer', background:'none', border:'none', fontWeight:activeDash===d?700:400, color:activeDash===d?'#1a1a1a':'#555', borderLeft:activeDash===d?'3px solid #48b5ea':'3px solid transparent', display:'flex', alignItems:'center', gap:6 }}>
                 {editMode && <Grip size={12} style={{ color:'#ccc', flexShrink:0 }}/>}
                 <span style={{ flex:1 }}>{d}</span>
@@ -515,10 +521,9 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
           </div>
         </div>
 
-        {/* Right panel — icon strip always visible, edit panel slides in next to it */}
+        {/* Right panel */}
         {editMode && (
           <div style={{ display:'flex', height:'100%', borderLeft:'1px solid #e5e5e5' }}>
-            {/* Edit Widget panel */}
             {editingWidget && (
               <div style={{ width:300, minWidth:300, background:'#fff', borderRight:'1px solid #e5e5e5', display:'flex', flexDirection:'column', overflow:'hidden' }}>
                 <div style={{ padding:'14px 16px', borderBottom:'1px solid #e5e5e5' }}>
@@ -601,7 +606,6 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                 </div>
               </div>
             )}
-            {/* Right panel content (Build with AI, etc.) */}
             {activeRightPanel && !editingWidget && (
               <div style={{ width:300, background:'#fff', borderRight:'1px solid #e5e5e5', display:'flex', flexDirection:'column', overflow:'hidden' }}>
                 {activeRightPanel==='build' && (
@@ -686,7 +690,6 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                 )}
               </div>
             )}
-            {/* Icon strip — always visible */}
             <div style={{ width:80, minWidth:80, background:'#fff', display:'flex', flexDirection:'column', alignItems:'center', padding:'12px 0', gap:2 }}>
               {RIGHT_PANEL_ITEMS.map(item => (
                 <button key={item.id}
@@ -701,15 +704,76 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
         )}
       </div>
 
-      {/* ── DrillDownPanel — replaces the old inline drill overlay ── */}
+      {/* Drill-down panel */}
       {drillWidget && !editMode && (
-        <DrillDownPanel
-          clientName={clientName}
-          ga4Data={ga4Data}
-          sessionData={sessionData}
-          sourceData={sourceData}
-          onClose={() => setDrillWidget(null)}
-        />
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:200, display:'flex', alignItems:'stretch', justifyContent:'flex-end' }}
+          onClick={() => setDrillWidget(null)}>
+          <div style={{ width:'82%', background:'#fff', display:'flex', flexDirection:'column', overflow:'hidden' }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ padding:'14px 24px', borderBottom:'1px solid #e5e5e5', display:'flex', alignItems:'center', gap:12, background:'#fff', flexShrink:0 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                <span style={{ fontSize:15, fontWeight:700, color:'#1a1a1a' }}>All Channels</span>
+                <div style={{ background:'#f0f0f0', border:'1px solid #e5e5e5', borderRadius:6, padding:'4px 12px', fontSize:12, color:'#333', display:'flex', alignItems:'center', gap:6 }}>
+                  Account is <strong>Atlanta BeltLine Website</strong>
+                </div>
+                <button style={{ background:'#f5f5f5', border:'1px solid #e5e5e5', borderRadius:6, padding:'4px 12px', fontSize:12, color:'#333', cursor:'pointer' }}>+ Add Filter</button>
+                <button style={{ background:'none', border:'none', fontSize:12, color:'#999', cursor:'pointer' }}>Clear All</button>
+              </div>
+              <button onClick={() => setDrillWidget(null)} style={{ marginLeft:'auto', background:'none', border:'none', cursor:'pointer', fontSize:20, color:'#999' }}>✕</button>
+            </div>
+            <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', color:'#999', fontSize:14 }}>
+              Drill-down panel — integrate DrillDownPanel component here
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Add Dashboard Modal ── */}
+      {showAddDashModal && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:300, padding:16 }}
+          onClick={() => setShowAddDashModal(false)}>
+          <div style={{ background:'#fff', borderRadius:12, width:'100%', maxWidth:560, overflow:'hidden', boxShadow:'0 20px 60px rgba(0,0,0,0.2)' }}
+            onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'18px 24px', borderBottom:'1px solid #e5e5e5' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                <div style={{ width:28, height:28, borderRadius:'50%', overflow:'hidden', background:'#f0f0f0', flexShrink:0 }}>
+                  <img src={`https://logo.clearbit.com/${clientDomain}`} alt="" style={{ width:'100%', height:'100%', objectFit:'contain' }} onError={e=>(e.currentTarget.style.display='none')}/>
+                </div>
+                <div>
+                  <p style={{ fontSize:14, fontWeight:700, color:'#1a1a1a', lineHeight:1.2 }}>{clientName}</p>
+                  <p style={{ fontSize:11, color:'#999' }}>Client</p>
+                </div>
+              </div>
+              <button onClick={() => setShowAddDashModal(false)} style={{ background:'none', border:'none', cursor:'pointer', color:'#999', fontSize:20, lineHeight:1 }}>✕</button>
+            </div>
+            {/* 2×2 options grid */}
+            <div style={{ padding:24 }}>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                {ADD_DASHBOARD_OPTIONS.map(opt => (
+                  <button key={opt.title}
+                    onClick={() => {
+                      setShowAddDashModal(false)
+                      const newName = 'Untitled Dashboard'
+                      setDashboards(prev => [...prev, newName])
+                      setActiveDash(newName)
+                      setEditMode(true)
+                    }}
+                    style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:12, padding:'28px 20px', background:'#fafafa', border:'2px solid #e5e5e5', borderRadius:10, cursor:'pointer', textAlign:'center' as const, transition:'all 0.15s' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor='#48b5ea'; (e.currentTarget as HTMLButtonElement).style.background='#f0f9ff' }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor='#e5e5e5'; (e.currentTarget as HTMLButtonElement).style.background='#fafafa' }}
+                  >
+                    <div style={{ width:52, height:52, borderRadius:10, background:'#fff', border:'1px solid #e5e5e5', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>{opt.icon}</div>
+                    <div>
+                      <p style={{ fontSize:14, fontWeight:600, color:'#1a1a1a', marginBottom:6 }}>{opt.title}</p>
+                      <p style={{ fontSize:12, color:'#888', lineHeight:1.5 }}>{opt.desc}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Map Data Sources Modal */}
