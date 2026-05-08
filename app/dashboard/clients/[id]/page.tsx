@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { ChevronRight, Sparkles, Settings, Calendar, ChevronDown, Plus, MoreHorizontal, Maximize2, X, Grip, RotateCcw, RotateCw, Monitor, Smartphone, ChevronLeft, RefreshCw, CheckCircle2 } from 'lucide-react'
 import Link from 'next/link'
 import { BarChart, Bar, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
+import DrillDownPanel from '@/components/dashboard/DrillDownPanel'
 
 const DASHBOARDS = ['Website Performance','Paid Media','Organic + AI Search','Donations Trend','oiijuyuh']
 const DATA_SOURCES = ['SEO','Analytics','Social','Paid Ads']
@@ -58,7 +59,6 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [editingWidget, setEditingWidget] = useState<Widget|null>(null)
   const [editTab, setEditTab] = useState<'General'|'Data'|'Display'>('General')
   const [drillWidget, setDrillWidget] = useState<Widget|null>(null)
-  const [drillChannel, setDrillChannel] = useState('All')
   const [openMenu, setOpenMenu] = useState<string|null>(null)
   const [activeRightPanel, setActiveRightPanel] = useState<string|null>(null)
   const [integrationSearch, setIntegrationSearch] = useState('')
@@ -136,7 +136,6 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       const data = await res.json()
       if (data.connected) {
         setGa4Data(data)
-        // Use GA4 totals row (metricAggregations: TOTAL) for accurate KPI numbers
         const totalsRow = data.timeSeries?.totals?.[0]
         const sessions = parseInt(totalsRow?.metricValues?.[0]?.value || '0')
         const users = parseInt(totalsRow?.metricValues?.[1]?.value || '0')
@@ -180,7 +179,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const maxCity = Math.max(...cityData.map((c: any) => c.val), 1)
 
   function startEdit(w: Widget) { setEditingWidget({...w}); setEditTab('General'); setOpenMenu(null); setActiveRightPanel(null) }
-  function openDrill(w: Widget) { if (!editMode) { setDrillWidget(w); setDrillChannel('All') } }
+  function openDrill(w: Widget) { if (!editMode) { setDrillWidget(w) } }
   function saveWidget() {
     if (!editingWidget) return
     setWidgets(prev => prev.map(w => w.id===editingWidget.id ? editingWidget : w))
@@ -702,153 +701,15 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
         )}
       </div>
 
-      {/* Drill-down widget view — shown when clicking a KPI in view mode */}
+      {/* ── DrillDownPanel — replaces the old inline drill overlay ── */}
       {drillWidget && !editMode && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:200, display:'flex', alignItems:'stretch', justifyContent:'flex-end' }}
-          onClick={() => setDrillWidget(null)}>
-          <div style={{ width:'82%', background:'#fff', display:'flex', flexDirection:'column', overflow:'hidden' }}
-            onClick={e => e.stopPropagation()}>
-            {/* Header */}
-            <div style={{ padding:'14px 24px', borderBottom:'1px solid #e5e5e5', display:'flex', alignItems:'center', gap:12, background:'#fff', flexShrink:0 }}>
-              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                <span style={{ fontSize:15, fontWeight:700, color:'#1a1a1a' }}>All Channels</span>
-                <div style={{ background:'#f0f0f0', border:'1px solid #e5e5e5', borderRadius:6, padding:'4px 12px', fontSize:12, color:'#333', display:'flex', alignItems:'center', gap:6 }}>
-                  Account is <strong>Atlanta BeltLine Website</strong>
-                </div>
-                <button style={{ background:'#f5f5f5', border:'1px solid #e5e5e5', borderRadius:6, padding:'4px 12px', fontSize:12, color:'#333', cursor:'pointer' }}>+ Add Filter</button>
-                <button style={{ background:'none', border:'none', fontSize:12, color:'#999', cursor:'pointer' }}>Clear All</button>
-              </div>
-              <button onClick={() => setDrillWidget(null)} style={{ marginLeft:'auto', background:'none', border:'none', cursor:'pointer', fontSize:20, color:'#999' }}>✕</button>
-            </div>
-
-            <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
-              {/* Left nav */}
-              <div style={{ width:200, minWidth:200, borderRight:'1px solid #e5e5e5', background:'#fff', overflowY:'auto' }}>
-                <div style={{ padding:'10px 16px 4px', display:'flex', alignItems:'center', gap:8, cursor:'pointer' }}>
-                  <span style={{ fontSize:13, color:'#f9b62a' }}>📊</span>
-                  <span style={{ fontSize:13, fontWeight:600, color:'#333' }}>Google Analytics 4</span>
-                </div>
-                <div style={{ padding:'4px 16px 4px 28px' }}>
-                  <div style={{ fontSize:12, fontWeight:600, color:'#555', padding:'6px 0', cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}>
-                    Acquisition
-                  </div>
-                  {['All','Organic Search','Paid Search','Direct','Social','Referral','Display','Email','Video'].map(ch => (
-                    <button key={ch} onClick={() => setDrillChannel(ch)}
-                      style={{ width:'100%', textAlign:'left', padding:'7px 0 7px 12px', fontSize:12, cursor:'pointer', background: drillChannel===ch ? '#f0f0f0' : 'none', border:'none', color: drillChannel===ch ? '#1a1a1a' : '#555', fontWeight: drillChannel===ch ? 600 : 400, borderRadius:4 }}>
-                      {ch}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Main drill content */}
-              <div style={{ flex:1, overflowY:'auto', padding:20, background:'#f8f9fa' }}>
-                {/* KPI row */}
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginBottom:16 }}>
-                  {[
-                    { label:'Sessions', val: ga4Data?.timeSeries?.totals?.[0]?.metricValues?.[0]?.value || '120,500', change:'-0.35%', up:false, highlight:true },
-                    { label:'Total Users', val: ga4Data?.timeSeries?.totals?.[0]?.metricValues?.[1]?.value || '88,069', change:'+0.69%', up:true },
-                    { label:'User Engagement', val:'66d 21h 22m', change:'-1.65%', up:false },
-                    { label:'Views', val: '242.9K', change:'-1.91%', up:false },
-                  ].map(k => (
-                    <div key={k.label} style={{ background: k.highlight ? '#fff' : '#fff', border: k.highlight ? '2px solid #48b5ea' : '1px solid #e5e5e5', borderRadius:8, padding:16 }}>
-                      <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
-                        <span style={{ fontSize:12, color:'#666', fontWeight:500 }}>{k.label}</span>
-                        <span style={{ fontSize:10, fontWeight:700, color: k.up ? '#22c55e' : '#ef4444', background: k.up ? '#f0fdf4' : '#fef2f2', padding:'2px 5px', borderRadius:4 }}>{k.up?'▲':'▼'} {k.change}</span>
-                      </div>
-                      <p style={{ fontSize:26, fontWeight:700, color:'#1a1a1a', letterSpacing:'-0.5px' }}>
-                        {typeof k.val === 'string' && k.val.includes('d') ? k.val : parseInt(k.val?.toString().replace(/,/g,'')||'0').toLocaleString()}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Charts row */}
-                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:12 }}>
-                  {/* Sessions over time */}
-                  <div style={{ background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, padding:16 }}>
-                    <div style={{ display:'flex', justifyContent:'space-between', marginBottom:12 }}>
-                      <span style={{ fontSize:13, fontWeight:600, color:'#333' }}>Sessions</span>
-                      <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                        <span style={{ fontSize:16, fontWeight:700, color:'#1a1a1a' }}>
-                          {parseInt(ga4Data?.timeSeries?.totals?.[0]?.metricValues?.[0]?.value || '120500').toLocaleString()}
-                        </span>
-                        <span style={{ fontSize:10, fontWeight:700, color:'#ef4444', background:'#fef2f2', padding:'2px 5px', borderRadius:4 }}>▼ 0.35%</span>
-                        <button style={{ background:'none', border:'none', cursor:'pointer', color:'#999', fontSize:16 }}>•••</button>
-                      </div>
-                    </div>
-                    <ResponsiveContainer width="100%" height={160}>
-                      <AreaChart data={sessionData}>
-                        <defs>
-                          <linearGradient id="dg1" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#48b5ea" stopOpacity={0.3}/>
-                            <stop offset="95%" stopColor="#48b5ea" stopOpacity={0}/>
-                          </linearGradient>
-                        </defs>
-                        <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'#999' }}/>
-                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'#999' }}/>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0"/>
-                        <Tooltip contentStyle={{ fontSize:10, borderRadius:4 }} formatter={(v:number) => [v.toLocaleString(),'Sessions']}/>
-                        <Area type="monotone" dataKey="v" stroke="#48b5ea" fill="url(#dg1)" strokeWidth={2}/>
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-
-                  {/* Sessions by channel donut */}
-                  <div style={{ background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, padding:16 }}>
-                    <div style={{ display:'flex', justifyContent:'space-between', marginBottom:12 }}>
-                      <span style={{ fontSize:13, fontWeight:600, color:'#333' }}>Sessions</span>
-                      <span style={{ fontSize:10, fontWeight:700, color:'#ef4444', background:'#fef2f2', padding:'2px 5px', borderRadius:4 }}>▼ 0.35%</span>
-                    </div>
-                    <div style={{ display:'flex', alignItems:'center', gap:16 }}>
-                      <div style={{ position:'relative', width:130, height:130, flexShrink:0 }}>
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie data={sourceData} cx="50%" cy="50%" innerRadius={38} outerRadius={58} dataKey="value">
-                              {sourceData.map((_:any, i:number) => <Cell key={i} fill={['#2196f3','#4caf82','#f9b62a','#9c27b0','#f44336','#ff9800','#607d8b','#795548'][i%8]}/>)}
-                            </Pie>
-                          </PieChart>
-                        </ResponsiveContainer>
-                        <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
-                          <span style={{ fontSize:14, fontWeight:700 }}>{parseInt(ga4Data?.timeSeries?.totals?.[0]?.metricValues?.[0]?.value || '120500').toLocaleString()}</span>
-                          <span style={{ fontSize:9, color:'#999' }}>Sessions</span>
-                        </div>
-                      </div>
-                      <div style={{ flex:1 }}>
-                        {sourceData.slice(0,6).map((d:any, i:number) => (
-                          <div key={d.name} style={{ display:'flex', alignItems:'center', gap:6, marginBottom:5 }}>
-                            <div style={{ width:8, height:8, borderRadius:'50%', background:['#2196f3','#4caf82','#f9b62a','#9c27b0','#f44336','#ff9800'][i%6], flexShrink:0 }}/>
-                            <span style={{ fontSize:11, color:'#555', flex:1 }}>{d.name}</span>
-                            <span style={{ fontSize:11, fontWeight:600 }}>{d.value?.toLocaleString()}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bottom KPI detail row */}
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10 }}>
-                  {[
-                    { label:'Key Events', val: ga4Data?.timeSeries?.totals?.[0]?.metricValues?.[2]?.value || '3,610', change:'-21%', up:false },
-                    { label:'Event Count', val:'1.54M', change:'-2.67%', up:false },
-                    { label:'Total Purchasers', val:'0', change:'0%', up:true },
-                  ].map(k => (
-                    <div key={k.label} style={{ background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, padding:16 }}>
-                      <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
-                        <span style={{ fontSize:12, color:'#666', fontWeight:500 }}>{k.label}</span>
-                        <span style={{ fontSize:10, fontWeight:700, color: k.up?'#22c55e':'#ef4444', background:k.up?'#f0fdf4':'#fef2f2', padding:'2px 5px', borderRadius:4 }}>{k.up?'▲':'▼'} {k.change}</span>
-                      </div>
-                      <p style={{ fontSize:24, fontWeight:700, color:'#1a1a1a', letterSpacing:'-0.5px' }}>
-                        {parseInt(k.val.replace(/,/g,'').replace(/M/,'')||'0').toLocaleString()}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <DrillDownPanel
+          clientName={clientName}
+          ga4Data={ga4Data}
+          sessionData={sessionData}
+          sourceData={sourceData}
+          onClose={() => setDrillWidget(null)}
+        />
       )}
 
       {/* Map Data Sources Modal */}
