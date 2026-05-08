@@ -673,6 +673,216 @@ function AudienceNewReturning({search,onSearch}:{search:string;onSearch:(v:strin
   )
 }
 
+// ── PAGES items ───────────────────────────────────────────────────────────────
+const PAGES_ITEMS = [
+  { id:'pages-all',     label:'All' },
+  { id:'pages-landing', label:'Landing Pages' },
+  { id:'pages-path',    label:'Path' },
+  { id:'pages-title',   label:'Title' },
+  { id:'pages-content', label:'Content Group' },
+]
+
+const ALL_PAGES_ROWS = [
+  {label:'/visit/',           sessions:34188,sessChange:'0.70%',sessUp:true,  users:28476,usersChange:'1.81%',usersUp:true,  engagement:'7d 8h 14m 38s', engChange:'3.10%',engUp:false,views:44050, viewsChange:'0.93%',viewsUp:true,  keyEvents:47,   keyChange:'24%',  keyUp:true,  eventCount:259177,evtChange:'0.04%',evtUp:false, purchasers:'0.00',pct:'0%'},
+  {label:'/map/',             sessions:21739,sessChange:'4.88%',sessUp:true,  users:15572,usersChange:'5.21%',usersUp:true,  engagement:'13d 11h 37m 43s',engChange:'5.04%',engUp:true,  views:30287, viewsChange:'4.84%',viewsUp:true,  keyEvents:18,   keyChange:'5.26%',keyUp:true,  eventCount:203302,evtChange:'2.64%',evtUp:true,  purchasers:'0.00',pct:'0%'},
+  {label:'/events/',          sessions:15491,sessChange:'9.67%',sessUp:false, users:12508,usersChange:'10%',  usersUp:false, engagement:'5d 3h 3m 55s',   engChange:'25%',  engUp:false, views:17207, viewsChange:'18%',  viewsUp:false, keyEvents:13,   keyChange:'86%',  keyUp:false, eventCount:119255,evtChange:'16%',  evtUp:false, purchasers:'0.00',pct:'0%'},
+  {label:'/parks-trails/',    sessions:6808, sessChange:'7.48%',sessUp:true,  users:6224, usersChange:'9.21%',usersUp:true,  engagement:'2d 6h 7m 49s',   engChange:'1.73%',engUp:true,  views:9943,  viewsChange:'8.25%',viewsUp:true,  keyEvents:1,    keyChange:'0%',   keyUp:true,  eventCount:65120, evtChange:'9.00%',evtUp:true,  purchasers:'0.00',pct:'0%'},
+  {label:'/things-to-do/shopping-dining/',sessions:5319,sessChange:'3.89%',sessUp:false,users:4362,usersChange:'0.32%',usersUp:false,engagement:'2d 9h 53m 4s',engChange:'3.16%',engUp:true,views:6435,viewsChange:'0.09%',viewsUp:true,keyEvents:5,keyChange:'69%',keyUp:false,eventCount:49760,evtChange:'0.57%',evtUp:false,purchasers:'0.00',pct:'0%'},
+  {label:'/things-to-do/',    sessions:4279, sessChange:'5.94%',sessUp:false, users:3929, usersChange:'2.24%',usersUp:false, engagement:'23h 13m 49s',     engChange:'1.68%',engUp:false, views:5639,  viewsChange:'2.20%',viewsUp:false, keyEvents:3,    keyChange:'57%',  keyUp:false, eventCount:35428, evtChange:'2.77%',evtUp:false, purchasers:'0.00',pct:'0%'},
+  {label:'/events/69748c4576a962dcab2ff934/',sessions:4111,sessChange:'6106%',sessUp:true,users:3910,usersChange:'6106%',usersUp:true,engagement:'2h 12m 59s',engChange:'159%',engUp:true,views:4244,viewsChange:'4616%',viewsUp:true,keyEvents:22,keyChange:'633%',keyUp:true,eventCount:15914,evtChange:'3014%',evtUp:true,purchasers:'0.00',pct:'0%'},
+  {label:'/visitor-information/',sessions:2327,sessChange:'11%',sessUp:true,users:2169,usersChange:'9.55%',usersUp:true,engagement:'12h 6m 17s',engChange:'46%',engUp:true,views:3254,viewsChange:'8.36%',viewsUp:true,keyEvents:1,keyChange:'0%',keyUp:true,eventCount:20583,evtChange:'17%',evtUp:true,purchasers:'0.00',pct:'0%'},
+  {label:'/parks-trails/shirley-clarke-franklin-park/',sessions:2505,sessChange:'14%',sessUp:true,users:2114,usersChange:'24%',usersUp:true,engagement:'18h 45m 33s',engChange:'22%',engUp:true,views:3084,viewsChange:'15%',viewsUp:true,keyEvents:1,keyChange:'0%',keyUp:true,eventCount:22238,evtChange:'19%',evtUp:true,purchasers:'0.00',pct:'0%'},
+  {label:'/live/',             sessions:2676, sessChange:'0%',   sessUp:true,  users:2567, usersChange:'1.34%',usersUp:true,  engagement:'12h 34m 44s',     engChange:'8.14%',engUp:false, views:2985,  viewsChange:'0.95%',viewsUp:true,  keyEvents:2,    keyChange:'50%',  keyUp:false, eventCount:16918, evtChange:'10%',  evtUp:true,  purchasers:'0.00',pct:'0%'},
+]
+
+const LANDING_PAGES_ROWS = [
+  {label:'/visit',  sessions:29039,sessChange:'1.66%',sessUp:false,users:25103,usersChange:'0.94%',usersUp:true,  engagement:'23d 7h 6m 47s', engChange:'2.14%',engUp:true,  views:84876,viewsChange:'0.18%',viewsUp:false,keyEvents:905, keyChange:'2.14%',keyUp:true,  eventCount:537634,evtChange:'0.59%',evtUp:false, purchasers:'0.00',pct:'0%'},
+  {label:'/map',    sessions:11037,sessChange:'1.00%',sessUp:false,users:8102, usersChange:'2.95%',usersUp:false, engagement:'7d 9h 50m 57s',  engChange:'9.88%',engUp:false, views:23220,viewsChange:'4.31%',viewsUp:true,  keyEvents:138, keyChange:'6.12%',keyUp:true,  eventCount:148199,evtChange:'5.87%',evtUp:false, purchasers:'0.00',pct:'0%'},
+  {label:'/events', sessions:8934, sessChange:'12%',  sessUp:false,users:7541, usersChange:'9%',   usersUp:false, engagement:'4d 12h 22m',     engChange:'20%',  engUp:false, views:12610,viewsChange:'14%',  viewsUp:false, keyEvents:12,  keyChange:'80%',  keyUp:false, eventCount:89500, evtChange:'12%',  evtUp:false, purchasers:'0.00',pct:'0%'},
+  {label:'/things-to-do',sessions:4190,sessChange:'4%',sessUp:false,users:3890,usersChange:'2%',usersUp:false,engagement:'19h 20m',engChange:'2%',engUp:false,views:5817,viewsChange:'3%',viewsUp:false,keyEvents:4,keyChange:'60%',keyUp:false,eventCount:38200,evtChange:'3%',evtUp:false,purchasers:'0.00',pct:'0%'},
+  {label:'/events/69748c4576a962dcab2ff934',sessions:3950,sessChange:'5800%',sessUp:true,users:3780,usersChange:'5800%',usersUp:true,engagement:'2h 5m',engChange:'150%',engUp:true,views:4286,viewsChange:'4400%',viewsUp:true,keyEvents:21,keyChange:'600%',keyUp:true,eventCount:14900,evtChange:'2900%',evtUp:true,purchasers:'0.00',pct:'0%'},
+]
+
+const TITLE_ROWS = [
+  {label:'Visit the Atlanta Beltline | Places To Go in Atlanta, GA', sessions:34188,sessChange:'0.70%',sessUp:true,users:28476,usersChange:'1.81%',usersUp:true,engagement:'7d 8h 11m 8s',engChange:'3.03%',engUp:false,views:44050,viewsChange:'0.94%',viewsUp:true,keyEvents:47,keyChange:'24%',keyUp:true,eventCount:259130,evtChange:'0.02%',evtUp:false,purchasers:'0.00',pct:'0%'},
+  {label:'Interactive Map | Beltline',                               sessions:21700,sessChange:'5.27%',sessUp:true,users:15535,usersChange:'5.10%',usersUp:true,engagement:'13d 11h 17m 24s',engChange:'4.89%',engUp:true,views:30201,viewsChange:'4.89%',viewsUp:true,keyEvents:18,keyChange:'5.26%',keyUp:true,eventCount:202497,evtChange:'2.64%',evtUp:true,purchasers:'0.00',pct:'0%'},
+  {label:'Atlanta Beltline',                                         sessions:10200,sessChange:'8%',sessUp:false,users:8900,usersChange:'7%',usersUp:false,engagement:'4d 12h 30m',engChange:'20%',engUp:false,views:20192,viewsChange:'15%',viewsUp:false,keyEvents:12,keyChange:'72%',keyUp:false,eventCount:95000,evtChange:'14%',evtUp:false,purchasers:'0.00',pct:'0%'},
+  {label:'Events | Beltline',                                        sessions:6400, sessChange:'11%',sessUp:false,users:5800,usersChange:'9%',usersUp:false,engagement:'3d 5h 20m',engChange:'22%',engUp:false,views:17887,viewsChange:'16%',viewsUp:false,keyEvents:10,keyChange:'82%',keyUp:false,eventCount:58000,evtChange:'14%',evtUp:false,purchasers:'0.00',pct:'0%'},
+  {label:'Parks & Trails | Atlanta Beltline',                        sessions:6808, sessChange:'7.48%',sessUp:true,users:6224,usersChange:'9.21%',usersUp:true,engagement:'2d 6h 7m 49s',engChange:'1.73%',engUp:true,views:9936,viewsChange:'8.25%',viewsUp:true,keyEvents:1,keyChange:'0%',keyUp:true,eventCount:65120,evtChange:'9%',evtUp:true,purchasers:'0.00',pct:'0%'},
+]
+
+// Horizontal bar chart for right panel (Pages views)
+function HorizontalBarList({items}:{items:{label:string;value:number;maxVal:number}[]}){
+  return(
+    <div style={{padding:'12px 0'}}>
+      {items.map((item)=>(
+        <div key={item.label} style={{marginBottom:12}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
+            <span style={{fontSize:12,color:'#333',flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' as const,paddingRight:16}}>{item.label}</span>
+            <span style={{fontSize:12,fontWeight:600,color:'#1a1a1a',flexShrink:0}}>{item.value.toLocaleString()}</span>
+          </div>
+          <div style={{height:4,background:'#f0f0f0',borderRadius:2,overflow:'hidden'}}>
+            <div style={{height:'100%',width:`${(item.value/item.maxVal)*100}%`,background:'#48b5ea',borderRadius:2}}/>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function PagesGeneric({
+  subLabel, rightItems, tableColLabel, tableRows, totalRows, search, onSearch,
+  hlCard, kpiOverride
+}:{
+  subLabel:string; rightItems:{label:string;value:number;maxVal:number}[];
+  tableColLabel:string; tableRows:any[]; totalRows:number;
+  search:string; onSearch:(v:string)=>void;
+  hlCard?:'total-users'|'total-purchasers'|'event-count'|'key-events';
+  kpiOverride?:Partial<ChannelData>;
+}){
+  const kpi={...SHARED_KPI,...(kpiOverride||{})}
+  const maxVal=rightItems[0]?.maxVal||1
+
+  // KPI row 1: Sessions, Total Users, User Engagement, Views
+  // highlighted card changes per sub-page
+  const row1=[
+    {label:'Sessions',        val:fmt(kpi.sessions),                change:kpi.sessChange,  up:kpi.sessUp,  hl:false},
+    {label:'Total Users',     val:fmt(kpi.users),                   change:kpi.usersChange, up:kpi.usersUp, hl:hlCard==='total-users'},
+    {label:'User Engagement', val:kpi.engagement,                   change:kpi.engChange,   up:kpi.engUp,   hl:false},
+    {label:'Views',           val:fmt(kpi.views),                   change:kpi.viewsChange, up:kpi.viewsUp, hl:false},
+  ]
+  const row2=[
+    {label:'Key Events',       val:kpi.keyEvents>=1000?fmt(kpi.keyEvents):kpi.keyEvents.toLocaleString(), change:kpi.keyChange,up:kpi.keyUp,hl:hlCard==='key-events',badge:false},
+    {label:'Event Count',      val:kpi.eventCount,                                                         change:kpi.evtChange,up:kpi.evtUp,hl:hlCard==='event-count',badge:false},
+    {label:'Total Purchasers', val:'0',                                                                     change:'0%',up:true,hl:hlCard==='total-purchasers',badge:true},
+  ]
+  // default highlighted: Views (row1[3]) unless override
+  if(!hlCard){row1[3].hl=true}
+
+  return(
+    <>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
+        {/* Left: area chart */}
+        <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
+            <span style={{fontSize:13,color:'#555'}}>Views</span>
+            <div style={{display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:16,fontWeight:700}}>243 K</span><Change val="1.91%" up={false}/></div>
+          </div>
+          <ResponsiveContainer width="100%" height={220}>
+            <AreaChart data={TIME_DATA}>
+              <defs>
+                <linearGradient id="pg1" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#48b5ea" stopOpacity={0.2}/><stop offset="95%" stopColor="#48b5ea" stopOpacity={0}/></linearGradient>
+                <linearGradient id="pg2" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#a8d8ff" stopOpacity={0.15}/><stop offset="95%" stopColor="#a8d8ff" stopOpacity={0}/></linearGradient>
+              </defs>
+              <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{fontSize:9,fill:'#999'}}/>
+              <YAxis axisLine={false} tickLine={false} tick={{fontSize:10,fill:'#999'}} tickFormatter={(v:number)=>v>=1000?(v/1000)+'K':String(v)}/>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0"/>
+              <Tooltip contentStyle={{fontSize:11,borderRadius:6}}/>
+              <Area type="monotone" dataKey="v" stroke="#48b5ea" fill="url(#pg1)" strokeWidth={2} name="This period"/>
+              <Area type="monotone" dataKey="v2" stroke="#a8d8ff" fill="url(#pg2)" strokeWidth={1.5} strokeDasharray="4 2" name="Prev period"/>
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+        {/* Right: horizontal bar list */}
+        <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+            <span style={{fontSize:13,color:'#555'}}>Views</span>
+          </div>
+          <HorizontalBarList items={rightItems}/>
+        </div>
+      </div>
+
+      {/* KPI row 1 */}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12,marginBottom:12}}>
+        {row1.map(k=>(
+          <div key={k.label} style={{background:'#fff',border:`${k.hl?2:1}px solid ${k.hl?'#48b5ea':'#e5e5e5'}`,borderRadius:8,padding:'16px 20px'}}>
+            <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+              <span style={{fontSize:13,color:'#555'}}>{k.label}</span>
+              {k.hl?<button style={{background:'none',border:'none',cursor:'pointer',color:'#bbb'}}><MoreHorizontal size={14}/></button>:<Change val={k.change} up={k.up}/>}
+            </div>
+            <p style={{fontSize:28,fontWeight:700,color:'#1a1a1a',letterSpacing:'-0.5px',lineHeight:1.2}}>{k.val}</p>
+            {k.hl&&<div style={{marginTop:6}}><Change val={k.change} up={k.up}/></div>}
+          </div>
+        ))}
+      </div>
+
+      {/* KPI row 2 */}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12}}>
+        {row2.map(k=>(
+          <div key={k.label} style={{background:'#fff',border:`${k.hl?2:1}px solid ${k.hl?'#48b5ea':'#e5e5e5'}`,borderRadius:8,padding:'16px 20px'}}>
+            <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+              <span style={{fontSize:13,color:'#555'}}>{k.label}</span>
+              {k.badge?<span style={{fontSize:11,fontWeight:600,color:'#999',background:'#f0f0f0',padding:'2px 6px',borderRadius:4}}>0%</span>:(k.hl?<button style={{background:'none',border:'none',cursor:'pointer',color:'#bbb'}}><MoreHorizontal size={14}/></button>:<Change val={k.change} up={k.up}/>)}
+            </div>
+            <p style={{fontSize:28,fontWeight:700,color:'#1a1a1a',letterSpacing:'-0.5px'}}>{k.val}</p>
+            {k.hl&&<div style={{marginTop:6}}><Change val={k.change} up={k.up}/></div>}
+          </div>
+        ))}
+      </div>
+
+      {/* Data table */}
+      <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,overflow:'hidden',marginTop:16}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 16px',borderBottom:'1px solid #f0f0f0'}}>
+          <span style={{fontSize:12,color:'#666'}}>Showing {tableRows.filter(r=>(r.label||'').toLowerCase().includes(search.toLowerCase())).length} of {totalRows.toLocaleString()} Rows</span>
+          <div style={{display:'flex',alignItems:'center',gap:8}}>
+            <input value={search} onChange={e=>onSearch(e.target.value)} placeholder="Search" style={{background:'#fafafa',border:'1px solid #e5e5e5',borderRadius:6,padding:'5px 10px',fontSize:12,outline:'none',width:160}}/>
+            <button style={{background:'none',border:'none',cursor:'pointer',color:'#bbb'}}><MoreHorizontal size={14}/></button>
+          </div>
+        </div>
+        <div style={{overflowX:'auto' as const}}>
+          <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:12}}>
+            <thead><tr style={{borderBottom:'1px solid #f0f0f0',background:'#fafafa'}}>
+              {[tableColLabel,'SESSIONS','TOTAL USERS','USER ENGAGEMENT','VIEWS ↓','KEY EVENTS','EVENT COUNT','TOTAL PURCHASERS'].map(h=>(
+                <th key={h} style={{padding:'9px 14px',textAlign:h===tableColLabel?'left':'right' as any,fontSize:11,fontWeight:600,color:'#888',whiteSpace:'nowrap' as const}}>{h}</th>
+              ))}
+            </tr></thead>
+            <tbody>
+              {tableRows.filter(r=>(r.label||'').toLowerCase().includes(search.toLowerCase())).map((row,i)=>(
+                <tr key={i} style={{borderBottom:'1px solid #f8f8f8',background:i%2===0?'#fff':'#fafafa'}}>
+                  <td style={{padding:'11px 14px',fontWeight:500,color:'#1a1a1a',maxWidth:260,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' as const}}>{row.label}</td>
+                  <td style={{padding:'11px 14px',textAlign:'right' as const}}><div>{row.sessions.toLocaleString()}</div><Change val={row.sessChange} up={row.sessUp}/></td>
+                  <td style={{padding:'11px 14px',textAlign:'right' as const}}><div>{row.users.toLocaleString()}</div><Change val={row.usersChange} up={row.usersUp}/></td>
+                  <td style={{padding:'11px 14px',textAlign:'right' as const,fontSize:12,color:'#555'}}><div>{row.engagement}</div><Change val={row.engChange} up={row.engUp}/></td>
+                  <td style={{padding:'11px 14px',textAlign:'right' as const}}><div>{row.views.toLocaleString()}</div><Change val={row.viewsChange} up={row.viewsUp}/></td>
+                  <td style={{padding:'11px 14px',textAlign:'right' as const}}><div>{typeof row.keyEvents==='number'?row.keyEvents.toFixed(2):row.keyEvents}</div><Change val={row.keyChange} up={row.keyUp}/></td>
+                  <td style={{padding:'11px 14px',textAlign:'right' as const}}><div>{typeof row.eventCount==='number'?row.eventCount.toLocaleString():row.eventCount}</div><Change val={row.evtChange} up={row.evtUp}/></td>
+                  <td style={{padding:'11px 14px',textAlign:'right' as const}}><div>{row.purchasers}</div><span style={{fontSize:10,background:'#f0f0f0',color:'#999',padding:'1px 5px',borderRadius:3}}>{row.pct||'0%'}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  )
+}
+
+function PagesAll({search,onSearch}:{search:string;onSearch:(v:string)=>void}){
+  const maxVal=44050
+  return <PagesGeneric subLabel="All Pages" rightItems={[{label:'/visit/',value:44050,maxVal},{label:'/map/',value:30287,maxVal},{label:'/events/',value:17207,maxVal},{label:'/parks-trails/',value:9943,maxVal},{label:'/things-to-do/shopping-dining/',value:6435,maxVal}]} tableColLabel="PAGE" tableRows={ALL_PAGES_ROWS} totalRows={1556} search={search} onSearch={onSearch}/>
+}
+
+function PagesLanding({search,onSearch}:{search:string;onSearch:(v:string)=>void}){
+  const maxVal=84876
+  return <PagesGeneric subLabel="Landing Pages" rightItems={[{label:'/visit',value:84876,maxVal},{label:'/map',value:23220,maxVal},{label:'/events',value:12610,maxVal},{label:'/things-to-do',value:5817,maxVal},{label:'/events/69748c4576a962dcab2ff934',value:4286,maxVal}]} tableColLabel="LANDING PAGE" tableRows={LANDING_PAGES_ROWS} totalRows={1374} search={search} onSearch={onSearch} hlCard="total-purchasers"/>
+}
+
+function PagesPath({search,onSearch}:{search:string;onSearch:(v:string)=>void}){
+  const maxVal=44050
+  return <PagesGeneric subLabel="Path" rightItems={[{label:'/visit/',value:44050,maxVal},{label:'/map/',value:30287,maxVal},{label:'/events/',value:17207,maxVal},{label:'/parks-trails/',value:9943,maxVal},{label:'/things-to-do/shopping-dining/',value:6435,maxVal}]} tableColLabel="PAGE PATH AND SCREEN CLASS" tableRows={ALL_PAGES_ROWS} totalRows={1556} search={search} onSearch={onSearch} hlCard="event-count"/>
+}
+
+function PagesTitle({search,onSearch}:{search:string;onSearch:(v:string)=>void}){
+  const maxVal=44050
+  return <PagesGeneric subLabel="Title" rightItems={[{label:'Visit the Atlanta Beltline | Places To Go in Atlanta, GA',value:44050,maxVal},{label:'Interactive Map | Beltline',value:30201,maxVal},{label:'Atlanta Beltline',value:20192,maxVal},{label:'Events | Beltline',value:17887,maxVal},{label:'Parks & Trails | Atlanta Beltline',value:9936,maxVal}]} tableColLabel="PAGE TITLE AND SCREEN CLASS" tableRows={TITLE_ROWS} totalRows={1456} search={search} onSearch={onSearch}/>
+}
+
+function PagesContentGroup({search,onSearch}:{search:string;onSearch:(v:string)=>void}){
+  const maxVal=242901
+  const contentRows=[{label:'(not set)',sessions:120520,sessChange:'0.35%',sessUp:false,users:88069,usersChange:'0.69%',usersUp:true,engagement:'66d 21h 22m 49s',engChange:'1.65%',engUp:false,views:242901,viewsChange:'1.91%',viewsUp:false,keyEvents:3610,keyChange:'21%',keyUp:false,eventCount:1539974,evtChange:'2.67%',evtUp:false,purchasers:'0.00',pct:'0%'}]
+  return <PagesGeneric subLabel="Content Group" rightItems={[{label:'(not set)',value:242901,maxVal}]} tableColLabel="CONTENT GROUP" tableRows={contentRows} totalRows={1} search={search} onSearch={onSearch} hlCard="key-events"/>
+}
+
 // ── Main export ───────────────────────────────────────────────────────────────
 export default function DrillDownPanel({clientName='Atlanta BeltLine Website',onClose}:DrillDownPanelProps){
   const [activeNav,setActiveNav]=useState('all')
@@ -683,8 +893,9 @@ export default function DrillDownPanel({clientName='Atlanta BeltLine Website',on
 
   const isAudience=AUDIENCE_ITEMS.some(a=>a.id===activeNav)
   const isConversion=CONVERSION_ITEMS.some(c=>c.id===activeNav)
+  const isPages=PAGES_ITEMS.some(p=>p.id===activeNav)
   const cd=CHANNEL_DATA[activeNav]||CHANNEL_DATA['all']
-  const activeLabel=[...CHANNELS,...AUDIENCE_ITEMS,...CONVERSION_ITEMS].find(c=>c.id===activeNav)?.label||'All Channels'
+  const activeLabel=[...CHANNELS,...AUDIENCE_ITEMS,...CONVERSION_ITEMS,...PAGES_ITEMS].find(c=>c.id===activeNav)?.label||'All Channels'
 
   function LeftNav(){
     return(
@@ -717,8 +928,11 @@ export default function DrillDownPanel({clientName='Atlanta BeltLine Website',on
           ))}
           {/* Pages */}
           <button onClick={()=>toggleGroup('Pages')} style={{width:'100%',display:'flex',alignItems:'center',gap:6,padding:'7px 16px 7px 28px',background:'none',border:'none',cursor:'pointer',textAlign:'left' as const}}>
-            <ChevronRight size={11} style={{color:'#888'}}/><span style={{fontSize:13,fontWeight:500,color:'#333'}}>Pages</span>
+            <ChevronDown size={11} style={{color:'#888',transform:expandedGroups.has('Pages')?'rotate(0deg)':'rotate(-90deg)',transition:'0.15s'}}/><span style={{fontSize:13,fontWeight:500,color:'#333'}}>Pages</span>
           </button>
+          {expandedGroups.has('Pages')&&PAGES_ITEMS.map(item=>(
+            <button key={item.id} onClick={()=>setActiveNav(item.id)} style={{width:'100%',textAlign:'left' as const,padding:'7px 16px 7px 44px',fontSize:13,cursor:'pointer',border:'none',borderLeft:activeNav===item.id?'2px solid #48b5ea':'2px solid transparent',background:activeNav===item.id?'#f0f7ff':'transparent',color:activeNav===item.id?'#1a85c8':'#555',fontWeight:activeNav===item.id?600:400}}>{item.label}</button>
+          ))}
           {/* Events */}
           <button onClick={()=>toggleGroup('Events')} style={{width:'100%',display:'flex',alignItems:'center',gap:6,padding:'7px 16px 7px 28px',background:'none',border:'none',cursor:'pointer',textAlign:'left' as const}}>
             <ChevronRight size={11} style={{color:'#888'}}/><span style={{fontSize:13,fontWeight:500,color:'#333'}}>Events</span>
@@ -779,6 +993,15 @@ export default function DrillDownPanel({clientName='Atlanta BeltLine Website',on
   }
 
   function renderContent(){
+    if(isPages){
+      switch(activeNav){
+        case 'pages-all':     return <PagesAll search={tableSearch} onSearch={setTableSearch}/>
+        case 'pages-landing': return <PagesLanding search={tableSearch} onSearch={setTableSearch}/>
+        case 'pages-path':    return <PagesPath search={tableSearch} onSearch={setTableSearch}/>
+        case 'pages-title':   return <PagesTitle search={tableSearch} onSearch={setTableSearch}/>
+        case 'pages-content': return <PagesContentGroup search={tableSearch} onSearch={setTableSearch}/>
+      }
+    }
     if(isConversion){
       switch(activeNav){
         case 'conv-campaigns': return <ConversionsCampaigns search={tableSearch} onSearch={setTableSearch}/>
