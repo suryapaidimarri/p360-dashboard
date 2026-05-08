@@ -1020,6 +1020,434 @@ function EventsEventName({search,onSearch}:{search:string;onSearch:(v:string)=>v
   )
 }
 
+// ── SOCIAL: Facebook sub-items ────────────────────────────────────────────────
+const FACEBOOK_ITEMS = [
+  { id:'fb-page',       label:'Page' },
+  { id:'fb-engagement', label:'Engagement' },
+  { id:'fb-posts',      label:'Posts' },
+  { id:'fb-reels',      label:'Reels' },
+]
+
+const FB_TIME = [
+  {d:'1 Apr',follows:100200,views:380},{d:'3 Apr',follows:100400,views:420},
+  {d:'5 Apr',follows:100600,views:340},{d:'7 Apr',follows:100900,views:460},
+  {d:'9 Apr',follows:101100,views:280},{d:'11 Apr',follows:101400,views:520},
+  {d:'13 Apr',follows:101800,views:380},{d:'15 Apr',follows:102200,views:440},
+  {d:'17 Apr',follows:102600,views:360},{d:'19 Apr',follows:102900,views:300},
+  {d:'21 Apr',follows:103200,views:280},{d:'23 Apr',follows:103500,views:320},
+  {d:'25 Apr',follows:103700,views:260},{d:'27 Apr',follows:103900,views:240},
+  {d:'29 Apr',follows:104100,views:220},
+]
+
+const FB_POSTS = [
+  {
+    date:'Apr 30, 2026',
+    image:'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=600&q=80',
+    text:'Due to inclement weather, Big Tigger\'s Beltline BikeFest has moved indoors & the community bike ride has been canceled.',
+    caption:'Unfortunately, due to heavy rain forecasted for Saturday, Big Tigger\'s Beltline BikeFest has been moved indoors and the community bike ride has been canceled. For those who pre-registered for the kids\' bike giveaway, pickup will take place indoors at 929 Lee Street from 11 a.m.-1 p.m., with celebrity captains on-site for photos from 12-1 p.m.',
+    impressions:4895, likes:8, clicks:84,
+    bgColor:'#c0392b',
+  },
+  {
+    date:'Apr 24, 2026',
+    image:'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=600&q=80',
+    text:'Join us for the Atlanta BeltLine 5K!',
+    caption:'Lace up your running shoes and join the Atlanta BeltLine community for our annual 5K run along the trail. Register now to secure your spot!',
+    impressions:6240, likes:142, clicks:231,
+    bgColor:'#2980b9',
+  },
+]
+
+const FB_REELS = [
+  {
+    date:'Apr 23, 2026',
+    image:'https://images.unsplash.com/photo-1555993539-1732b0258235?w=600&q=80',
+    text:'Atlanta Beltline Market is now open at the airport!',
+    caption:'Check out the new Atlanta BeltLine Market at Hartsfield-Jackson Atlanta International Airport, Gate B27. Pick up local artisan goods and BeltLine merchandise before your next flight.',
+    impressions:12400, likes:389, clicks:156,
+  },
+  {
+    date:'Apr 18, 2026',
+    image:'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=600&q=80',
+    text:'Spring on the BeltLine Trail',
+    caption:'The cherry blossoms are in full bloom along the Atlanta BeltLine Eastside Trail. Come enjoy the beautiful spring scenery!',
+    impressions:8700, likes:512, clicks:98,
+  },
+]
+
+function SocialFacebookPage(){
+  const followsGrowthData = FB_TIME.map(t=>({
+    d:t.d.replace(' Apr',''),
+    nonPaid:Math.round(Math.random()*40+40),
+    paid:Math.round(Math.random()*8+2),
+    lost:Math.round(Math.random()*8+2)*-1,
+  }))
+  const impressionsData = FB_TIME.map(t=>({
+    d:t.d.replace(' Apr',''), nonPaid:Math.round(t.views*120+10000), paid:Math.round(t.views*8)
+  }))
+
+  return(
+    <div style={{flex:1,overflowY:'auto',padding:20,background:'#f8f9fa'}}>
+      {/* Top two charts */}
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
+        <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
+            <span style={{fontSize:13,color:'#555'}}>Page Follows</span>
+            <div style={{display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:16,fontWeight:700}}>104 K</span><Change val="1.39%" up={true}/></div>
+          </div>
+          <ResponsiveContainer width="100%" height={200}>
+            <AreaChart data={FB_TIME}>
+              <defs>
+                <linearGradient id="fbf1" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#48b5ea" stopOpacity={0.2}/><stop offset="95%" stopColor="#48b5ea" stopOpacity={0}/></linearGradient>
+                <linearGradient id="fbf2" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#a8d8ff" stopOpacity={0.15}/><stop offset="95%" stopColor="#a8d8ff" stopOpacity={0}/></linearGradient>
+              </defs>
+              <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{fontSize:9,fill:'#999'}}/>
+              <YAxis axisLine={false} tickLine={false} tick={{fontSize:10,fill:'#999'}} tickFormatter={(v:number)=>v>=1000?(v/1000).toFixed(0)+'K':String(v)} domain={[99000,105000]}/>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0"/>
+              <Tooltip contentStyle={{fontSize:11,borderRadius:6}} formatter={(v:number)=>[v.toLocaleString(),'Follows']}/>
+              <Area type="monotone" dataKey="follows" stroke="#48b5ea" fill="url(#fbf1)" strokeWidth={2}/>
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+        <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
+            <span style={{fontSize:13,color:'#555'}}>Page Views</span>
+            <div style={{display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:16,fontWeight:700}}>7,077</span><Change val="30%" up={false}/></div>
+          </div>
+          <ResponsiveContainer width="100%" height={200}>
+            <AreaChart data={FB_TIME}>
+              <defs>
+                <linearGradient id="fbv1" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#48b5ea" stopOpacity={0.2}/><stop offset="95%" stopColor="#48b5ea" stopOpacity={0}/></linearGradient>
+                <linearGradient id="fbv2" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#a8d8ff" stopOpacity={0.15}/><stop offset="95%" stopColor="#a8d8ff" stopOpacity={0}/></linearGradient>
+              </defs>
+              <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{fontSize:9,fill:'#999'}}/>
+              <YAxis axisLine={false} tickLine={false} tick={{fontSize:10,fill:'#999'}}/>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0"/>
+              <Tooltip contentStyle={{fontSize:11,borderRadius:6}} formatter={(v:number)=>[v.toLocaleString(),'Views']}/>
+              <Area type="monotone" dataKey="views" stroke="#48b5ea" fill="url(#fbv1)" strokeWidth={2}/>
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* KPI cards */}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12,marginBottom:16}}>
+        {[
+          {label:'New Page Follows',val:'1,506',change:'32%',up:false},
+          {label:'Page Media Views',val:'197.1 K',change:'58%',up:false},
+          {label:'Unique Page Impressions',val:'999.7 K',change:'8.49%',up:true},
+          {label:'Page Views',val:'7,077',change:'30%',up:false},
+        ].map(k=>(
+          <div key={k.label} style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:'16px 20px'}}>
+            <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+              <span style={{fontSize:13,color:'#555'}}>{k.label}</span>
+              <Change val={k.change} up={k.up}/>
+            </div>
+            <p style={{fontSize:26,fontWeight:700,color:'#1a1a1a',letterSpacing:'-0.5px'}}>{k.val}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Bottom row: 3 charts */}
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:16,marginBottom:16}}>
+        {/* Page Follows Growth stacked bar */}
+        <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
+            <span style={{fontSize:13,color:'#555'}}>Page Follows Growth</span>
+            <div style={{display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:14,fontWeight:700}}>1,425</span><Change val="33%" up={false}/></div>
+          </div>
+          <ResponsiveContainer width="100%" height={160}>
+            <BarChart data={followsGrowthData} barSize={10} stackOffset="sign">
+              <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{fontSize:8,fill:'#999'}}/>
+              <YAxis axisLine={false} tickLine={false} tick={{fontSize:9,fill:'#999'}}/>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false}/>
+              <Tooltip contentStyle={{fontSize:11,borderRadius:6}}/>
+              <Legend wrapperStyle={{fontSize:9}} iconSize={8}/>
+              <Bar dataKey="nonPaid" name="Non-Paid" stackId="a" fill="#9CCC65" radius={[2,2,0,0]}/>
+              <Bar dataKey="paid" name="Paid" stackId="a" fill="#F9B62A"/>
+              <Bar dataKey="lost" name="Lost" stackId="a" fill="#ef5350"/>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Unique Page Impressions area */}
+        <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
+            <span style={{fontSize:13,color:'#555'}}>Unique Page Impressions</span>
+            <div style={{display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:14,fontWeight:700}}>1,000 K</span><Change val="8.49%" up={true}/><button style={{background:'none',border:'none',cursor:'pointer',color:'#bbb'}}><MoreHorizontal size={12}/></button></div>
+          </div>
+          <ResponsiveContainer width="100%" height={160}>
+            <AreaChart data={impressionsData}>
+              <defs>
+                <linearGradient id="imp1" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#48b5ea" stopOpacity={0.3}/><stop offset="95%" stopColor="#48b5ea" stopOpacity={0}/></linearGradient>
+              </defs>
+              <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{fontSize:8,fill:'#999'}}/>
+              <YAxis axisLine={false} tickLine={false} tick={{fontSize:9,fill:'#999'}} tickFormatter={(v:number)=>v>=1000?(v/1000)+'K':String(v)}/>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0"/>
+              <Tooltip contentStyle={{fontSize:11,borderRadius:6}}/>
+              <Area type="monotone" dataKey="nonPaid" stroke="#48b5ea" fill="url(#imp1)" strokeWidth={2} name="Non-Paid"/>
+              <Area type="monotone" dataKey="paid" stroke="#a8d8ff" fill="none" strokeWidth={1.5} name="Paid"/>
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Unique Page Impressions donut */}
+        <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20,display:'flex',flexDirection:'column'}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+            <span style={{fontSize:13,color:'#555'}}>Unique Page Impressions</span>
+            <Change val="8.49%" up={true}/>
+          </div>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:20,flex:1}}>
+            <div style={{position:'relative',width:130,height:130,flexShrink:0}}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart><Pie data={[{name:'Non-Paid',value:955000,color:'#9CCC65'},{name:'Paid',value:44292,color:'#F9B62A'}]} cx="50%" cy="50%" innerRadius={38} outerRadius={58} dataKey="value">{[{color:'#9CCC65'},{color:'#F9B62A'}].map((d,i)=><Cell key={i} fill={d.color}/>)}</Pie><Tooltip contentStyle={{fontSize:11,borderRadius:6}} formatter={(v:number)=>[v.toLocaleString(),'']}/></PieChart>
+              </ResponsiveContainer>
+              <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
+                <span style={{fontSize:13,fontWeight:700}}>999.7 K</span>
+                <span style={{fontSize:8,color:'#999',textAlign:'center'}}>Unique Page Impressions</span>
+              </div>
+            </div>
+            <div>
+              {[{name:'Non-Paid',val:'955 K',color:'#9CCC65'},{name:'Paid',val:'44,292',color:'#F9B62A'}].map(d=>(
+                <div key={d.name} style={{display:'flex',alignItems:'center',gap:6,marginBottom:8}}>
+                  <div style={{width:10,height:10,borderRadius:'50%',background:d.color}}/>
+                  <span style={{fontSize:12,color:'#333'}}>{d.name}</span>
+                  <span style={{fontSize:12,fontWeight:600,marginLeft:4}}>{d.val}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Top Countries / Top Cities */}
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
+        {[
+          {title:'Top Countries',items:[{name:'United States',flag:'🇺🇸',val:102662,change:'1.30%',up:true},{name:'Canada',flag:'🇨🇦',val:4820,change:'2.10%',up:false},{name:'United Kingdom',flag:'🇬🇧',val:2940,change:'0.80%',up:true},{name:'Brazil',flag:'🇧🇷',val:1820,change:'3.40%',up:false}]},
+          {title:'Top Cities',items:[{name:'Atlanta, GA',flag:'📍',val:25107,change:'2.36%',up:false},{name:'Birmingham, AL',flag:'📍',val:4820,change:'1.10%',up:true},{name:'Nashville, TN',flag:'📍',val:3940,change:'0.90%',up:true},{name:'Charlotte, NC',flag:'📍',val:2180,change:'1.20%',up:false}]},
+        ].map(section=>(
+          <div key={section.title} style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+            <h3 style={{fontSize:13,fontWeight:600,color:'#333',marginBottom:12}}>{section.title}</h3>
+            {section.items.map(item=>(
+              <div key={item.name} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 0',borderBottom:'1px solid #f5f5f5'}}>
+                <span style={{fontSize:16}}>{item.flag}</span>
+                <span style={{fontSize:13,color:'#333',flex:1}}>{item.name}</span>
+                <div style={{textAlign:'right' as const}}>
+                  <div style={{fontSize:13,fontWeight:600}}>{item.val.toLocaleString()}</div>
+                  <Change val={item.change} up={item.up}/>
+                </div>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function SocialFacebookEngagement(){
+  const postEngData = FB_TIME.map(t=>({d:t.d.replace(' Apr',''), v:Math.round(t.views*2.8+800), v2:Math.round(t.views*5.5+1200)}))
+  const mediaViewsData = FB_TIME.map(t=>({d:t.d.replace(' Apr',''), v:Math.round(t.views*55)}))
+  const videoViewsData = FB_TIME.map(t=>({d:t.d.replace(' Apr',''), nonPaid:Math.round(t.views*1.4), paid:0}))
+
+  return(
+    <div style={{flex:1,overflowY:'auto',padding:20,background:'#f8f9fa'}}>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
+        <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
+            <span style={{fontSize:13,color:'#555'}}>Post Engagement</span>
+            <div style={{display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:16,fontWeight:700}}>41,591</span><Change val="55%" up={false}/></div>
+          </div>
+          <ResponsiveContainer width="100%" height={200}>
+            <AreaChart data={postEngData}>
+              <defs><linearGradient id="peg1" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#48b5ea" stopOpacity={0.2}/><stop offset="95%" stopColor="#48b5ea" stopOpacity={0}/></linearGradient></defs>
+              <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{fontSize:9,fill:'#999'}}/>
+              <YAxis axisLine={false} tickLine={false} tick={{fontSize:10,fill:'#999'}} tickFormatter={(v:number)=>v>=1000?(v/1000)+'K':String(v)}/>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0"/>
+              <Tooltip contentStyle={{fontSize:11,borderRadius:6}}/>
+              <Area type="monotone" dataKey="v" stroke="#48b5ea" fill="url(#peg1)" strokeWidth={2} name="This period"/>
+              <Area type="monotone" dataKey="v2" stroke="#a8d8ff" fill="none" strokeWidth={1.5} strokeDasharray="4 2" name="Prev period"/>
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+        <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
+            <span style={{fontSize:13,color:'#555'}}>Page Follows</span>
+            <div style={{display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:16,fontWeight:700}}>104 K</span><Change val="1.39%" up={true}/></div>
+          </div>
+          <ResponsiveContainer width="100%" height={200}>
+            <AreaChart data={FB_TIME}>
+              <defs><linearGradient id="pfl1" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#4DA6FF" stopOpacity={0.4}/><stop offset="95%" stopColor="#4DA6FF" stopOpacity={0.1}/></linearGradient></defs>
+              <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{fontSize:9,fill:'#999'}}/>
+              <YAxis axisLine={false} tickLine={false} tick={{fontSize:10,fill:'#999'}} tickFormatter={(v:number)=>v>=1000?(v/1000).toFixed(0)+'K':String(v)} domain={[0,130000]}/>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0"/>
+              <Tooltip contentStyle={{fontSize:11,borderRadius:6}} formatter={(v:number)=>[v.toLocaleString(),'Follows']}/>
+              <Area type="monotone" dataKey="follows" stroke="#4DA6FF" fill="url(#pfl1)" strokeWidth={2}/>
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12,marginBottom:16}}>
+        {[
+          {label:'Post Engagement Rate',val:'1.35%',change:'54%',up:false},
+          {label:'Post Media Views',val:'101.0 K',change:'41%',up:false},
+          {label:'New Page Follows',val:'1,506',change:'32%',up:false},
+          {label:'Page Unfollows',val:'81',change:'13%',up:false},
+        ].map(k=>(
+          <div key={k.label} style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:'16px 20px'}}>
+            <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+              <span style={{fontSize:13,color:'#555'}}>{k.label}</span>
+              <Change val={k.change} up={k.up}/>
+            </div>
+            <p style={{fontSize:24,fontWeight:700,color:'#1a1a1a',letterSpacing:'-0.5px'}}>{k.val}</p>
+          </div>
+        ))}
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:16}}>
+        <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
+            <span style={{fontSize:13,color:'#555'}}>Post Media Views</span>
+            <div style={{display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:14,fontWeight:700}}>101 K</span><Change val="41%" up={false}/><button style={{background:'none',border:'none',cursor:'pointer',color:'#bbb'}}><MoreHorizontal size={12}/></button></div>
+          </div>
+          <ResponsiveContainer width="100%" height={160}>
+            <AreaChart data={mediaViewsData}>
+              <defs><linearGradient id="pmv1" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#48b5ea" stopOpacity={0.2}/><stop offset="95%" stopColor="#48b5ea" stopOpacity={0}/></linearGradient></defs>
+              <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{fontSize:8,fill:'#999'}}/>
+              <YAxis axisLine={false} tickLine={false} tick={{fontSize:9,fill:'#999'}} tickFormatter={(v:number)=>v>=1000?(v/1000)+'K':String(v)}/>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0"/>
+              <Tooltip contentStyle={{fontSize:11,borderRadius:6}}/>
+              <Area type="monotone" dataKey="v" stroke="#48b5ea" fill="url(#pmv1)" strokeWidth={2}/>
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
+            <span style={{fontSize:13,color:'#555'}}>Video Views</span>
+            <div style={{display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:14,fontWeight:700}}>10,016</span><Change val="8.65%" up={true}/></div>
+          </div>
+          <ResponsiveContainer width="100%" height={160}>
+            <AreaChart data={videoViewsData}>
+              <defs>
+                <linearGradient id="vv1" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#48b5ea" stopOpacity={0.3}/><stop offset="95%" stopColor="#48b5ea" stopOpacity={0}/></linearGradient>
+              </defs>
+              <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{fontSize:8,fill:'#999'}}/>
+              <YAxis axisLine={false} tickLine={false} tick={{fontSize:9,fill:'#999'}}/>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0"/>
+              <Tooltip contentStyle={{fontSize:11,borderRadius:6}}/>
+              <Area type="monotone" dataKey="nonPaid" stroke="#48b5ea" fill="url(#vv1)" strokeWidth={2} name="Non-Paid"/>
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20,display:'flex',flexDirection:'column'}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+            <span style={{fontSize:13,color:'#555'}}>Video Views</span>
+            <Change val="8.65%" up={true}/>
+          </div>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:16,flex:1}}>
+            <div style={{position:'relative',width:120,height:120,flexShrink:0}}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart><Pie data={[{name:'Non-Paid',value:10016,color:'#9CCC65'},{name:'Paid',value:1,color:'#F9B62A'}]} cx="50%" cy="50%" innerRadius={35} outerRadius={52} dataKey="value">{[{color:'#9CCC65'},{color:'#F9B62A'}].map((d,i)=><Cell key={i} fill={d.color}/>)}</Pie></PieChart>
+              </ResponsiveContainer>
+              <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
+                <span style={{fontSize:12,fontWeight:700}}>10,016</span>
+                <span style={{fontSize:8,color:'#999'}}>Video Views</span>
+              </div>
+            </div>
+            <div>
+              {[{name:'Non-Paid',val:'10,016',color:'#9CCC65'},{name:'Paid',val:'0',color:'#F9B62A'}].map(d=>(
+                <div key={d.name} style={{display:'flex',alignItems:'center',gap:6,marginBottom:8}}>
+                  <div style={{width:10,height:10,borderRadius:'50%',background:d.color}}/>
+                  <span style={{fontSize:12,color:'#333'}}>{d.name}</span>
+                  <span style={{fontSize:12,fontWeight:600,marginLeft:4}}>{d.val}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SocialPostCard({post}:{post:typeof FB_POSTS[0]}){
+  return(
+    <div style={{maxWidth:480,margin:'0 auto 24px',background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,overflow:'hidden'}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 16px'}}>
+        <div style={{display:'flex',alignItems:'center',gap:10}}>
+          <div style={{width:40,height:40,borderRadius:'50%',background:'linear-gradient(135deg,#20BB71,#48b5ea)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:16}}>🌿</div>
+          <div>
+            <div style={{fontSize:13,fontWeight:600,color:'#1a1a1a'}}>Atlanta Beltline</div>
+            <div style={{fontSize:11,color:'#999'}}>@Atlanta Beltline</div>
+          </div>
+        </div>
+        <span style={{fontSize:12,color:'#999'}}>{post.date}</span>
+      </div>
+      <div style={{width:'100%',height:280,background:post.bgColor||'#f0f0f0',display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden'}}>
+        <img src={post.image} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}} onError={e=>{(e.currentTarget as HTMLImageElement).style.display='none'}}/>
+      </div>
+      <div style={{padding:'12px 16px'}}>
+        <p style={{fontSize:13,color:'#333',lineHeight:1.5,marginBottom:12}}>{post.caption}</p>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',paddingTop:10,borderTop:'1px solid #f0f0f0'}}>
+          <span style={{fontSize:12,color:'#48b5ea',fontWeight:600,cursor:'pointer'}}>Comments</span>
+          <div style={{display:'flex',gap:8}}>
+            <span style={{background:'#f0f0f0',padding:'4px 10px',borderRadius:4,fontSize:11,fontWeight:600,color:'#555'}}>{post.impressions.toLocaleString()} POST IMPRESSIONS UNIQUE</span>
+            <span style={{background:'#f0f0f0',padding:'4px 10px',borderRadius:4,fontSize:11,fontWeight:600,color:'#555'}}>{post.likes} LIKES</span>
+            <span style={{background:'#f0f0f0',padding:'4px 10px',borderRadius:4,fontSize:11,fontWeight:600,color:'#555'}}>{post.clicks} CLICKS</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SocialFacebookPosts(){
+  return(
+    <div style={{flex:1,overflowY:'auto',padding:20,background:'#f8f9fa'}}>
+      {FB_POSTS.map((post,i)=><SocialPostCard key={i} post={post}/>)}
+    </div>
+  )
+}
+
+function SocialFacebookReels(){
+  return(
+    <div style={{flex:1,overflowY:'auto',padding:20,background:'#f8f9fa'}}>
+      {FB_REELS.map((reel,i)=>(
+        <div key={i} style={{maxWidth:480,margin:'0 auto 24px',background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,overflow:'hidden'}}>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 16px'}}>
+            <div style={{display:'flex',alignItems:'center',gap:10}}>
+              <div style={{width:40,height:40,borderRadius:'50%',background:'linear-gradient(135deg,#20BB71,#48b5ea)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:16}}>🌿</div>
+              <div>
+                <div style={{fontSize:13,fontWeight:600,color:'#1a1a1a'}}>Atlanta Beltline</div>
+                <div style={{fontSize:11,color:'#999'}}>@Atlanta Beltline</div>
+              </div>
+            </div>
+            <span style={{fontSize:12,color:'#999'}}>{reel.date}</span>
+          </div>
+          <div style={{width:'100%',height:380,background:'#1a1a1a',overflow:'hidden',position:'relative'}}>
+            <img src={reel.image} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}} onError={e=>{(e.currentTarget as HTMLImageElement).style.display='none'}}/>
+            <div style={{position:'absolute',bottom:12,right:12,background:'rgba(0,0,0,0.6)',borderRadius:4,padding:'4px 8px',fontSize:11,color:'#fff',display:'flex',alignItems:'center',gap:4}}>
+              <span>▶</span> Reel
+            </div>
+          </div>
+          <div style={{padding:'12px 16px'}}>
+            <p style={{fontSize:13,color:'#333',lineHeight:1.5,marginBottom:12}}>{reel.caption}</p>
+            <div style={{display:'flex',gap:8,paddingTop:10,borderTop:'1px solid #f0f0f0',flexWrap:'wrap' as const}}>
+              <span style={{background:'#f0f0f0',padding:'4px 10px',borderRadius:4,fontSize:11,fontWeight:600,color:'#555'}}>{reel.impressions.toLocaleString()} IMPRESSIONS</span>
+              <span style={{background:'#f0f0f0',padding:'4px 10px',borderRadius:4,fontSize:11,fontWeight:600,color:'#555'}}>{reel.likes} LIKES</span>
+              <span style={{background:'#f0f0f0',padding:'4px 10px',borderRadius:4,fontSize:11,fontWeight:600,color:'#555'}}>{reel.clicks} CLICKS</span>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+
 // ── Main export ───────────────────────────────────────────────────────────────
 export default function DrillDownPanel({clientName='Atlanta BeltLine Website',onClose}:DrillDownPanelProps){
   const [activeNav,setActiveNav]=useState('all')
@@ -1032,8 +1460,9 @@ export default function DrillDownPanel({clientName='Atlanta BeltLine Website',on
   const isConversion=CONVERSION_ITEMS.some(c=>c.id===activeNav)
   const isPages=PAGES_ITEMS.some(p=>p.id===activeNav)
   const isEvents=activeNav==='events-name'
+  const isSocial=FACEBOOK_ITEMS.some(f=>f.id===activeNav)
   const cd=CHANNEL_DATA[activeNav]||CHANNEL_DATA['all']
-  const activeLabel=[...CHANNELS,...AUDIENCE_ITEMS,...CONVERSION_ITEMS,...PAGES_ITEMS,{id:'events-name',label:'Event Name'}].find(c=>c.id===activeNav)?.label||'All Channels'
+  const activeLabel=[...CHANNELS,...AUDIENCE_ITEMS,...CONVERSION_ITEMS,...PAGES_ITEMS,{id:'events-name',label:'Event Name'},...FACEBOOK_ITEMS].find(c=>c.id===activeNav)?.label||'All Channels'
 
   function LeftNav(){
     return(
@@ -1079,9 +1508,21 @@ export default function DrillDownPanel({clientName='Atlanta BeltLine Website',on
             <button onClick={()=>setActiveNav('events-name')} style={{width:'100%',textAlign:'left' as const,padding:'7px 16px 7px 44px',fontSize:13,cursor:'pointer',border:'none',borderLeft:activeNav==='events-name'?'2px solid #48b5ea':'2px solid transparent',background:activeNav==='events-name'?'#f0f7ff':'transparent',color:activeNav==='events-name'?'#1a85c8':'#555',fontWeight:activeNav==='events-name'?600:400}}>Event Name</button>
           )}
         </>}
-        <button style={{width:'100%',display:'flex',alignItems:'center',gap:8,padding:'10px 16px',background:'none',border:'none',cursor:'pointer'}}>
-          <span style={{fontSize:14}}>📱</span><span style={{fontSize:13,fontWeight:600,color:'#1a1a1a',flex:1}}>Social</span><ChevronRight size={12} style={{color:'#999'}}/>
+        <button onClick={()=>toggleGroup('Social')} style={{width:'100%',display:'flex',alignItems:'center',gap:8,padding:'10px 16px',background:'none',border:'none',cursor:'pointer',textAlign:'left' as const}}>
+          <span style={{fontSize:14}}>📱</span><span style={{fontSize:13,fontWeight:600,color:'#1a1a1a',flex:1}}>Social</span>
+          <ChevronDown size={12} style={{color:'#999',transform:expandedGroups.has('Social')?'rotate(0deg)':'rotate(-90deg)',transition:'0.15s'}}/>
         </button>
+        {expandedGroups.has('Social')&&(
+          <>
+            <button onClick={()=>toggleGroup('Facebook')} style={{width:'100%',display:'flex',alignItems:'center',gap:8,padding:'7px 16px 7px 24px',background:'none',border:'none',cursor:'pointer',textAlign:'left' as const}}>
+              <span style={{fontSize:12}}>📘</span><span style={{fontSize:13,fontWeight:500,color:'#333',flex:1}}>Facebook</span>
+              <ChevronDown size={11} style={{color:'#999',transform:expandedGroups.has('Facebook')?'rotate(0deg)':'rotate(-90deg)',transition:'0.15s'}}/>
+            </button>
+            {expandedGroups.has('Facebook')&&FACEBOOK_ITEMS.map(item=>(
+              <button key={item.id} onClick={()=>setActiveNav(item.id)} style={{width:'100%',textAlign:'left' as const,padding:'7px 16px 7px 44px',fontSize:13,cursor:'pointer',border:'none',borderLeft:activeNav===item.id?'2px solid #48b5ea':'2px solid transparent',background:activeNav===item.id?'#f0f7ff':'transparent',color:activeNav===item.id?'#1a85c8':'#555',fontWeight:activeNav===item.id?600:400}}>{item.label}</button>
+            ))}
+          </>
+        )}
         <button style={{width:'100%',display:'flex',alignItems:'center',gap:8,padding:'10px 16px',background:'none',border:'none',cursor:'pointer'}}>
           <span style={{fontSize:14}}>💰</span><span style={{fontSize:13,fontWeight:600,color:'#1a1a1a',flex:1}}>Paid Ads</span><ChevronRight size={12} style={{color:'#999'}}/>
         </button>
@@ -1134,6 +1575,14 @@ export default function DrillDownPanel({clientName='Atlanta BeltLine Website',on
   }
 
   function renderContent(){
+    if(isSocial){
+      switch(activeNav){
+        case 'fb-page':       return <SocialFacebookPage/>
+        case 'fb-engagement': return <SocialFacebookEngagement/>
+        case 'fb-posts':      return <SocialFacebookPosts/>
+        case 'fb-reels':      return <SocialFacebookReels/>
+      }
+    }
     if(isEvents){
       return <EventsEventName search={tableSearch} onSearch={setTableSearch}/>
     }
@@ -1181,7 +1630,7 @@ export default function DrillDownPanel({clientName='Atlanta BeltLine Website',on
         </div>
         <div style={{display:'flex',flex:1,overflow:'hidden'}}>
           <div style={{width:220,minWidth:220,borderRight:'1px solid #e5e5e5',background:'#fff',display:'flex',flexDirection:'column',overflow:'hidden'}}><LeftNav/></div>
-          <div style={{flex:1,overflowY:'auto',padding:20,background:'#f8f9fa'}}>{renderContent()}</div>
+          {isSocial ? renderContent() : <div style={{flex:1,overflowY:'auto',padding:20,background:'#f8f9fa'}}>{renderContent()}</div>}
         </div>
       </div>
     </div>
