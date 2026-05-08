@@ -2924,6 +2924,358 @@ function FbaCustomEvents(){
 }
 
 
+
+// ── LINKEDIN ADS ──────────────────────────────────────────────────────────────
+const LI_ITEMS = [
+  { id:'li-campaign-groups', label:'Campaign Groups' },
+  { id:'li-campaigns',       label:'Campaigns' },
+  { id:'li-ads',             label:'Ads' },
+]
+const LI_DEMO_ITEMS = [
+  { id:'li-industry',      label:'Industry',      col:'INDUSTRY' },
+  { id:'li-company-size',  label:'Company Size',  col:'COMPANY SIZE' },
+  { id:'li-country',       label:'Country',       col:'COUNTRY' },
+  { id:'li-seniority',     label:'Seniority',     col:'SENIORITY' },
+  { id:'li-job-function',  label:'Job Function',  col:'JOB FUNCTION' },
+  { id:'li-company',       label:'Company',       col:'COMPANY' },
+]
+
+// LinkedIn empty 2-panel top row (Clicks + Clicks, both 0 / 0%)
+function LiTopPanels2(){
+  return(
+    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
+      {['Clicks','Clicks'].map((title,i)=>(
+        <div key={i} style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+            <span style={{fontSize:13,color:'#555'}}>{title}</span>
+            <div style={{display:'flex',alignItems:'center',gap:8}}>
+              <span style={{fontSize:16,fontWeight:700}}>0</span>
+              <span style={{fontSize:11,fontWeight:600,color:'#999',background:'#f0f0f0',padding:'2px 6px',borderRadius:4}}>0%</span>
+            </div>
+          </div>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:180,color:'#bbb',fontSize:13}}>No Clicks found for your date range</div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// LinkedIn 5 KPI cards (Clicks highlighted, Impressions, Cost, CPC, CTR)
+function LiKpiCards5(){
+  return(
+    <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:12,marginBottom:16}}>
+      {[
+        {label:'Clicks',val:'0',hl:true,badge:true},
+        {label:'Impressions',val:'0',hl:false,badge:true},
+        {label:'Cost',val:'$0.00',hl:false,badge:true},
+        {label:'CPC',val:'$0.00',hl:false,badge:true},
+        {label:'CTR',val:'0%',hl:false,badge:true},
+      ].map(k=>(
+        <div key={k.label} style={{background:'#fff',border:`${k.hl?2:1}px solid ${k.hl?'#48b5ea':'#e5e5e5'}`,borderRadius:8,padding:'16px 18px'}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+            <span style={{fontSize:13,color:'#555'}}>{k.label}</span>
+            <span style={{fontSize:11,fontWeight:600,color:'#999',background:'#f0f0f0',padding:'2px 6px',borderRadius:4}}>0%</span>
+          </div>
+          <p style={{fontSize:26,fontWeight:700,color:'#1a1a1a',letterSpacing:'-0.5px'}}>{k.val}</p>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// LinkedIn empty table
+function LiEmptyTable({cols,search,onSearch,showSearch=true,showMore=false}:{cols:string[];search?:string;onSearch?:(v:string)=>void;showSearch?:boolean;showMore?:boolean}){
+  return(
+    <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,overflow:'hidden'}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 16px',borderBottom:'1px solid #f0f0f0'}}>
+        <span style={{fontSize:12,color:'#666'}}>No results</span>
+        {showSearch&&<div style={{display:'flex',alignItems:'center',gap:8}}>
+          <input value={search||''} onChange={e=>onSearch&&onSearch(e.target.value)} placeholder="Search" style={{background:'#fafafa',border:'1px solid #e5e5e5',borderRadius:6,padding:'5px 10px',fontSize:12,outline:'none',width:160}}/>
+          {showMore&&<button style={{background:'none',border:'none',cursor:'pointer',color:'#bbb'}}><MoreHorizontal size={14}/></button>}
+        </div>}
+      </div>
+      <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:12}}>
+        <thead><tr style={{borderBottom:'1px solid #f0f0f0',background:'#fafafa'}}>
+          {cols.map(h=>(
+            <th key={h} style={{padding:'9px 14px',textAlign:h===cols[0]?'left':'right' as any,fontSize:11,fontWeight:600,color:'#888',whiteSpace:'nowrap' as const}}>{h}</th>
+          ))}
+        </tr></thead>
+        <tbody><tr><td colSpan={cols.length} style={{padding:'50px 20px',textAlign:'center' as const}}>
+          <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:10,color:'#bbb'}}>
+            <div style={{width:40,height:40,borderRadius:'50%',background:'#f0f0f0',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18}}>📄</div>
+            <span style={{fontSize:13}}>No data available in the table</span>
+          </div>
+        </td></tr></tbody>
+      </table>
+    </div>
+  )
+}
+
+// LinkedIn 3-panel empty row (Clicks, Impressions, Conversions) for Demographics
+function LiDemoTopPanels(){
+  return(
+    <>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:16,marginBottom:16}}>
+        {[
+          {title:'Clicks',msg:'No Clicks found for your date range'},
+          {title:'Impressions',msg:'No Impressions found for your date range'},
+          {title:'Conversions',msg:'No Conversions found for your date range'},
+        ].map((p,i)=>(
+          <div key={i} style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+            <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+              <span style={{fontSize:13,color:'#555'}}>{p.title}</span>
+              <span style={{fontSize:11,fontWeight:600,color:'#999',background:'#f0f0f0',padding:'2px 6px',borderRadius:4}}>0%</span>
+            </div>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:160,color:'#bbb',fontSize:13}}>{p.msg}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
+        {[
+          {title:'CTR',val:'0%',msg:'No CTR found for your date range'},
+          {title:'Conversion Rate',msg:'No Conversion Rate found for your date range'},
+        ].map((p,i)=>(
+          <div key={i} style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+            <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+              <span style={{fontSize:13,color:'#555'}}>{p.title}</span>
+              <div style={{display:'flex',alignItems:'center',gap:8}}>
+                {p.val&&<span style={{fontSize:16,fontWeight:700}}>{p.val}</span>}
+                <span style={{fontSize:11,fontWeight:600,color:'#999',background:'#f0f0f0',padding:'2px 6px',borderRadius:4}}>0%</span>
+              </div>
+            </div>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:160,color:'#bbb',fontSize:13}}>{p.msg}</div>
+          </div>
+        ))}
+      </div>
+    </>
+  )
+}
+
+function LiCampaignGroups({search,onSearch}:{search:string;onSearch:(v:string)=>void}){
+  return(
+    <>
+      <LiTopPanels2/>
+      <LiKpiCards5/>
+      <LiEmptyTable cols={['CAMPAIGN GROUP','CLICKS ↓','IMPRESSIONS','COST','CPC','CTR','TYPE','STATUS']} search={search} onSearch={onSearch}/>
+    </>
+  )
+}
+
+function LiCampaigns({search,onSearch}:{search:string;onSearch:(v:string)=>void}){
+  return(
+    <>
+      <LiTopPanels2/>
+      <LiKpiCards5/>
+      <LiEmptyTable cols={['CAMPAIGN','CLICKS ↓','IMPRESSIONS','COST','CPC','CTR','TYPE','STATUS']} search={search} onSearch={onSearch}/>
+    </>
+  )
+}
+
+function LiAds({search,onSearch}:{search:string;onSearch:(v:string)=>void}){
+  return(
+    <>
+      <LiTopPanels2/>
+      <LiKpiCards5/>
+      <LiEmptyTable cols={['AD','THUMBNAIL','CLICKS ↓','IMPRESSIONS','COST','CPC','CTR','STATUS']} search={search} onSearch={onSearch}/>
+    </>
+  )
+}
+
+function LiDemoView({col,search,onSearch,showMore=false}:{col:string;search:string;onSearch:(v:string)=>void;showMore?:boolean}){
+  return(
+    <>
+      <LiDemoTopPanels/>
+      <LiEmptyTable cols={[col,'CLICKS ↓','IMPRESSIONS','COST','CPC','CTR']} search={search} onSearch={onSearch} showMore={showMore}/>
+    </>
+  )
+}
+
+
+
+// ── LINKEDIN ADS ──────────────────────────────────────────────────────────────
+const LI_ITEMS = [
+  { id:'li-campaign-groups', label:'Campaign Groups' },
+  { id:'li-campaigns',       label:'Campaigns' },
+  { id:'li-ads',             label:'Ads' },
+  { id:'li-demographics',    label:'Demographics', hasChildren:true },
+]
+const LI_DEMO_ITEMS = [
+  { id:'li-demo-industry',      label:'Industry' },
+  { id:'li-demo-company-size',  label:'Company Size' },
+  { id:'li-demo-country',       label:'Country' },
+  { id:'li-demo-seniority',     label:'Seniority' },
+  { id:'li-demo-job-function',  label:'Job Function' },
+  { id:'li-demo-company',       label:'Company' },
+]
+
+// Shared LinkedIn empty panel
+function LiEmptyPanel({title,metric,zero}:{title:string;metric:string;zero?:boolean}){
+  return(
+    <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20,flex:1}}>
+      <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+        <span style={{fontSize:13,color:'#555'}}>{title}</span>
+        <div style={{display:'flex',alignItems:'center',gap:6}}>
+          {zero?<span style={{fontSize:14,fontWeight:700,color:'#1a1a1a'}}>0</span>:<span style={{fontSize:13,color:'#bbb'}}>—</span>}
+          <span style={{fontSize:11,fontWeight:600,color:'#999',background:'#f0f0f0',padding:'2px 6px',borderRadius:4}}>0%</span>
+        </div>
+      </div>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:170,color:'#bbb',fontSize:13}}>No {metric} found for your date range</div>
+    </div>
+  )
+}
+
+// LinkedIn Campaigns/Campaign Groups/Ads — 2 panels + 5 KPI cards
+function LiCampaignLayout({tableCol,search,onSearch}:{tableCol:string;search:string;onSearch:(v:string)=>void}){
+  return(
+    <>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
+        <LiEmptyPanel title="Clicks" metric="Clicks" zero/>
+        <LiEmptyPanel title="Clicks" metric="Clicks" zero/>
+      </div>
+      {/* 5 KPI cards */}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:12,marginBottom:16}}>
+        {[
+          {label:'Clicks',val:'0',hl:true},{label:'Impressions',val:'0',hl:false},
+          {label:'Cost',val:'$0.00',hl:false},{label:'CPC',val:'$0.00',hl:false},{label:'CTR',val:'0%',hl:false},
+        ].map(k=>(
+          <div key={k.label} style={{background:'#fff',border:`${k.hl?2:1}px solid ${k.hl?'#48b5ea':'#e5e5e5'}`,borderRadius:8,padding:'16px 16px'}}>
+            <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+              <span style={{fontSize:12,color:'#555'}}>{k.label}</span>
+              <span style={{fontSize:11,fontWeight:600,color:'#999',background:'#f0f0f0',padding:'2px 6px',borderRadius:4}}>0%</span>
+            </div>
+            <p style={{fontSize:24,fontWeight:700,color:'#1a1a1a',letterSpacing:'-0.5px'}}>{k.val}</p>
+          </div>
+        ))}
+      </div>
+      <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,overflow:'hidden'}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 16px',borderBottom:'1px solid #f0f0f0'}}>
+          <span style={{fontSize:12,color:'#666'}}>No results</span>
+          <input value={search} onChange={e=>onSearch(e.target.value)} placeholder="Search" style={{background:'#fafafa',border:'1px solid #e5e5e5',borderRadius:6,padding:'5px 10px',fontSize:12,outline:'none',width:160}}/>
+        </div>
+        <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:12}}>
+          <thead><tr style={{borderBottom:'1px solid #f0f0f0',background:'#fafafa'}}>
+            {[tableCol,'CLICKS ↓','IMPRESSIONS','COST','CPC','CTR','TYPE','STATUS'].map(h=>(
+              <th key={h} style={{padding:'9px 12px',textAlign:h===tableCol?'left':'right' as any,fontSize:11,fontWeight:600,color:'#888',whiteSpace:'nowrap' as const}}>{h}</th>
+            ))}
+          </tr></thead>
+          <tbody><tr><td colSpan={8} style={{padding:'50px 20px',textAlign:'center' as const}}>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:10,color:'#bbb'}}>
+              <div style={{width:40,height:40,borderRadius:'50%',background:'#f0f0f0',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18}}>📄</div>
+              <span style={{fontSize:13}}>No data available in the table</span>
+            </div>
+          </td></tr></tbody>
+        </table>
+      </div>
+    </>
+  )
+}
+
+// LinkedIn Ads view has THUMBNAIL column
+function LiAdsView({search,onSearch}:{search:string;onSearch:(v:string)=>void}){
+  return(
+    <>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
+        <LiEmptyPanel title="Clicks" metric="Clicks" zero/>
+        <LiEmptyPanel title="Clicks" metric="Clicks" zero/>
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:12,marginBottom:16}}>
+        {[
+          {label:'Clicks',val:'0',hl:true},{label:'Impressions',val:'0',hl:false},
+          {label:'Cost',val:'$0.00',hl:false},{label:'CPC',val:'$0.00',hl:false},{label:'CTR',val:'0%',hl:false},
+        ].map(k=>(
+          <div key={k.label} style={{background:'#fff',border:`${k.hl?2:1}px solid ${k.hl?'#48b5ea':'#e5e5e5'}`,borderRadius:8,padding:'16px 16px'}}>
+            <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+              <span style={{fontSize:12,color:'#555'}}>{k.label}</span>
+              <span style={{fontSize:11,fontWeight:600,color:'#999',background:'#f0f0f0',padding:'2px 6px',borderRadius:4}}>0%</span>
+            </div>
+            <p style={{fontSize:24,fontWeight:700,color:'#1a1a1a',letterSpacing:'-0.5px'}}>{k.val}</p>
+          </div>
+        ))}
+      </div>
+      <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,overflow:'hidden'}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 16px',borderBottom:'1px solid #f0f0f0'}}>
+          <span style={{fontSize:12,color:'#666'}}>No results</span>
+          <div style={{display:'flex',alignItems:'center',gap:8}}>
+            <input value={search} onChange={e=>onSearch(e.target.value)} placeholder="Search" style={{background:'#fafafa',border:'1px solid #e5e5e5',borderRadius:6,padding:'5px 10px',fontSize:12,outline:'none',width:160}}/>
+            <button style={{background:'none',border:'none',cursor:'pointer',color:'#bbb'}}><MoreHorizontal size={14}/></button>
+          </div>
+        </div>
+        <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:12}}>
+          <thead><tr style={{borderBottom:'1px solid #f0f0f0',background:'#fafafa'}}>
+            {['AD','THUMBNAIL','CLICKS ↓','IMPRESSIONS','COST','CPC','CTR','STATUS'].map(h=>(
+              <th key={h} style={{padding:'9px 12px',textAlign:h==='AD'?'left':'right' as any,fontSize:11,fontWeight:600,color:'#888',whiteSpace:'nowrap' as const}}>{h}</th>
+            ))}
+          </tr></thead>
+          <tbody><tr><td colSpan={8} style={{padding:'50px 20px',textAlign:'center' as const}}>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:10,color:'#bbb'}}>
+              <div style={{width:40,height:40,borderRadius:'50%',background:'#f0f0f0',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18}}>📄</div>
+              <span style={{fontSize:13}}>No data available in the table</span>
+            </div>
+          </td></tr></tbody>
+        </table>
+      </div>
+    </>
+  )
+}
+
+// LinkedIn Demographics views — 5 panels (3+2) + table
+function LiDemoView({colName,tableLabel,search,onSearch,showMore}:{colName:string;tableLabel:string;search:string;onSearch:(v:string)=>void;showMore?:boolean}){
+  return(
+    <>
+      {/* Top row: 3 panels */}
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:16,marginBottom:16}}>
+        <LiEmptyPanel title="Clicks" metric="Clicks"/>
+        <LiEmptyPanel title="Impressions" metric="Impressions"/>
+        <LiEmptyPanel title="Conversions" metric="Conversions"/>
+      </div>
+      {/* Middle row: 2 panels */}
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
+        <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+            <span style={{fontSize:13,color:'#555'}}>CTR</span>
+            <div style={{display:'flex',alignItems:'center',gap:6}}>
+              <span style={{fontSize:14,fontWeight:700}}>0%</span>
+              <span style={{fontSize:11,fontWeight:600,color:'#999',background:'#f0f0f0',padding:'2px 6px',borderRadius:4}}>0%</span>
+            </div>
+          </div>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:170,color:'#bbb',fontSize:13}}>No CTR found for your date range</div>
+        </div>
+        <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+            <span style={{fontSize:13,color:'#555'}}>Conversion Rate</span>
+            <div style={{display:'flex',alignItems:'center',gap:6}}>
+              <span style={{fontSize:14,fontWeight:700}}>0%</span>
+              <span style={{fontSize:11,fontWeight:600,color:'#999',background:'#f0f0f0',padding:'2px 6px',borderRadius:4}}>0%</span>
+            </div>
+          </div>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:170,color:'#bbb',fontSize:13}}>No Conversion Rate found for your date range</div>
+        </div>
+      </div>
+      {/* Table */}
+      <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,overflow:'hidden'}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 16px',borderBottom:'1px solid #f0f0f0'}}>
+          <span style={{fontSize:12,color:'#666'}}>No results</span>
+          {showMore&&<button style={{background:'none',border:'none',cursor:'pointer',color:'#bbb'}}><MoreHorizontal size={14}/></button>}
+        </div>
+        <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:12}}>
+          <thead><tr style={{borderBottom:'1px solid #f0f0f0',background:'#fafafa'}}>
+            {[tableLabel,'CLICKS ↓','IMPRESSIONS','COST','CPC','CTR'].map(h=>(
+              <th key={h} style={{padding:'9px 12px',textAlign:h===tableLabel?'left':'right' as any,fontSize:11,fontWeight:600,color:'#888',whiteSpace:'nowrap' as const}}>{h}</th>
+            ))}
+          </tr></thead>
+          <tbody><tr><td colSpan={6} style={{padding:'50px 20px',textAlign:'center' as const}}>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:10,color:'#bbb'}}>
+              <div style={{width:40,height:40,borderRadius:'50%',background:'#f0f0f0',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18}}>📄</div>
+              <span style={{fontSize:13}}>No data available in the table</span>
+            </div>
+          </td></tr></tbody>
+        </table>
+      </div>
+    </>
+  )
+}
+
+
 // ── Main export ───────────────────────────────────────────────────────────────
 export default function DrillDownPanel({clientName='Atlanta BeltLine Website',onClose}:DrillDownPanelProps){
   const [activeNav,setActiveNav]=useState('all')
@@ -2937,10 +3289,10 @@ export default function DrillDownPanel({clientName='Atlanta BeltLine Website',on
   const isPages=PAGES_ITEMS.some(p=>p.id===activeNav)
   const isEvents=activeNav==='events-name'
   const isSocial=FACEBOOK_ITEMS.some(f=>f.id===activeNav)
-  const GA_ALL_IDS=[...GOOGLE_ADS_ITEMS,...KEYWORD_ITEMS,'ga-demo-age','ga-demo-gender','ga-demo-location','ga-demo-devices',...FB_ADS_ITEMS]
+  const GA_ALL_IDS=[...GOOGLE_ADS_ITEMS,...KEYWORD_ITEMS,'ga-demo-age','ga-demo-gender','ga-demo-location','ga-demo-devices',...FB_ADS_ITEMS,...LI_ITEMS,...LI_DEMO_ITEMS]
   const isPaidAds=GA_ALL_IDS.some(g=>(typeof g==='string'?g:g.id)===activeNav)
   const cd=CHANNEL_DATA[activeNav]||CHANNEL_DATA['all']
-  const activeLabel=[...CHANNELS,...AUDIENCE_ITEMS,...CONVERSION_ITEMS,...PAGES_ITEMS,{id:'events-name',label:'Event Name'},...FACEBOOK_ITEMS,...GOOGLE_ADS_ITEMS,...KEYWORD_ITEMS,{id:'ga-demo-age',label:'Age'},{id:'ga-demo-gender',label:'Gender'},{id:'ga-demo-location',label:'Locale'},{id:'ga-demo-devices',label:'Devices'},...FB_ADS_ITEMS].find(c=>c.id===activeNav)?.label||'All Channels'
+  const activeLabel=[...CHANNELS,...AUDIENCE_ITEMS,...CONVERSION_ITEMS,...PAGES_ITEMS,{id:'events-name',label:'Event Name'},...FACEBOOK_ITEMS,...GOOGLE_ADS_ITEMS,...KEYWORD_ITEMS,{id:'ga-demo-age',label:'Age'},{id:'ga-demo-gender',label:'Gender'},{id:'ga-demo-location',label:'Locale'},{id:'ga-demo-devices',label:'Devices'},...FB_ADS_ITEMS,...LI_ITEMS,...LI_DEMO_ITEMS].find(c=>c.id===activeNav)?.label||'All Channels'
 
   function LeftNav(){
     return(
@@ -3057,9 +3409,23 @@ export default function DrillDownPanel({clientName='Atlanta BeltLine Website',on
               <button key={item.id} onClick={()=>setActiveNav(item.id)} style={{width:'100%',textAlign:'left' as const,padding:'6px 16px 6px 44px',fontSize:13,cursor:'pointer',border:'none',borderLeft:activeNav===item.id?'2px solid #48b5ea':'2px solid transparent',background:activeNav===item.id?'#f0f7ff':'transparent',color:activeNav===item.id?'#1a85c8':'#555',fontWeight:activeNav===item.id?600:400}}>{item.label}</button>
             ))}
             {/* LinkedIn Ads */}
-            <button style={{width:'100%',display:'flex',alignItems:'center',gap:8,padding:'7px 16px 7px 24px',background:'none',border:'none',cursor:'pointer'}}>
-              <span style={{fontSize:12}}>💼</span><span style={{fontSize:13,fontWeight:500,color:'#333',flex:1}}>LinkedIn Ads</span><ChevronRight size={11} style={{color:'#999'}}/>
+            <button onClick={()=>toggleGroup('LIAds')} style={{width:'100%',display:'flex',alignItems:'center',gap:8,padding:'7px 16px 7px 24px',background:'none',border:'none',cursor:'pointer',textAlign:'left' as const}}>
+              <span style={{fontSize:12}}>💼</span><span style={{fontSize:13,fontWeight:500,color:'#333',flex:1}}>LinkedIn Ads</span>
+              <ChevronDown size={11} style={{color:'#999',transform:expandedGroups.has('LIAds')?'rotate(0deg)':'rotate(-90deg)',transition:'0.15s'}}/>
             </button>
+            {expandedGroups.has('LIAds')&&(
+              <>
+                {LI_ITEMS.map(item=>(
+                  <button key={item.id} onClick={()=>setActiveNav(item.id)} style={{width:'100%',textAlign:'left' as const,padding:'6px 16px 6px 44px',fontSize:13,cursor:'pointer',border:'none',borderLeft:activeNav===item.id?'2px solid #48b5ea':'2px solid transparent',background:activeNav===item.id?'#f0f7ff':'transparent',color:activeNav===item.id?'#1a85c8':'#555',fontWeight:activeNav===item.id?600:400}}>{item.label}</button>
+                ))}
+                <button onClick={()=>toggleGroup('LIDemo')} style={{width:'100%',display:'flex',alignItems:'center',gap:6,padding:'6px 16px 6px 40px',background:'none',border:'none',cursor:'pointer',textAlign:'left' as const}}>
+                  <ChevronDown size={10} style={{color:'#888',transform:expandedGroups.has('LIDemo')?'rotate(0deg)':'rotate(-90deg)',transition:'0.15s'}}/><span style={{fontSize:13,color:'#555'}}>Demographics</span>
+                </button>
+                {expandedGroups.has('LIDemo')&&LI_DEMO_ITEMS.map(item=>(
+                  <button key={item.id} onClick={()=>setActiveNav(item.id)} style={{width:'100%',textAlign:'left' as const,padding:'6px 16px 6px 60px',fontSize:13,cursor:'pointer',border:'none',borderLeft:activeNav===item.id?'2px solid #48b5ea':'2px solid transparent',background:activeNav===item.id?'#f0f7ff':'transparent',color:activeNav===item.id?'#1a85c8':'#555',fontWeight:activeNav===item.id?600:400}}>{item.label}</button>
+                ))}
+              </>
+            )}
           </>
         )}
       </div>
@@ -3134,6 +3500,15 @@ export default function DrillDownPanel({clientName='Atlanta BeltLine Website',on
         case 'fba-demographics': return <FbaDemographics search={tableSearch} onSearch={setTableSearch}/>
         case 'fba-custom-conv':  return <FbaCustomConversions/>
         case 'fba-custom-events':return <FbaCustomEvents/>
+        case 'li-campaign-groups': return <LiCampaignGroups search={tableSearch} onSearch={setTableSearch}/>
+        case 'li-campaigns':       return <LiCampaigns search={tableSearch} onSearch={setTableSearch}/>
+        case 'li-ads':             return <LiAds search={tableSearch} onSearch={setTableSearch}/>
+        case 'li-industry':        return <LiDemoView col="INDUSTRY" search={tableSearch} onSearch={setTableSearch}/>
+        case 'li-company-size':    return <LiDemoView col="COMPANY SIZE" search={tableSearch} onSearch={setTableSearch}/>
+        case 'li-country':         return <LiDemoView col="COUNTRY" search={tableSearch} onSearch={setTableSearch}/>
+        case 'li-seniority':       return <LiDemoView col="SENIORITY" search={tableSearch} onSearch={setTableSearch} showMore={true}/>
+        case 'li-job-function':    return <LiDemoView col="JOB FUNCTION" search={tableSearch} onSearch={setTableSearch}/>
+        case 'li-company':         return <LiDemoView col="COMPANY" search={tableSearch} onSearch={setTableSearch} showMore={true}/>
         default: return <GaCampaigns search={tableSearch} onSearch={setTableSearch}/>
       }})()
       return <div style={{flex:1,overflowY:'auto',padding:20,background:'#f8f9fa'}}>{inner}</div>
