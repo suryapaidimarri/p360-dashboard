@@ -1448,6 +1448,678 @@ function SocialFacebookReels(){
 }
 
 
+// ── PAID ADS: Google Ads ──────────────────────────────────────────────────────
+const GOOGLE_ADS_ITEMS = [
+  { id:'ga-overview',     label:'Overview',    hasChildren:true },
+  { id:'ga-campaigns',    label:'Campaigns',   hasChildren:false },
+  { id:'ga-pmax',         label:'PMax',        hasChildren:false },
+  { id:'ga-adgroups',     label:'Ad Groups',   hasChildren:false },
+  { id:'ga-keywords',     label:'Keywords',    hasChildren:true },
+  { id:'ga-shopping',     label:'Shopping',    hasChildren:false },
+  { id:'ga-ads',          label:'Ads',         hasChildren:false },
+  { id:'ga-conversions',  label:'Conversions', hasChildren:false },
+  { id:'ga-demographics', label:'Demographics',hasChildren:true },
+  { id:'ga-calls',        label:'Calls',       hasChildren:false },
+  { id:'ga-placements',   label:'Placements',  hasChildren:false },
+  { id:'ga-videos',       label:'Videos',      hasChildren:false },
+]
+const KEYWORD_ITEMS = [
+  { id:'ga-kw-search',    label:'Search Keywords' },
+  { id:'ga-kw-terms',     label:'Search Terms' },
+]
+const DEMO_ITEMS = [
+  { id:'ga-demo-age',     label:'Age' },
+  { id:'ga-demo-gender',  label:'Gender' },
+]
+
+const GA_CLICKS_DATA = [
+  {d:'1 Apr',v:102,v2:118},{d:'3 Apr',v:128,v2:134},{d:'5 Apr',v:115,v2:126},
+  {d:'7 Apr',v:142,v2:130},{d:'9 Apr',v:108,v2:122},{d:'11 Apr',v:135,v2:128},
+  {d:'13 Apr',v:148,v2:142},{d:'15 Apr',v:158,v2:144},{d:'17 Apr',v:132,v2:138},
+  {d:'19 Apr',v:155,v2:148},{d:'21 Apr',v:145,v2:150},{d:'23 Apr',v:128,v2:136},
+  {d:'25 Apr',v:110,v2:122},{d:'27 Apr',v:98,v2:108},{d:'29 Apr',v:88,v2:96},
+]
+const GA_CONV_DATA = [
+  {d:'1 Apr',v:8,v2:10},{d:'3 Apr',v:14,v2:12},{d:'5 Apr',v:11,v2:13},
+  {d:'7 Apr',v:16,v2:14},{d:'9 Apr',v:9,v2:11},{d:'11 Apr',v:13,v2:12},
+  {d:'13 Apr',v:17,v2:15},{d:'15 Apr',v:19,v2:16},{d:'17 Apr',v:12,v2:14},
+  {d:'19 Apr',v:15,v2:13},{d:'21 Apr',v:10,v2:12},{d:'23 Apr',v:8,v2:10},
+  {d:'25 Apr',v:6,v2:8},{d:'27 Apr',v:4,v2:6},{d:'29 Apr',v:3,v2:5},
+]
+
+// Standard KPI cards for Google Ads
+function GaKpiCards({hlCard,rows1,rows2}:{
+  hlCard:string;
+  rows1:{label:string;val:string;change:string;up:boolean}[];
+  rows2:{label:string;val:string;change:string;up:boolean;badge?:boolean}[];
+}){
+  return(
+    <>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12,marginBottom:12}}>
+        {rows1.map(k=>(
+          <div key={k.label} style={{background:'#fff',border:`${k.label===hlCard?2:1}px solid ${k.label===hlCard?'#48b5ea':'#e5e5e5'}`,borderRadius:8,padding:'16px 20px'}}>
+            <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+              <span style={{fontSize:13,color:'#555'}}>{k.label}</span>
+              {k.label===hlCard?<button style={{background:'none',border:'none',cursor:'pointer',color:'#bbb'}}><MoreHorizontal size={14}/></button>:<Change val={k.change} up={k.up}/>}
+            </div>
+            <p style={{fontSize:26,fontWeight:700,color:'#1a1a1a',letterSpacing:'-0.5px',lineHeight:1.2}}>{k.val}</p>
+            {k.label===hlCard&&<div style={{marginTop:6}}><Change val={k.change} up={k.up}/></div>}
+          </div>
+        ))}
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:`repeat(${rows2.length},1fr)`,gap:12}}>
+        {rows2.map(k=>(
+          <div key={k.label} style={{background:'#fff',border:`${k.label===hlCard?2:1}px solid ${k.label===hlCard?'#48b5ea':'#e5e5e5'}`,borderRadius:8,padding:'16px 20px'}}>
+            <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+              <span style={{fontSize:13,color:'#555'}}>{k.label}</span>
+              {k.badge?<span style={{fontSize:11,fontWeight:600,color:'#999',background:'#f0f0f0',padding:'2px 6px',borderRadius:4}}>0%</span>:(k.label===hlCard?<button style={{background:'none',border:'none',cursor:'pointer',color:'#bbb'}}><MoreHorizontal size={14}/></button>:<Change val={k.change} up={k.up}/>)}
+            </div>
+            <p style={{fontSize:26,fontWeight:700,color:'#1a1a1a',letterSpacing:'-0.5px'}}>{k.val}</p>
+            {k.label===hlCard&&<div style={{marginTop:6}}><Change val={k.change} up={k.up}/></div>}
+          </div>
+        ))}
+      </div>
+    </>
+  )
+}
+
+// Right horizontal bar list for top items
+function TopBarList({title,items}:{title:string;items:{label:string;value:number}[]}){
+  const max=items[0]?.value||1
+  return(
+    <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+      <div style={{display:'flex',justifyContent:'space-between',marginBottom:12}}>
+        <span style={{fontSize:13,color:'#555'}}>{title}</span>
+      </div>
+      {items.map(item=>(
+        <div key={item.label} style={{marginBottom:14}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:3}}>
+            <span style={{fontSize:12,color:'#333',flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' as const,paddingRight:12}}>{item.label}</span>
+            <span style={{fontSize:12,fontWeight:600,flexShrink:0}}>{item.value.toLocaleString()}</span>
+          </div>
+          <div style={{height:4,background:'#f0f0f0',borderRadius:2}}>
+            <div style={{height:'100%',width:`${(item.value/max)*100}%`,background:'#48b5ea',borderRadius:2}}/>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// Left area chart
+function GaAreaChart({metric,value,change,up,data}:{metric:string;value:string;change:string;up:boolean;data:typeof GA_CLICKS_DATA}){
+  return(
+    <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+      <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
+        <span style={{fontSize:13,color:'#555'}}>{metric}</span>
+        <div style={{display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:16,fontWeight:700}}>{value}</span><Change val={change} up={up}/></div>
+      </div>
+      <ResponsiveContainer width="100%" height={220}>
+        <AreaChart data={data}>
+          <defs>
+            <linearGradient id="gaa1" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#48b5ea" stopOpacity={0.2}/><stop offset="95%" stopColor="#48b5ea" stopOpacity={0}/></linearGradient>
+            <linearGradient id="gaa2" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#a8d8ff" stopOpacity={0.15}/><stop offset="95%" stopColor="#a8d8ff" stopOpacity={0}/></linearGradient>
+          </defs>
+          <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{fontSize:9,fill:'#999'}}/>
+          <YAxis axisLine={false} tickLine={false} tick={{fontSize:10,fill:'#999'}}/>
+          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0"/>
+          <Tooltip contentStyle={{fontSize:11,borderRadius:6}}/>
+          <Area type="monotone" dataKey="v" stroke="#48b5ea" fill="url(#gaa1)" strokeWidth={2} name="This period"/>
+          <Area type="monotone" dataKey="v2" stroke="#a8d8ff" fill="url(#gaa2)" strokeWidth={1.5} strokeDasharray="4 2" name="Prev period"/>
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
+// Empty state for PMax/Shopping
+function GaEmptyView({metric}:{metric:string}){
+  return(
+    <>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
+        {[0,1].map(i=>(
+          <div key={i} style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+            <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+              <span style={{fontSize:13,color:'#555'}}>Clicks</span>
+              <div style={{display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:16,fontWeight:700}}>0</span><span style={{fontSize:11,fontWeight:600,color:'#999',background:'#f0f0f0',padding:'2px 6px',borderRadius:4}}>0%</span></div>
+            </div>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:180,color:'#bbb',fontSize:13}}>No Clicks found for your date range</div>
+          </div>
+        ))}
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12,marginBottom:12}}>
+        {[
+          {label:'View-Through Conv.',val:'0',badge:true},
+          {label:'Avg CPC',val:'$0.00',badge:true},
+          {label:'Clicks',val:'0',hl:true,badge:true},
+          {label:'Conversion Rate',val:'0%',badge:true},
+        ].map(k=>(
+          <div key={k.label} style={{background:'#fff',border:`${(k as any).hl?2:1}px solid ${(k as any).hl?'#48b5ea':'#e5e5e5'}`,borderRadius:8,padding:'16px 20px'}}>
+            <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+              <span style={{fontSize:13,color:'#555'}}>{k.label}</span>
+              <span style={{fontSize:11,fontWeight:600,color:'#999',background:'#f0f0f0',padding:'2px 6px',borderRadius:4}}>0%</span>
+            </div>
+            <p style={{fontSize:26,fontWeight:700,color:'#1a1a1a',letterSpacing:'-0.5px'}}>{k.val}</p>
+          </div>
+        ))}
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12,marginBottom:16}}>
+        {[
+          {label:metric==='shopping'?'Cost':'Conversions',val:metric==='shopping'?'$0.00':'0'},
+          {label:metric==='shopping'?'Cost / Conversion':'Cost',val:'$0.00',hl:metric==='shopping'},
+          {label:'Impressions',val:'0'},
+        ].map(k=>(
+          <div key={k.label} style={{background:'#fff',border:`${(k as any).hl?2:1}px solid ${(k as any).hl?'#48b5ea':'#e5e5e5'}`,borderRadius:8,padding:'16px 20px'}}>
+            <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+              <span style={{fontSize:13,color:'#555'}}>{k.label}</span>
+              <span style={{fontSize:11,fontWeight:600,color:'#999',background:'#f0f0f0',padding:'2px 6px',borderRadius:4}}>0%</span>
+            </div>
+            <p style={{fontSize:26,fontWeight:700,color:'#1a1a1a',letterSpacing:'-0.5px'}}>{k.val}</p>
+          </div>
+        ))}
+      </div>
+    </>
+  )
+}
+
+// Standard GA table
+function GaTable({colLabel,rows,totalRows,search,onSearch,cols}:{
+  colLabel:string;rows:any[];totalRows:number;search:string;onSearch:(v:string)=>void;
+  cols:{key:string;label:string}[];
+}){
+  const filtered=rows.filter(r=>(r[cols[0].key]||'').toString().toLowerCase().includes(search.toLowerCase()))
+  return(
+    <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,overflow:'hidden',marginTop:16}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 16px',borderBottom:'1px solid #f0f0f0'}}>
+        <span style={{fontSize:12,color:'#666'}}>Showing {filtered.length} of {totalRows.toLocaleString()} Rows</span>
+        <div style={{display:'flex',alignItems:'center',gap:8}}>
+          <input value={search} onChange={e=>onSearch(e.target.value)} placeholder="Search" style={{background:'#fafafa',border:'1px solid #e5e5e5',borderRadius:6,padding:'5px 10px',fontSize:12,outline:'none',width:160}}/>
+          <button style={{background:'none',border:'none',cursor:'pointer',color:'#bbb'}}><MoreHorizontal size={14}/></button>
+        </div>
+      </div>
+      <div style={{overflowX:'auto' as const}}>
+        <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:12}}>
+          <thead><tr style={{borderBottom:'1px solid #f0f0f0',background:'#fafafa'}}>
+            <th style={{padding:'9px 14px',textAlign:'left' as const,fontSize:11,fontWeight:600,color:'#888'}}>{colLabel}</th>
+            {cols.slice(1).map(c=><th key={c.key} style={{padding:'9px 12px',textAlign:'right' as const,fontSize:11,fontWeight:600,color:'#888',whiteSpace:'nowrap' as const}}>{c.label}</th>)}
+          </tr></thead>
+          <tbody>
+            {filtered.map((row,i)=>(
+              <tr key={i} style={{borderBottom:'1px solid #f8f8f8',background:i%2===0?'#fff':'#fafafa'}}>
+                <td style={{padding:'11px 14px',fontWeight:500,color:'#1a85c8',textDecoration:'underline',cursor:'pointer',maxWidth:280,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' as const}}>{row[cols[0].key]}</td>
+                {cols.slice(1).map(c=>(
+                  <td key={c.key} style={{padding:'10px 12px',textAlign:'right' as const}}>
+                    {row[c.key+'_display']
+                      ? <div>{row[c.key+'_display']}</div>
+                      : <div>{row[c.key]!==undefined?(typeof row[c.key]==='number'&&c.key.includes('rate')?`${row[c.key]}%`:typeof row[c.key]==='number'&&(c.key.includes('cpc')||c.key.includes('cost'))?`$${row[c.key].toFixed(2)}`:typeof row[c.key]==='number'?row[c.key].toLocaleString():row[c.key]):'-'}</div>
+                    }
+                    {row[c.key+'_change']&&<Change val={row[c.key+'_change']} up={row[c.key+'_up']===undefined?true:row[c.key+'_up']}/>}
+                    {row[c.key+'_badge']&&<span style={{fontSize:10,fontWeight:600,color:'#999',background:'#f0f0f0',padding:'1px 5px',borderRadius:3}}>0%</span>}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+// ── Campaigns ─────────────────────────────────────────────────────────────────
+function GaCampaigns({search,onSearch}:{search:string;onSearch:(v:string)=>void}){
+  const rows=[{
+    campaign:'ABP|Google|Search|All|Main',
+    vtc:0,vtc_badge:true,
+    avg_cpc:1.78,avg_cpc_change:'1.42%',avg_cpc_up:true,
+    clicks:3446,clicks_change:'2.16%',clicks_up:false,
+    conv_rate:'6.17%',conv_rate_change:'0.32%',conv_rate_up:false,
+    conversions:'212.53',conversions_change:'2.44%',conversions_up:false,
+    cost:6119.06,cost_change:'3.55%',cost_up:true,
+    cost_conv:'$28.79',cost_conv_change:'1.14%',cost_conv_up:true,
+    impressions:31827,impressions_change:'8.93%',impressions_up:false,
+  }]
+  const barData=[{name:'ABP|Google|Search|All|Main',v:3446,color:'#4DA6FF'}]
+  return(
+    <>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
+        <GaAreaChart metric="Clicks" value="3,446" change="2.16%" up={false} data={GA_CLICKS_DATA}/>
+        <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+            <span style={{fontSize:13,color:'#555'}}>Clicks</span>
+            <div style={{display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:16,fontWeight:700}}>3,446</span><Change val="2.16%" up={false}/></div>
+          </div>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={barData} barSize={60}>
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize:9,fill:'#999'}}/>
+              <YAxis axisLine={false} tickLine={false} tick={{fontSize:10,fill:'#999'}} tickFormatter={(v:number)=>v>=1000?(v/1000)+'K':String(v)}/>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false}/>
+              <Tooltip contentStyle={{fontSize:11,borderRadius:6}} formatter={(v:number)=>[v.toLocaleString(),'Clicks']}/>
+              <Bar dataKey="v" radius={[3,3,0,0]}><Cell fill="#4DA6FF"/></Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+      <GaKpiCards hlCard="Clicks" rows1={[
+        {label:'View-Through Conv.',val:'0',change:'0%',up:true},
+        {label:'Avg CPC',val:'$1.78',change:'1.42%',up:true},
+        {label:'Clicks',val:'3,446',change:'2.16%',up:false},
+        {label:'Conversion Rate',val:'6.17%',change:'0.32%',up:false},
+      ]} rows2={[
+        {label:'Conversions',val:'212.53',change:'2.44%',up:false},
+        {label:'Cost',val:'$6,119.06',change:'3.55%',up:true},
+        {label:'Cost / Conversion',val:'$28.79',change:'1.14%',up:true},
+        {label:'Impressions',val:'31,827',change:'8.93%',up:false},
+      ]}/>
+      <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,overflow:'hidden',marginTop:16}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 16px',borderBottom:'1px solid #f0f0f0'}}>
+          <span style={{fontSize:12,color:'#666'}}>Showing 1 of 1 Rows</span>
+          <div style={{display:'flex',alignItems:'center',gap:8}}>
+            <input value={search} onChange={e=>onSearch(e.target.value)} placeholder="Search" style={{background:'#fafafa',border:'1px solid #e5e5e5',borderRadius:6,padding:'5px 10px',fontSize:12,outline:'none',width:160}}/>
+          </div>
+        </div>
+        <div style={{overflowX:'auto' as const}}>
+          <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:12}}>
+            <thead><tr style={{borderBottom:'1px solid #f0f0f0',background:'#fafafa'}}>
+              {['CAMPAIGN ↑','VIEW-THROUGH CONV.','AVG CPC','CLICKS','CONVERSION RATE','CONVERSIONS','COST','COST / CONVERSION','IMPRESSIONS'].map(h=>(
+                <th key={h} style={{padding:'9px 12px',textAlign:h==='CAMPAIGN ↑'?'left':'right' as any,fontSize:11,fontWeight:600,color:'#888',whiteSpace:'nowrap' as const}}>{h}</th>
+              ))}
+            </tr></thead>
+            <tbody>
+              {rows.filter(r=>r.campaign.toLowerCase().includes(search.toLowerCase())).map((row,i)=>(
+                <tr key={i} style={{borderBottom:'1px solid #f8f8f8'}}>
+                  <td style={{padding:'11px 12px',fontWeight:500,color:'#1a85c8',textDecoration:'underline',cursor:'pointer'}}>{row.campaign}</td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.vtc}</div><span style={{fontSize:10,background:'#f0f0f0',color:'#999',padding:'1px 5px',borderRadius:3}}>0%</span></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>${row.avg_cpc.toFixed(2)}</div><Change val={row.avg_cpc_change} up={row.avg_cpc_up}/></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.clicks.toLocaleString()}</div><Change val={row.clicks_change} up={row.clicks_up}/></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.conv_rate}</div><Change val={row.conv_rate_change} up={row.conv_rate_up}/></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.conversions}</div><Change val={row.conversions_change} up={row.conversions_up}/></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>${row.cost.toFixed(2)}</div><Change val={row.cost_change} up={row.cost_up}/></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.cost_conv}</div><Change val={row.cost_conv_change} up={row.cost_conv_up}/></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.impressions.toLocaleString()}</div><Change val={row.impressions_change} up={row.impressions_up}/></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  )
+}
+
+// ── Ad Groups ─────────────────────────────────────────────────────────────────
+function GaAdGroups({search,onSearch}:{search:string;onSearch:(v:string)=>void}){
+  const barData=[
+    {name:'Branded',v:2500,color:'#4DA6FF'},{name:'Events',v:618,color:'#9CCC65'},
+    {name:'Affordable Housing',v:155,color:'#F9B62A'},{name:'Race Series',v:120,color:'#A8D8FF'},
+    {name:'Fitness & Wellness',v:35,color:'#CE93D8'},{name:'Volunteering',v:15,color:'#FFB74D'},
+    {name:'Tax Assistance',v:3,color:'#B0BEC5'},
+  ]
+  const rows=[
+    {group:'Affordable Housing',vtc:0,vtc_badge:true,avg_cpc:'$1.80',cpc_ch:'5.26%',cpc_up:false,clicks:155,cl_ch:'52%',cl_up:true,conv_rate:'0.00%',cr_ch:'100%',cr_up:false,convs:'0.00',cv_ch:'100%',cv_up:false,cost:'$279.35',co_ch:'44%',co_up:true,cpc2:'$0.00',c2_ch:'100%',c2_up:false,imps:1560,im_ch:'9.70%',im_up:true},
+    {group:'Branded',vtc:0,vtc_badge:true,avg_cpc:'$1.76',cpc_ch:'0.75%',cpc_up:false,clicks:2500,cl_ch:'3.05%',cl_up:true,conv_rate:'6.87%',cr_ch:'8.89%',cr_up:false,convs:'171.75',cv_ch:'6.08%',cv_up:false,cost:'$4,396.60',co_ch:'2.28%',co_up:true,cpc2:'$25.60',c2_ch:'8.90%',c2_up:false,imps:17533,im_ch:'1.18%',im_up:false},
+    {group:'Events',vtc:0,vtc_badge:true,avg_cpc:'$1.88',cpc_ch:'0.47%',cpc_up:false,clicks:618,cl_ch:'25%',cl_up:false,conv_rate:'1.91%',cr_ch:'17%',cr_up:false,convs:'11.78',cv_ch:'38%',cv_up:false,cost:'$1,162.10',co_ch:'26%',co_up:true,cpc2:'$98.64',c2_ch:'20%',c2_up:false,imps:10468,im_ch:'21%',im_up:false},
+  ]
+  return(
+    <>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
+        <GaAreaChart metric="Clicks" value="3,446" change="2.16%" up={false} data={GA_CLICKS_DATA}/>
+        <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+            <span style={{fontSize:13,color:'#555'}}>Clicks</span>
+            <div style={{display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:16,fontWeight:700}}>3,446</span><Change val="2.16%" up={false}/></div>
+          </div>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={barData} barSize={26}>
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize:9,fill:'#999'}}/>
+              <YAxis axisLine={false} tickLine={false} tick={{fontSize:10,fill:'#999'}} tickFormatter={(v:number)=>v>=1000?(v/1000)+'K':String(v)}/>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false}/>
+              <Tooltip contentStyle={{fontSize:11,borderRadius:6}} formatter={(v:number)=>[v.toLocaleString(),'Clicks']}/>
+              <Bar dataKey="v" radius={[3,3,0,0]}>{barData.map((d,i)=><Cell key={i} fill={d.color}/>)}</Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+      <GaKpiCards hlCard="Clicks" rows1={[
+        {label:'View-Through Conv.',val:'0',change:'0%',up:true},
+        {label:'Avg CPC',val:'$1.78',change:'1.42%',up:true},
+        {label:'Clicks',val:'3,446',change:'2.16%',up:false},
+        {label:'Conversion Rate',val:'6.17%',change:'0.32%',up:false},
+      ]} rows2={[
+        {label:'Conversions',val:'212.53',change:'2.44%',up:false},
+        {label:'Cost',val:'$6,119.06',change:'3.55%',up:true},
+        {label:'Cost / Conversion',val:'$28.79',change:'1.14%',up:true},
+        {label:'Impressions',val:'31,827',change:'8.93%',up:false},
+      ]}/>
+      <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,overflow:'hidden',marginTop:16}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 16px',borderBottom:'1px solid #f0f0f0'}}>
+          <span style={{fontSize:12,color:'#666'}}>Showing 7 of 7 Rows</span>
+          <div style={{display:'flex',alignItems:'center',gap:8}}>
+            <input value={search} onChange={e=>onSearch(e.target.value)} placeholder="Search" style={{background:'#fafafa',border:'1px solid #e5e5e5',borderRadius:6,padding:'5px 10px',fontSize:12,outline:'none',width:160}}/>
+            <button style={{background:'none',border:'none',cursor:'pointer',color:'#bbb'}}><MoreHorizontal size={14}/></button>
+          </div>
+        </div>
+        <div style={{overflowX:'auto' as const}}>
+          <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:12}}>
+            <thead><tr style={{borderBottom:'1px solid #f0f0f0',background:'#fafafa'}}>
+              {['AD GROUP ↑','VIEW-THROUGH CONV.','AVG CPC','CLICKS','CONVERSION RATE','CONVERSIONS','COST','COST / CONVERSION','IMPRESSIONS'].map(h=>(
+                <th key={h} style={{padding:'9px 12px',textAlign:h==='AD GROUP ↑'?'left':'right' as any,fontSize:11,fontWeight:600,color:'#888',whiteSpace:'nowrap' as const}}>{h}</th>
+              ))}
+            </tr></thead>
+            <tbody>
+              {rows.filter(r=>r.group.toLowerCase().includes(search.toLowerCase())).map((row,i)=>(
+                <tr key={i} style={{borderBottom:'1px solid #f8f8f8',background:i%2===0?'#fff':'#fafafa'}}>
+                  <td style={{padding:'11px 12px',fontWeight:500,color:'#1a85c8',textDecoration:'underline',cursor:'pointer'}}>{row.group}</td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>0</div><span style={{fontSize:10,background:'#f0f0f0',color:'#999',padding:'1px 5px',borderRadius:3}}>0%</span></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.avg_cpc}</div><Change val={row.cpc_ch} up={row.cpc_up}/></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.clicks.toLocaleString()}</div><Change val={row.cl_ch} up={row.cl_up}/></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.conv_rate}</div><Change val={row.cr_ch} up={row.cr_up}/></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.convs}</div><Change val={row.cv_ch} up={row.cv_up}/></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.cost}</div><Change val={row.co_ch} up={row.co_up}/></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.cpc2}</div><Change val={row.c2_ch} up={row.c2_up}/></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.imps.toLocaleString()}</div><Change val={row.im_ch} up={row.im_up}/></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  )
+}
+
+// ── Keywords (Search Keywords) ────────────────────────────────────────────────
+function GaSearchKeywords({search,onSearch}:{search:string;onSearch:(v:string)=>void}){
+  const rows=[
+    {kw:'atlanta beltline',vtc_badge:true,avg_cpc:'$1.74',cpc_ch:'0.32%',cpc_up:false,clicks:1554,cl_ch:'3.53%',cl_up:true,cr:'6.85%',cr_ch:'9.87%',cr_up:false,convs:'106.42',cv_ch:'6.77%',cv_up:false,cost:'$2,707.26',co_ch:'3.20%',co_up:true,cpc2:'$25.44',c2_ch:'11%',c2_up:true,imps:9744,im_ch:'12%',im_up:true},
+    {kw:'"atlanta the beltline"',vtc_badge:true,avg_cpc:'$1.82',cpc_ch:'0.38%',cpc_up:false,clicks:488,cl_ch:'53%',cl_up:true,cr:'5.50%',cr_ch:'2.83%',cr_up:false,convs:'26.83',cv_ch:'49%',cv_up:true,cost:'$888.04',co_ch:'3.34%',co_up:false,cpc2:'$33.09',c2_ch:'54%',c2_up:false,imps:3826,im_ch:'70%',im_up:true},
+    {kw:'affordable housing',vtc_badge:true,avg_cpc:'$1.85',cpc_ch:'4.24%',cpc_up:false,clicks:121,cl_ch:'36%',cl_up:true,cr:'0.00%',cr_ch:'100%',cr_up:false,convs:'0.00',cv_ch:'100%',cv_up:false,cost:'$224.07',co_ch:'30%',co_up:false,cpc2:'$0.00',c2_ch:'100%',c2_up:false,imps:1403,im_ch:'5.33%',im_up:false},
+    {kw:'atlanta beltline southside trail',vtc_badge:true,avg_cpc:'$1.69',cpc_ch:'2.10%',cpc_up:false,clicks:95,cl_ch:'18%',cl_up:true,cr:'5.26%',cr_ch:'4.80%',cr_up:true,convs:'5.00',cv_ch:'22%',cv_up:true,cost:'$160.55',co_ch:'2.90%',co_up:false,cpc2:'$32.11',c2_ch:'20%',c2_up:false,imps:1100,im_ch:'8%',im_up:true},
+  ]
+  return(
+    <>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
+        <GaAreaChart metric="Clicks" value="3,445" change="2.19%" up={false} data={GA_CLICKS_DATA}/>
+        <TopBarList title="Top Keywords" items={[
+          {label:'atlanta beltline',value:1554},
+          {label:'atlanta the beltline',value:488},
+          {label:'affordable housing',value:121},
+          {label:'atlanta beltline southside trail',value:95},
+        ]}/>
+      </div>
+      <GaKpiCards hlCard="Clicks" rows1={[
+        {label:'View-Through Conv.',val:'0',change:'0%',up:true},
+        {label:'Avg CPC',val:'$1.78',change:'1.42%',up:true},
+        {label:'Clicks',val:'3,445',change:'2.19%',up:false},
+        {label:'Conversion Rate',val:'6.17%',change:'0.32%',up:false},
+      ]} rows2={[
+        {label:'Conversions',val:'212.53',change:'2.44%',up:false},
+        {label:'Cost',val:'$6,117.09',change:'3.58%',up:true},
+        {label:'Cost / Conversion',val:'$28.78',change:'1.17%',up:true},
+        {label:'Impressions',val:'31,827',change:'8.93%',up:false},
+      ]}/>
+      <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,overflow:'hidden',marginTop:16}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 16px',borderBottom:'1px solid #f0f0f0'}}>
+          <span style={{fontSize:12,color:'#666'}}>Showing {rows.filter(r=>r.kw.toLowerCase().includes(search.toLowerCase())).length} of 100 Rows</span>
+          <div style={{display:'flex',alignItems:'center',gap:8}}>
+            <input value={search} onChange={e=>onSearch(e.target.value)} placeholder="Search" style={{background:'#fafafa',border:'1px solid #e5e5e5',borderRadius:6,padding:'5px 10px',fontSize:12,outline:'none',width:160}}/>
+          </div>
+        </div>
+        <div style={{overflowX:'auto' as const}}>
+          <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:12}}>
+            <thead><tr style={{borderBottom:'1px solid #f0f0f0',background:'#fafafa'}}>
+              {['KEYWORD','VIEW-THROUGH CONV.','AVG CPC','CLICKS ↓','CONVERSION RATE','CONVERSIONS','COST','COST / CONVERSION','IMPRESSIONS'].map(h=>(
+                <th key={h} style={{padding:'9px 12px',textAlign:h==='KEYWORD'?'left':'right' as any,fontSize:11,fontWeight:600,color:'#888',whiteSpace:'nowrap' as const}}>{h}</th>
+              ))}
+            </tr></thead>
+            <tbody>
+              {rows.filter(r=>r.kw.toLowerCase().includes(search.toLowerCase())).map((row,i)=>(
+                <tr key={i} style={{borderBottom:'1px solid #f8f8f8',background:i%2===0?'#fff':'#fafafa'}}>
+                  <td style={{padding:'11px 12px',color:'#333',display:'flex',alignItems:'center',gap:6}}><input type="checkbox" style={{marginRight:4}}/>{row.kw}</td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>0</div><span style={{fontSize:10,background:'#f0f0f0',color:'#999',padding:'1px 5px',borderRadius:3}}>0%</span></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.avg_cpc}</div><Change val={row.cpc_ch} up={row.cpc_up}/></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.clicks.toLocaleString()}</div><Change val={row.cl_ch} up={row.cl_up}/></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.cr}</div><Change val={row.cr_ch} up={row.cr_up}/></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.convs}</div><Change val={row.cv_ch} up={row.cv_up}/></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.cost}</div><Change val={row.co_ch} up={row.co_up}/></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.cpc2}</div><Change val={row.c2_ch} up={row.c2_up}/></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.imps.toLocaleString()}</div><Change val={row.im_ch} up={row.im_up}/></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  )
+}
+
+// ── Search Terms ──────────────────────────────────────────────────────────────
+function GaSearchTerms({search,onSearch}:{search:string;onSearch:(v:string)=>void}){
+  const rows=[
+    {term:'atlanta beltline',vtc_badge:true,avg_cpc:'$1.71',cpc_ch:'1.04%',cpc_up:false,clicks:718,cl_ch:'12%',cl_up:false,cr:'9.64%',cr_ch:'16%',cr_up:true,convs:'69.25',cv_ch:'2.65%',cv_up:true,cost:'$1,224.96',co_ch:'13%',co_up:false,cpc2:'$17.69',c2_ch:'15%',c2_up:false,imps:3958,im_ch:'0.95%',im_up:false},
+    {term:'beltline atlanta',vtc_badge:true,avg_cpc:'$1.73',cpc_ch:'0.25%',cpc_up:false,clicks:280,cl_ch:'15%',cl_up:false,cr:'7.32%',cr_ch:'54%',cr_up:true,convs:'20.50',cv_ch:'31%',cv_up:true,cost:'$485.01',co_ch:'35%',co_up:false,cpc2:'$23.66',c2_ch:'15%',c2_up:false,imps:1969,im_ch:'2.86%',im_up:false},
+    {term:'atlanta beltline map',vtc_badge:true,avg_cpc:'$1.73',cpc_ch:'6.12%',cpc_up:false,clicks:163,cl_ch:'21%',cl_up:true,cr:'0.61%',cr_ch:'88%',cr_up:false,convs:'1.00',cv_ch:'86%',cv_up:false,cost:'$282.42',co_ch:'13%',co_up:false,cpc2:'$282.42',c2_ch:'693%',c2_up:false,imps:1038,im_ch:'52%',im_up:true},
+    {term:'beltline',vtc_badge:true,avg_cpc:'$1.77',cpc_ch:'1.80%',cpc_up:false,clicks:110,cl_ch:'8%',cl_up:false,cr:'8.18%',cr_ch:'6.30%',cr_up:true,convs:'9.00',cv_ch:'3.80%',cv_up:true,cost:'$194.70',co_ch:'6.30%',co_up:false,cpc2:'$21.63',c2_ch:'2.50%',c2_up:false,imps:950,im_ch:'1.20%',im_up:false},
+  ]
+  return(
+    <>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
+        <GaAreaChart metric="Clicks" value="3,446" change="2.16%" up={false} data={GA_CLICKS_DATA}/>
+        <TopBarList title="Top Search Terms" items={[
+          {label:'atlanta beltline',value:718},
+          {label:'beltline atlanta',value:280},
+          {label:'atlanta beltline map',value:163},
+          {label:'beltline',value:110},
+        ]}/>
+      </div>
+      <GaKpiCards hlCard="Clicks" rows1={[
+        {label:'View-Through Conv.',val:'0',change:'0%',up:true},
+        {label:'Avg CPC',val:'$1.78',change:'1.42%',up:true},
+        {label:'Clicks',val:'3,446',change:'2.16%',up:false},
+        {label:'Conversion Rate',val:'6.17%',change:'0.32%',up:false},
+      ]} rows2={[
+        {label:'Conversions',val:'212.53',change:'2.44%',up:false},
+        {label:'Cost',val:'$6,119.06',change:'3.55%',up:true},
+        {label:'Cost / Conversion',val:'$28.79',change:'1.14%',up:true},
+        {label:'Impressions',val:'31,827',change:'8.93%',up:false},
+      ]}/>
+      <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,overflow:'hidden',marginTop:16}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 16px',borderBottom:'1px solid #f0f0f0'}}>
+          <span style={{fontSize:12,color:'#666'}}>Showing {rows.filter(r=>r.term.toLowerCase().includes(search.toLowerCase())).length} of 2,459 Rows</span>
+          <div style={{display:'flex',alignItems:'center',gap:8}}>
+            <input value={search} onChange={e=>onSearch(e.target.value)} placeholder="Search" style={{background:'#fafafa',border:'1px solid #e5e5e5',borderRadius:6,padding:'5px 10px',fontSize:12,outline:'none',width:160}}/>
+            <button style={{background:'none',border:'none',cursor:'pointer',color:'#bbb'}}><MoreHorizontal size={14}/></button>
+          </div>
+        </div>
+        <div style={{overflowX:'auto' as const}}>
+          <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:12}}>
+            <thead><tr style={{borderBottom:'1px solid #f0f0f0',background:'#fafafa'}}>
+              {['SEARCH TERM','VIEW-THROUGH CONV.','AVG CPC','CLICKS ↓','CONVERSION RATE','CONVERSIONS','COST','COST / CONVERSION','IMPRESSIONS'].map(h=>(
+                <th key={h} style={{padding:'9px 12px',textAlign:h==='SEARCH TERM'?'left':'right' as any,fontSize:11,fontWeight:600,color:'#888',whiteSpace:'nowrap' as const}}>{h}</th>
+              ))}
+            </tr></thead>
+            <tbody>
+              {rows.filter(r=>r.term.toLowerCase().includes(search.toLowerCase())).map((row,i)=>(
+                <tr key={i} style={{borderBottom:'1px solid #f8f8f8',background:i%2===0?'#fff':'#fafafa'}}>
+                  <td style={{padding:'11px 12px',color:'#333'}}>{row.term}</td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>0</div><span style={{fontSize:10,background:'#f0f0f0',color:'#999',padding:'1px 5px',borderRadius:3}}>0%</span></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.avg_cpc}</div><Change val={row.cpc_ch} up={row.cpc_up}/></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.clicks.toLocaleString()}</div><Change val={row.cl_ch} up={row.cl_up}/></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.cr}</div><Change val={row.cr_ch} up={row.cr_up}/></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.convs}</div><Change val={row.cv_ch} up={row.cv_up}/></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.cost}</div><Change val={row.co_ch} up={row.co_up}/></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.cpc2}</div><Change val={row.c2_ch} up={row.c2_up}/></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.imps.toLocaleString()}</div><Change val={row.im_ch} up={row.im_up}/></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  )
+}
+
+// ── Ads ───────────────────────────────────────────────────────────────────────
+function GaAds({search,onSearch}:{search:string;onSearch:(v:string)=>void}){
+  const rows=[
+    {ad:'Atlanta Beltline Events | Atlanta Beltline Things to Do |...',sub:'Check out our calendar of events for the most up to...',vtc_badge:true,avg_cpc:'$1.87',cpc_ch:'0.58%',cpc_up:false,clicks:307,cl_ch:'39%',cl_up:false,cr:'1.63%',cr_ch:'49%',cr_up:false,convs:'5.00',cv_ch:'69%',cv_up:false,cost:'$574.35',co_ch:'39%',co_up:false,cpc2:'$114.87',c2_ch:'95%',c2_up:false,imps:6153,im_ch:'26%',im_up:false},
+    {ad:'Atlanta Beltline Things to Do | Heart and Soul of Atlant...',sub:'No matter your age or skill, there are many paths to v...',vtc_badge:true,avg_cpc:'$1.57',cpc_ch:'2.46%',cpc_up:false,clicks:38,cl_ch:'73%',cl_up:true,cr:'10.53%',cr_ch:'67%',cr_up:true,convs:'4.00',cv_ch:'42%',cv_up:true,cost:'$59.80',co_ch:'68%',co_up:false,cpc2:'$14.95',c2_ch:'193%',c2_up:true,imps:388,im_ch:'15%',im_up:false},
+    {ad:'Atlanta Beltline Things to Do | Tour the Beltline | Find Y...',sub:'Register for a tour today to explore historic Atlanta ne...',vtc_badge:true,avg_cpc:'$1.89',cpc_ch:'0.69%',cpc_up:false,clicks:302,cl_ch:'3.82%',cl_up:false,cr:'1.91%',cr_ch:'99%',cr_up:false,convs:'5.78',cv_ch:'93%',cv_up:false,cost:'$571.48',co_ch:'4.49%',co_up:false,cpc2:'$98.85',c2_ch:'50%',c2_up:false,imps:4232,im_ch:'13%',im_up:false},
+  ]
+  return(
+    <>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
+        <GaAreaChart metric="Clicks" value="3,446" change="2.16%" up={false} data={GA_CLICKS_DATA}/>
+        <TopBarList title="Top Destination Urls" items={[
+          {label:'https://beltline.org/visit/',value:2500},
+          {label:'https://beltline.org/things-to-do/',value:311},
+          {label:'https://beltline.org/events/',value:307},
+          {label:'https://beltline.org/live/',value:155},
+        ]}/>
+      </div>
+      <GaKpiCards hlCard="Clicks" rows1={[
+        {label:'View-Through Conv.',val:'0',change:'0%',up:true},
+        {label:'Avg CPC',val:'$1.78',change:'1.42%',up:true},
+        {label:'Clicks',val:'3,446',change:'2.16%',up:false},
+        {label:'Conversion Rate',val:'6.17%',change:'0.32%',up:false},
+      ]} rows2={[
+        {label:'Conversions',val:'212.53',change:'2.44%',up:false},
+        {label:'Cost',val:'$6,119.06',change:'3.55%',up:true},
+        {label:'Cost / Conversion',val:'$28.79',change:'1.14%',up:true},
+        {label:'Impressions',val:'31,827',change:'8.93%',up:false},
+      ]}/>
+      <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,overflow:'hidden',marginTop:16}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 16px',borderBottom:'1px solid #f0f0f0'}}>
+          <span style={{fontSize:12,color:'#666'}}>Showing {rows.filter(r=>r.ad.toLowerCase().includes(search.toLowerCase())).length} of 19 Rows</span>
+          <div style={{display:'flex',alignItems:'center',gap:8}}>
+            <input value={search} onChange={e=>onSearch(e.target.value)} placeholder="Search" style={{background:'#fafafa',border:'1px solid #e5e5e5',borderRadius:6,padding:'5px 10px',fontSize:12,outline:'none',width:160}}/>
+            <button style={{background:'none',border:'none',cursor:'pointer',color:'#bbb'}}><MoreHorizontal size={14}/></button>
+          </div>
+        </div>
+        <div style={{overflowX:'auto' as const}}>
+          <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:12}}>
+            <thead><tr style={{borderBottom:'1px solid #f0f0f0',background:'#fafafa'}}>
+              {['AD ↑','VIEW-THROUGH CONV.','AVG CPC','CLICKS','CONVERSION RATE','CONVERSIONS','COST','COST / CONVERSION','IMPRESSIONS'].map(h=>(
+                <th key={h} style={{padding:'9px 12px',textAlign:h==='AD ↑'?'left':'right' as any,fontSize:11,fontWeight:600,color:'#888',whiteSpace:'nowrap' as const}}>{h}</th>
+              ))}
+            </tr></thead>
+            <tbody>
+              {rows.filter(r=>r.ad.toLowerCase().includes(search.toLowerCase())).map((row,i)=>(
+                <tr key={i} style={{borderBottom:'1px solid #f8f8f8',background:i%2===0?'#fff':'#fafafa'}}>
+                  <td style={{padding:'11px 12px',maxWidth:260,overflow:'hidden'}}>
+                    <div style={{color:'#1a85c8',textDecoration:'underline',cursor:'pointer',fontSize:12,whiteSpace:'nowrap' as const,overflow:'hidden',textOverflow:'ellipsis'}}>{row.ad}</div>
+                    <div style={{color:'#999',fontSize:11,marginTop:2,whiteSpace:'nowrap' as const,overflow:'hidden',textOverflow:'ellipsis'}}>{row.sub}</div>
+                  </td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>0</div><span style={{fontSize:10,background:'#f0f0f0',color:'#999',padding:'1px 5px',borderRadius:3}}>0%</span></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.avg_cpc}</div><Change val={row.cpc_ch} up={row.cpc_up}/></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.clicks}</div><Change val={row.cl_ch} up={row.cl_up}/></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.cr}</div><Change val={row.cr_ch} up={row.cr_up}/></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.convs}</div><Change val={row.cv_ch} up={row.cv_up}/></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.cost}</div><Change val={row.co_ch} up={row.co_up}/></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.cpc2}</div><Change val={row.c2_ch} up={row.c2_up}/></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.imps.toLocaleString()}</div><Change val={row.im_ch} up={row.im_up}/></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  )
+}
+
+// ── Conversions ───────────────────────────────────────────────────────────────
+function GaConversions({search,onSearch}:{search:string;onSearch:(v:string)=>void}){
+  const barData=[
+    {name:'Atlanta BeltLine ...',v:123,color:'#4DA6FF'},{name:'Atlanta BeltLine ...',v:37,color:'#9CCC65'},
+    {name:'Atlanta BeltLine ...',v:20,color:'#F9B62A'},{name:'Atlanta BeltLine ...',v:17,color:'#A8D8FF'},
+    {name:'Atlanta BeltLine ...',v:9.28,color:'#CE93D8'},{name:'Atlanta BeltLine ...',v:5,color:'#FFB74D'},
+    {name:'Atlanta BeltLine ...',v:1,color:'#B0BEC5'},
+  ]
+  const rows=[
+    {name:'Atlanta BeltLine Website (web) zoom_event_clicks',all_conv:'1.00',all_val:'$1.00',convs:'1.00',vtc:0,vtc_badge:true,conv_val:'$1.00',all_ch:'0%',all_up:true,av_ch:'0%',av_up:true,cv_ch:'0%',cv_up:true,vt_ch:'0%',vt_up:true,cval_ch:'0%',cval_up:true},
+    {name:'Atlanta BeltLine Website (web) volunteer_form_click',all_conv:'20.00',all_val:'$20.00',convs:'20.00',vtc:0,vtc_badge:true,conv_val:'$20.00',all_ch:'186%',all_up:true,av_ch:'186%',av_up:true,cv_ch:'186%',cv_up:true,vt_ch:'0%',vt_up:true,cval_ch:'186%',cval_up:true},
+    {name:'Atlanta BeltLine Website (web) shop_click',all_conv:'9.28',all_val:'$9.28',convs:'9.28',vtc:0,vtc_badge:true,conv_val:'$9.28',all_ch:'3.54%',all_up:true,av_ch:'3.54%',av_up:true,cv_ch:'3.54%',cv_up:true,vt_ch:'0%',vt_up:true,cval_ch:'3.54%',cval_up:true},
+    {name:'Atlanta BeltLine Website (web) file_download',all_conv:'123.00',all_val:'$123.00',convs:'123.00',vtc:0,vtc_badge:true,conv_val:'$123.00',all_ch:'3.36%',all_up:true,av_ch:'3.36%',av_up:true,cv_ch:'3.36%',cv_up:true,vt_ch:'0%',vt_up:true,cval_ch:'3.36%',cval_up:true},
+    {name:'Atlanta BeltLine Website (web) email_click',all_conv:'37.25',all_val:'$37.25',convs:'37.25',vtc:0,vtc_badge:true,conv_val:'$37.25',all_ch:'33%',all_up:false,av_ch:'33%',av_up:false,cv_ch:'33%',cv_up:false,vt_ch:'0%',vt_up:true,cval_ch:'33%',cval_up:false},
+  ]
+  return(
+    <>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
+        <GaAreaChart metric="Conversions" value="212.53" change="2.44%" up={false} data={GA_CONV_DATA}/>
+        <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,padding:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+            <span style={{fontSize:13,color:'#555'}}>Conversions</span>
+            <div style={{display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:16,fontWeight:700}}>212.53</span><Change val="2.44%" up={false}/></div>
+          </div>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={barData} barSize={26}>
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize:9,fill:'#999'}}/>
+              <YAxis axisLine={false} tickLine={false} tick={{fontSize:10,fill:'#999'}}/>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false}/>
+              <Tooltip contentStyle={{fontSize:11,borderRadius:6}}/>
+              <Bar dataKey="v" radius={[3,3,0,0]}>{barData.map((d,i)=><Cell key={i} fill={d.color}/>)}</Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+      {/* 5 KPI cards */}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:12,marginBottom:16}}>
+        {[
+          {label:'All Conversions',val:'212.53',change:'2.44%',up:false,hl:false},
+          {label:'All Conversion Value',val:'$212.53',change:'2.44%',up:false,hl:false},
+          {label:'Conversions',val:'212.53',change:'2.44%',up:false,hl:true},
+          {label:'View-Through Conv.',val:'0',change:'0%',up:true,hl:false,badge:true},
+          {label:'Conversion Value',val:'$212.53',change:'2.44%',up:false,hl:false},
+        ].map(k=>(
+          <div key={k.label} style={{background:'#fff',border:`${k.hl?2:1}px solid ${k.hl?'#48b5ea':'#e5e5e5'}`,borderRadius:8,padding:'16px 16px'}}>
+            <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+              <span style={{fontSize:12,color:'#555'}}>{k.label}</span>
+              {(k as any).badge?<span style={{fontSize:11,fontWeight:600,color:'#999',background:'#f0f0f0',padding:'2px 6px',borderRadius:4}}>0%</span>:(k.hl?<button style={{background:'none',border:'none',cursor:'pointer',color:'#bbb'}}><MoreHorizontal size={14}/></button>:<Change val={k.change} up={k.up}/>)}
+            </div>
+            <p style={{fontSize:22,fontWeight:700,color:'#1a1a1a',letterSpacing:'-0.5px'}}>{k.val}</p>
+            {k.hl&&<div style={{marginTop:6}}><Change val={k.change} up={k.up}/></div>}
+          </div>
+        ))}
+      </div>
+      {/* Table */}
+      <div style={{background:'#fff',border:'1px solid #e5e5e5',borderRadius:8,overflow:'hidden'}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 16px',borderBottom:'1px solid #f0f0f0'}}>
+          <span style={{fontSize:12,color:'#666'}}>Showing 7 of 7 Rows</span>
+          <div style={{display:'flex',alignItems:'center',gap:8}}>
+            <input value={search} onChange={e=>onSearch(e.target.value)} placeholder="Search" style={{background:'#fafafa',border:'1px solid #e5e5e5',borderRadius:6,padding:'5px 10px',fontSize:12,outline:'none',width:160}}/>
+            <button style={{background:'none',border:'none',cursor:'pointer',color:'#bbb'}}><MoreHorizontal size={14}/></button>
+          </div>
+        </div>
+        <div style={{overflowX:'auto' as const}}>
+          <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:12}}>
+            <thead><tr style={{borderBottom:'1px solid #f0f0f0',background:'#fafafa'}}>
+              {['CONVERSION NAME ↓','ALL CONVERSIONS','ALL CONVERSION VALUE','CONVERSIONS','VIEW-THROUGH CONV.','CONVERSION VALUE'].map(h=>(
+                <th key={h} style={{padding:'9px 12px',textAlign:h==='CONVERSION NAME ↓'?'left':'right' as any,fontSize:11,fontWeight:600,color:'#888',whiteSpace:'nowrap' as const}}>{h}</th>
+              ))}
+            </tr></thead>
+            <tbody>
+              {rows.filter(r=>r.name.toLowerCase().includes(search.toLowerCase())).map((row,i)=>(
+                <tr key={i} style={{borderBottom:'1px solid #f8f8f8',background:i%2===0?'#fff':'#fafafa'}}>
+                  <td style={{padding:'11px 12px',color:'#333',maxWidth:320,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' as const}}>{row.name}</td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.all_conv}</div><Change val={row.all_ch} up={row.all_up}/></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.all_val}</div><Change val={row.av_ch} up={row.av_up}/></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.convs}</div><Change val={row.cv_ch} up={row.cv_up}/></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.vtc}</div><span style={{fontSize:10,background:'#f0f0f0',color:'#999',padding:'1px 5px',borderRadius:3}}>0%</span></td>
+                  <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>{row.conv_val}</div><Change val={row.cval_ch} up={row.cval_up}/></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  )
+}
+
+
 // ── Main export ───────────────────────────────────────────────────────────────
 export default function DrillDownPanel({clientName='Atlanta BeltLine Website',onClose}:DrillDownPanelProps){
   const [activeNav,setActiveNav]=useState('all')
@@ -1461,8 +2133,9 @@ export default function DrillDownPanel({clientName='Atlanta BeltLine Website',on
   const isPages=PAGES_ITEMS.some(p=>p.id===activeNav)
   const isEvents=activeNav==='events-name'
   const isSocial=FACEBOOK_ITEMS.some(f=>f.id===activeNav)
+  const isPaidAds=[...GOOGLE_ADS_ITEMS,...KEYWORD_ITEMS].some(g=>g.id===activeNav)
   const cd=CHANNEL_DATA[activeNav]||CHANNEL_DATA['all']
-  const activeLabel=[...CHANNELS,...AUDIENCE_ITEMS,...CONVERSION_ITEMS,...PAGES_ITEMS,{id:'events-name',label:'Event Name'},...FACEBOOK_ITEMS].find(c=>c.id===activeNav)?.label||'All Channels'
+  const activeLabel=[...CHANNELS,...AUDIENCE_ITEMS,...CONVERSION_ITEMS,...PAGES_ITEMS,{id:'events-name',label:'Event Name'},...FACEBOOK_ITEMS,...GOOGLE_ADS_ITEMS,...KEYWORD_ITEMS].find(c=>c.id===activeNav)?.label||'All Channels'
 
   function LeftNav(){
     return(
@@ -1523,9 +2196,60 @@ export default function DrillDownPanel({clientName='Atlanta BeltLine Website',on
             ))}
           </>
         )}
-        <button style={{width:'100%',display:'flex',alignItems:'center',gap:8,padding:'10px 16px',background:'none',border:'none',cursor:'pointer'}}>
-          <span style={{fontSize:14}}>💰</span><span style={{fontSize:13,fontWeight:600,color:'#1a1a1a',flex:1}}>Paid Ads</span><ChevronRight size={12} style={{color:'#999'}}/>
+        <button onClick={()=>toggleGroup('PaidAds')} style={{width:'100%',display:'flex',alignItems:'center',gap:8,padding:'10px 16px',background:'none',border:'none',cursor:'pointer',textAlign:'left' as const}}>
+          <span style={{fontSize:14}}>💰</span><span style={{fontSize:13,fontWeight:600,color:'#1a1a1a',flex:1}}>Paid Ads</span>
+          <ChevronDown size={12} style={{color:'#999',transform:expandedGroups.has('PaidAds')?'rotate(0deg)':'rotate(-90deg)',transition:'0.15s'}}/>
         </button>
+        {expandedGroups.has('PaidAds')&&(
+          <>
+            <button onClick={()=>toggleGroup('GoogleAds')} style={{width:'100%',display:'flex',alignItems:'center',gap:8,padding:'7px 16px 7px 24px',background:'none',border:'none',cursor:'pointer',textAlign:'left' as const}}>
+              <span style={{fontSize:12}}>🎯</span><span style={{fontSize:13,fontWeight:500,color:'#333',flex:1}}>Google Ads</span>
+              <ChevronDown size={11} style={{color:'#999',transform:expandedGroups.has('GoogleAds')?'rotate(0deg)':'rotate(-90deg)',transition:'0.15s'}}/>
+            </button>
+            {expandedGroups.has('GoogleAds')&&<>
+              {/* Overview - expandable */}
+              <button onClick={()=>toggleGroup('GAOverview')} style={{width:'100%',display:'flex',alignItems:'center',gap:6,padding:'6px 16px 6px 40px',background:'none',border:'none',cursor:'pointer',textAlign:'left' as const}}>
+                <ChevronRight size={10} style={{color:'#888'}}/><span style={{fontSize:13,color:'#555'}}>Overview</span>
+              </button>
+              {/* Campaigns */}
+              <button onClick={()=>setActiveNav('ga-campaigns')} style={{width:'100%',textAlign:'left' as const,padding:'6px 16px 6px 52px',fontSize:13,cursor:'pointer',border:'none',borderLeft:activeNav==='ga-campaigns'?'2px solid #48b5ea':'2px solid transparent',background:activeNav==='ga-campaigns'?'#f0f7ff':'transparent',color:activeNav==='ga-campaigns'?'#1a85c8':'#555',fontWeight:activeNav==='ga-campaigns'?600:400}}>Campaigns</button>
+              {/* PMax */}
+              <button onClick={()=>setActiveNav('ga-pmax')} style={{width:'100%',textAlign:'left' as const,padding:'6px 16px 6px 52px',fontSize:13,cursor:'pointer',border:'none',borderLeft:activeNav==='ga-pmax'?'2px solid #48b5ea':'2px solid transparent',background:activeNav==='ga-pmax'?'#f0f7ff':'transparent',color:activeNav==='ga-pmax'?'#1a85c8':'#555',fontWeight:activeNav==='ga-pmax'?600:400}}>PMax</button>
+              {/* Ad Groups */}
+              <button onClick={()=>setActiveNav('ga-adgroups')} style={{width:'100%',textAlign:'left' as const,padding:'6px 16px 6px 52px',fontSize:13,cursor:'pointer',border:'none',borderLeft:activeNav==='ga-adgroups'?'2px solid #48b5ea':'2px solid transparent',background:activeNav==='ga-adgroups'?'#f0f7ff':'transparent',color:activeNav==='ga-adgroups'?'#1a85c8':'#555',fontWeight:activeNav==='ga-adgroups'?600:400}}>Ad Groups</button>
+              {/* Keywords - expandable */}
+              <button onClick={()=>toggleGroup('GAKeywords')} style={{width:'100%',display:'flex',alignItems:'center',gap:6,padding:'6px 16px 6px 40px',background:'none',border:'none',cursor:'pointer',textAlign:'left' as const}}>
+                <ChevronDown size={10} style={{color:'#888',transform:expandedGroups.has('GAKeywords')?'rotate(0deg)':'rotate(-90deg)',transition:'0.15s'}}/><span style={{fontSize:13,color:'#555'}}>Keywords</span>
+              </button>
+              {expandedGroups.has('GAKeywords')&&<>
+                <button onClick={()=>setActiveNav('ga-kw-search')} style={{width:'100%',textAlign:'left' as const,padding:'6px 16px 6px 64px',fontSize:13,cursor:'pointer',border:'none',borderLeft:activeNav==='ga-kw-search'?'2px solid #48b5ea':'2px solid transparent',background:activeNav==='ga-kw-search'?'#f0f7ff':'transparent',color:activeNav==='ga-kw-search'?'#1a85c8':'#555',fontWeight:activeNav==='ga-kw-search'?600:400}}>Search Keywords</button>
+                <button onClick={()=>setActiveNav('ga-kw-terms')} style={{width:'100%',textAlign:'left' as const,padding:'6px 16px 6px 64px',fontSize:13,cursor:'pointer',border:'none',borderLeft:activeNav==='ga-kw-terms'?'2px solid #48b5ea':'2px solid transparent',background:activeNav==='ga-kw-terms'?'#f0f7ff':'transparent',color:activeNav==='ga-kw-terms'?'#1a85c8':'#555',fontWeight:activeNav==='ga-kw-terms'?600:400}}>Search Terms</button>
+              </>}
+              {/* Shopping */}
+              <button onClick={()=>setActiveNav('ga-shopping')} style={{width:'100%',textAlign:'left' as const,padding:'6px 16px 6px 52px',fontSize:13,cursor:'pointer',border:'none',borderLeft:activeNav==='ga-shopping'?'2px solid #48b5ea':'2px solid transparent',background:activeNav==='ga-shopping'?'#f0f7ff':'transparent',color:activeNav==='ga-shopping'?'#1a85c8':'#555',fontWeight:activeNav==='ga-shopping'?600:400}}>Shopping</button>
+              {/* Ads */}
+              <button onClick={()=>setActiveNav('ga-ads')} style={{width:'100%',textAlign:'left' as const,padding:'6px 16px 6px 52px',fontSize:13,cursor:'pointer',border:'none',borderLeft:activeNav==='ga-ads'?'2px solid #48b5ea':'2px solid transparent',background:activeNav==='ga-ads'?'#f0f7ff':'transparent',color:activeNav==='ga-ads'?'#1a85c8':'#555',fontWeight:activeNav==='ga-ads'?600:400}}>Ads</button>
+              {/* Conversions */}
+              <button onClick={()=>setActiveNav('ga-conversions')} style={{width:'100%',textAlign:'left' as const,padding:'6px 16px 6px 52px',fontSize:13,cursor:'pointer',border:'none',borderLeft:activeNav==='ga-conversions'?'2px solid #48b5ea':'2px solid transparent',background:activeNav==='ga-conversions'?'#f0f7ff':'transparent',color:activeNav==='ga-conversions'?'#1a85c8':'#555',fontWeight:activeNav==='ga-conversions'?600:400}}>Conversions</button>
+              {/* Demographics - expandable */}
+              <button onClick={()=>toggleGroup('GADemo')} style={{width:'100%',display:'flex',alignItems:'center',gap:6,padding:'6px 16px 6px 40px',background:'none',border:'none',cursor:'pointer',textAlign:'left' as const}}>
+                <ChevronRight size={10} style={{color:'#888'}}/><span style={{fontSize:13,color:'#555'}}>Demographics</span>
+              </button>
+              {/* Calls, Placements, Videos */}
+              {['ga-calls','ga-placements','ga-videos'].map(id=>(
+                <button key={id} onClick={()=>setActiveNav(id)} style={{width:'100%',textAlign:'left' as const,padding:'6px 16px 6px 52px',fontSize:13,cursor:'pointer',border:'none',borderLeft:activeNav===id?'2px solid #48b5ea':'2px solid transparent',background:activeNav===id?'#f0f7ff':'transparent',color:activeNav===id?'#1a85c8':'#555',fontWeight:activeNav===id?600:400}}>{id==='ga-calls'?'Calls':id==='ga-placements'?'Placements':'Videos'}</button>
+              ))}
+            </>}
+            {/* Facebook Ads */}
+            <button style={{width:'100%',display:'flex',alignItems:'center',gap:8,padding:'7px 16px 7px 24px',background:'none',border:'none',cursor:'pointer'}}>
+              <span style={{fontSize:12}}>📘</span><span style={{fontSize:13,fontWeight:500,color:'#333',flex:1}}>Facebook Ads</span><ChevronRight size={11} style={{color:'#999'}}/>
+            </button>
+            {/* LinkedIn Ads */}
+            <button style={{width:'100%',display:'flex',alignItems:'center',gap:8,padding:'7px 16px 7px 24px',background:'none',border:'none',cursor:'pointer'}}>
+              <span style={{fontSize:12}}>💼</span><span style={{fontSize:13,fontWeight:500,color:'#333',flex:1}}>LinkedIn Ads</span><ChevronRight size={11} style={{color:'#999'}}/>
+            </button>
+          </>
+        )}
       </div>
     )
   }
@@ -1575,6 +2299,20 @@ export default function DrillDownPanel({clientName='Atlanta BeltLine Website',on
   }
 
   function renderContent(){
+    if(isPaidAds){
+      const inner=(()=>{switch(activeNav){
+        case 'ga-campaigns':   return <GaCampaigns search={tableSearch} onSearch={setTableSearch}/>
+        case 'ga-pmax':        return <GaEmptyView metric="pmax"/>
+        case 'ga-adgroups':    return <GaAdGroups search={tableSearch} onSearch={setTableSearch}/>
+        case 'ga-kw-search':   return <GaSearchKeywords search={tableSearch} onSearch={setTableSearch}/>
+        case 'ga-kw-terms':    return <GaSearchTerms search={tableSearch} onSearch={setTableSearch}/>
+        case 'ga-shopping':    return <GaEmptyView metric="shopping"/>
+        case 'ga-ads':         return <GaAds search={tableSearch} onSearch={setTableSearch}/>
+        case 'ga-conversions': return <GaConversions search={tableSearch} onSearch={setTableSearch}/>
+        default: return <GaCampaigns search={tableSearch} onSearch={setTableSearch}/>
+      }})()
+      return <div style={{flex:1,overflowY:'auto',padding:20,background:'#f8f9fa'}}>{inner}</div>
+    }
     if(isSocial){
       switch(activeNav){
         case 'fb-page':       return <SocialFacebookPage/>
