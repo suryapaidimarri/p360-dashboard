@@ -136,13 +136,13 @@ function StepChooseSource({
   return (
     <div style={{display:'flex',flex:1,overflow:'hidden'}}>
       {/* Left panel */}
-      <div style={{width:340,minWidth:340,borderRight:'1px solid #e5e5e5',display:'flex',flexDirection:'column',padding:'32px 32px 24px'}}>
+      <div style={{width:340,minWidth:340,borderRight:'1px solid #e5e5e5',display:'flex',flexDirection:'column',padding:'28px 28px 20px',overflow:'hidden'}}>
         <h2 style={{fontSize:22,fontWeight:700,color:'#1a1a1a',marginBottom:8,textAlign:'center'}}>Add Page Template</h2>
-        <p style={{fontSize:13,color:'#888',textAlign:'center',lineHeight:1.6,marginBottom:28}}>You can make changes after it's added to your dashboard.</p>
-        <div style={{height:1,background:'#e5e5e5',marginBottom:20}}/>
+        <p style={{fontSize:13,color:'#888',textAlign:'center',lineHeight:1.6,marginBottom:20}}>You can make changes after it's added to your dashboard.</p>
+        <div style={{height:1,background:'#e5e5e5',marginBottom:16}}/>
 
         {/* Category dropdown */}
-        <div style={{position:'relative',marginBottom:10}}>
+        <div style={{position:'relative',marginBottom:8,flexShrink:0}}>
           <button onClick={()=>setCatOpen(o=>!o)} style={{
             width:'100%',display:'flex',alignItems:'center',justifyContent:'space-between',
             padding:'9px 14px',border:'1px solid #e5e5e5',borderRadius:6,background:'#fff',
@@ -169,40 +169,41 @@ function StepChooseSource({
         </div>
 
         {/* Search */}
-        <div style={{display:'flex',alignItems:'center',gap:8,border:'1px solid #e5e5e5',borderRadius:6,padding:'7px 12px',marginBottom:10,background:'#fff'}}>
+        <div style={{display:'flex',alignItems:'center',gap:8,border:'1px solid #e5e5e5',borderRadius:6,padding:'7px 12px',marginBottom:8,background:'#fff',flexShrink:0}}>
           <Search size={13} style={{color:'#bbb',flexShrink:0}}/>
           <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search"
             style={{border:'none',outline:'none',fontSize:13,color:'#333',width:'100%',background:'transparent'}}/>
         </div>
 
-        {/* Template list */}
-        <div style={{flex:1,overflowY:'auto',border:'1px solid #e5e5e5',borderRadius:6}}>
+        {/* Template list - scrollable, fixed height */}
+        <div style={{flex:1,overflowY:'auto',border:'1px solid #e5e5e5',borderRadius:6,minHeight:0}}>
           {filtered.map(t=>(
             <div key={t} onClick={()=>setSelected(t)} style={{
-              display:'flex',alignItems:'center',gap:10,padding:'10px 14px',
+              display:'flex',alignItems:'center',gap:12,padding:'11px 16px',
               borderBottom:'1px solid #f5f5f5',cursor:'pointer',
               background:selected===t?'#f0f9ff':'#fff',
             }}
               onMouseEnter={e=>{if(selected!==t)(e.currentTarget as HTMLDivElement).style.background='#fafafa'}}
-              onMouseLeave={e=>{if(selected!==t)(e.currentTarget as HTMLDivElement).style.background='#fff'}}>
+              onMouseLeave={e=>{if(selected!==t)(e.currentTarget as HTMLDivElement).style.background=selected===t?'#f0f9ff':'#fff'}}>
               <div style={{
-                width:16,height:16,borderRadius:'50%',flexShrink:0,
+                width:18,height:18,borderRadius:'50%',flexShrink:0,
                 border:`2px solid ${selected===t?'#48b5ea':'#ccc'}`,
-                background:selected===t?'#48b5ea':'#fff',
+                background:'#fff',
                 display:'flex',alignItems:'center',justifyContent:'center',
               }}>
-                {selected===t&&<div style={{width:6,height:6,borderRadius:'50%',background:'#fff'}}/>}
+                {selected===t&&<div style={{width:8,height:8,borderRadius:'50%',background:'#48b5ea'}}/>}
               </div>
               <span style={{fontSize:13,color:'#333'}}>{t}</span>
             </div>
           ))}
         </div>
 
-        {/* Buttons */}
-        <div style={{display:'flex',gap:10,marginTop:16}}>
+        {/* Buttons - always visible at bottom */}
+        <div style={{display:'flex',gap:10,marginTop:14,flexShrink:0,paddingTop:4}}>
           <button onClick={()=>selected&&onContinue(selected)} disabled={!selected} style={{
             background:selected?'#48b5ea':'#a8d8f0',border:'none',borderRadius:6,
             padding:'10px 24px',fontSize:13,fontWeight:600,color:'#fff',cursor:selected?'pointer':'default',
+            transition:'background 0.15s',
           }}>Continue</button>
           <button onClick={onCancel} style={{
             background:'#fff',border:'1px solid #e5e5e5',borderRadius:6,
@@ -356,13 +357,13 @@ export default function DashboardBuilder({ clientName, clientDomain, onClose }: 
       }}>
         <span style={{fontSize:15,fontWeight:700,color:'#1a1a1a'}}>Dashboard</span>
         <div style={{display:'flex',alignItems:'center',gap:8,marginLeft:4}}>
-          <div style={{width:22,height:22,borderRadius:'50%',overflow:'hidden',background:'#f0f0f0',flexShrink:0}}>
+          <div style={{width:24,height:24,borderRadius:'50%',overflow:'hidden',background:'#f0f0f0',flexShrink:0,border:'1px solid #e5e5e5'}}>
             <img src={`https://logo.clearbit.com/${clientDomain}`} alt=""
               style={{width:'100%',height:'100%',objectFit:'contain'}}
               onError={e=>(e.currentTarget.style.display='none')}/>
           </div>
-          <span style={{fontSize:13,color:'#555'}}>{clientName}</span>
-          <span style={{fontSize:11,background:'#f0f0f0',color:'#666',padding:'2px 8px',borderRadius:4}}>Client</span>
+          <span style={{fontSize:14,fontWeight:600,color:'#1a1a1a'}}>{clientName}</span>
+          <span style={{fontSize:11,background:'#e8f4fd',color:'#1a85c8',padding:'2px 10px',borderRadius:12,fontWeight:500}}>Client</span>
         </div>
         <div style={{display:'flex',alignItems:'center',gap:6,marginLeft:'auto'}}>
           <div style={{display:'flex',gap:1,background:'#f5f5f5',border:'1px solid #e5e5e5',borderRadius:6,padding:2}}>
@@ -537,8 +538,8 @@ export default function DashboardBuilder({ clientName, clientDomain, onClose }: 
           </div>
 
           {/* Step content */}
-          <div style={{flex:1,display:'flex',flexDirection:'column',margin:'24px auto',width:'100%',maxWidth:800,background:'transparent'}}>
-            <div style={{flex:1,background:'#fff',borderRadius:8,border:'1px solid #e5e5e5',overflow:'hidden',display:'flex',flexDirection:'column',boxShadow:'0 4px 24px rgba(0,0,0,0.08)'}}>
+          <div style={{display:'flex',flexDirection:'column',margin:'24px auto',width:'100%',maxWidth:800,background:'transparent',flex:1,minHeight:0}}>
+            <div style={{height:'75vh',background:'#fff',borderRadius:8,border:'1px solid #e5e5e5',overflow:'hidden',display:'flex',flexDirection:'column',boxShadow:'0 4px 24px rgba(0,0,0,0.08)'}}>
               {flowStep===1 && (
                 <StepChooseSource
                   onContinue={handleTemplateChoose}
