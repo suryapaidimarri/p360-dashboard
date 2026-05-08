@@ -90,6 +90,87 @@ const ADD_DASHBOARD_OPTIONS = [
   { icon:'⊞',  title:'Smart Dashboard', desc:'Generate a dashboard from your connected integrations' },
 ]
 
+
+function NewDashCanvas() {
+  const options = [
+    {
+      title: 'Add a page template',
+      desc: 'Choose from a ready-made template
+or one of your saved pages',
+      icon: (
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="4" y="4" width="12" height="12" rx="2" fill="#D0D0D0"/>
+          <rect x="20" y="4" width="12" height="12" rx="2" fill="#D0D0D0"/>
+          <rect x="4" y="20" width="12" height="7" rx="1.5" fill="#E8E8E8"/>
+          <rect x="20" y="20" width="12" height="7" rx="1.5" fill="#E8E8E8"/>
+          <circle cx="10" cy="30" r="2.5" fill="#48b5ea"/>
+        </svg>
+      ),
+    },
+    {
+      title: 'Build a page using AI',
+      desc: "Tell AI what you're trying to achieve,
+and watch it build your page",
+      icon: (
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="18" cy="18" r="12" stroke="#D0D0D0" strokeWidth="2"/>
+          <circle cx="18" cy="10" r="3" fill="#D0D0D0"/>
+          <path d="M14 18 L17 21 L23 15" stroke="#48b5ea" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M26 10 L28 14 L32 12" stroke="#D0D0D0" strokeWidth="1.5" strokeLinecap="round"/>
+        </svg>
+      ),
+    },
+    {
+      title: 'Clone existing page',
+      desc: 'Copy a page from another page',
+      icon: (
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="5" y="8" width="18" height="22" rx="2" stroke="#D0D0D0" strokeWidth="2"/>
+          <rect x="13" y="6" width="18" height="22" rx="2" stroke="#D0D0D0" strokeWidth="2" fill="#FAFAFA"/>
+          <path d="M18 13 h8" stroke="#E0E0E0" strokeWidth="1.5" strokeLinecap="round"/>
+          <path d="M18 17 h6" stroke="#E0E0E0" strokeWidth="1.5" strokeLinecap="round"/>
+          <path d="M18 21 h7" stroke="#E0E0E0" strokeWidth="1.5" strokeLinecap="round"/>
+        </svg>
+      ),
+    },
+    {
+      title: 'Smart Dashboard',
+      desc: 'Generate a dashboard from your
+connected integrations',
+      icon: (
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="4" y="9" width="28" height="18" rx="2" stroke="#D0D0D0" strokeWidth="2"/>
+          <path d="M4 15 h28" stroke="#D0D0D0" strokeWidth="1.5"/>
+          <rect x="8" y="19" width="7" height="5" rx="1" fill="#E0E0E0"/>
+          <rect x="20" y="19" width="7" height="5" rx="1" fill="#48b5ea" fillOpacity="0.35"/>
+          <rect x="14" y="27" width="8" height="2" rx="1" fill="#D0D0D0"/>
+        </svg>
+      ),
+    },
+  ]
+  return (
+    <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:6, background:'#f8f9fa' }}>
+      <p style={{ fontSize:15, color:'#555', marginBottom:2 }}>Start building by dragging widgets</p>
+      <p style={{ fontSize:13, color:'#bbb', marginBottom:20 }}>or</p>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, width:520 }}>
+        {options.map(opt => (
+          <button key={opt.title}
+            style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:14, padding:'30px 24px', background:'#fff', border:'1px solid #e8e8e8', borderRadius:8, cursor:'pointer', textAlign:'center' as const, transition:'border-color 0.15s, box-shadow 0.15s' }}
+            onMouseEnter={e => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor='#c8c8c8'; b.style.boxShadow='0 2px 8px rgba(0,0,0,0.07)' }}
+            onMouseLeave={e => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor='#e8e8e8'; b.style.boxShadow='none' }}
+          >
+            <div style={{ width:56, height:56, display:'flex', alignItems:'center', justifyContent:'center' }}>{opt.icon}</div>
+            <div>
+              <p style={{ fontSize:14, fontWeight:500, color:'#1a1a1a', marginBottom:6 }}>{opt.title}</p>
+              <p style={{ fontSize:12, color:'#aaa', lineHeight:1.6, whiteSpace:'pre-line' as const }}>{opt.desc}</p>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function ClientWorkspace({ params }: { params: { id: string } }) {
   const clientId = params.id
   const [activeTab, setActiveTab] = useState('Dashboards')
@@ -465,41 +546,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
           </div>
           <div style={{ padding: activeDash.startsWith('Untitled') ? 0 : 16, height: activeDash.startsWith('Untitled') ? '100%' : 'auto' }}>
             {activeDash.startsWith('Untitled') ? (
-              <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:6 }}>
-                <p style={{ fontSize:15, fontWeight:400, color:'#555', marginBottom:2 }}>Start building by dragging widgets</p>
-                <p style={{ fontSize:13, color:'#aaa', marginBottom:16 }}>or</p>
-                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, width:520 }}>
-                  {[
-                    { icon:(
-                        <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><rect x="4" y="4" width="10" height="10" rx="2" fill="#ccc"/><rect x="18" y="4" width="10" height="10" rx="2" fill="#ccc"/><rect x="4" y="18" width="10" height="6" rx="1" fill="#e0e0e0"/><rect x="18" y="18" width="10" height="6" rx="1" fill="#e0e0e0"/><circle cx="9" cy="26" r="2" fill="#48b5ea"/></svg>
-                      ), title:'Add a page template', desc:'Choose from a ready-made template
-or one of your saved pages' },
-                    { icon:(
-                        <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="10" stroke="#ccc" strokeWidth="2" fill="none"/><path d="M12 16 L15 19 L20 13" stroke="#48b5ea" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 6 L18 10 L22 8" stroke="#ccc" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                      ), title:'Build a page using AI', desc:"Tell AI what you're trying to achieve,
-and watch it build your page" },
-                    { icon:(
-                        <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><rect x="5" y="7" width="16" height="20" rx="2" stroke="#ccc" strokeWidth="2" fill="none"/><rect x="11" y="5" width="16" height="20" rx="2" stroke="#ccc" strokeWidth="2" fill="white"/><path d="M15 12 h8 M15 16 h6 M15 20 h7" stroke="#e0e0e0" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                      ), title:'Clone existing page', desc:'Copy a page from another page' },
-                    { icon:(
-                        <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><rect x="4" y="8" width="24" height="16" rx="2" stroke="#ccc" strokeWidth="2" fill="none"/><path d="M4 13 h24" stroke="#ccc" strokeWidth="1.5"/><rect x="8" y="17" width="6" height="4" rx="1" fill="#e0e0e0"/><rect x="18" y="17" width="6" height="4" rx="1" fill="#48b5ea" opacity="0.4"/></svg>
-                      ), title:'Smart Dashboard', desc:'Generate a dashboard from your
-connected integrations' },
-                  ].map(opt => (
-                    <button key={opt.title}
-                      style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:14, padding:'30px 24px', background:'#fff', border:'1px solid #e8e8e8', borderRadius:8, cursor:'pointer', textAlign:'center' as const, transition:'all 0.12s' }}
-                      onMouseEnter={e => { const b=e.currentTarget as HTMLButtonElement; b.style.borderColor='#d0d0d0'; b.style.boxShadow='0 2px 8px rgba(0,0,0,0.06)' }}
-                      onMouseLeave={e => { const b=e.currentTarget as HTMLButtonElement; b.style.borderColor='#e8e8e8'; b.style.boxShadow='none' }}
-                    >
-                      <div style={{ width:52, height:52, display:'flex', alignItems:'center', justifyContent:'center' }}>{opt.icon}</div>
-                      <div>
-                        <p style={{ fontSize:14, fontWeight:500, color:'#1a1a1a', marginBottom:6 }}>{opt.title}</p>
-                        <p style={{ fontSize:12, color:'#aaa', lineHeight:1.6, whiteSpace:'pre-line' as const }}>{opt.desc}</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <NewDashCanvas/>
             ) : (
             <><div style={{ background:'#48b5ea', borderRadius:8, padding:'18px 24px', marginBottom:12 }}>
               <h2 style={{ fontSize:20, fontWeight:700, color:'#fff' }}>Website Performance</h2>
