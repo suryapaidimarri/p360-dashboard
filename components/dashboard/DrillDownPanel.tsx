@@ -2375,7 +2375,7 @@ function GaDemoLocation({search,onSearch}:{search:string;onSearch:(v:string)=>vo
                 <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>3,446</div><Change val="2.16%" up={false}/></td>
                 <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>6.17%</div><Change val="2.15%" up={true}/></td>
                 <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>212.53</div><Change val="0.14%" up={true}/></td>
-                <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>$6,119.06</div><Change val="3.55%" up:={true}/></td>
+                <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>$6,119.06</div><Change val="3.55%" up={true}/></td>
                 <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>$28.79</div><Change val="3.41%" up={false}/></td>
                 <td style={{padding:'11px 12px',textAlign:'right' as const}}><div>31,827</div><Change val="8.93%" up={false}/></td>
               </tr>
