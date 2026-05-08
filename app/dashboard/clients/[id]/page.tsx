@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import DashboardBuilder from '@/components/dashboard/DashboardBuilder'
 import { ChevronRight, Sparkles, Settings, Calendar, ChevronDown, Plus, MoreHorizontal, Maximize2, X, Grip, RotateCcw, RotateCw, Monitor, Smartphone, ChevronLeft, RefreshCw, CheckCircle2 } from 'lucide-react'
 import Link from 'next/link'
 import { BarChart, Bar, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
@@ -197,6 +198,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [mappingSite, setMappingSite] = useState('')
   const [savingMapping, setSavingMapping] = useState(false)
   const [mappingSaved, setMappingSaved] = useState(false)
+  const [showBuilder, setShowBuilder] = useState(false)
   const [dashboards, setDashboards] = useState(DASHBOARDS)
   const [widgets, setWidgets] = useState<Widget[]>([
     {id:'w1',title:'Total Sessions',dataSource:'google-analytics-4 / traffic-analytics',chartType:'sparkline',tooltip:'Total sessions during the selected period.',color:'white',value:'120.5 K',change:'29%',up:true},
@@ -501,14 +503,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
         {/* Left panel */}
         <div style={{ width:220, minWidth:220, borderRight:'1px solid #e5e5e5', display:'flex', flexDirection:'column', background:'#fff' }}>
           <div style={{ padding:12 }}>
-            <button onClick={() => {
-                const newName = 'Untitled Dashboard'
-                setDashboards(prev => [...prev, newName])
-                setActiveDash(newName)
-                setEditMode(true)
-                setActiveRightPanel('integrations')
-                setEditingWidget(null)
-              }}
+            <button onClick={() => setShowBuilder(true)}
               style={{ width:'100%', display:'flex', alignItems:'center', gap:6, background:'#48b5ea', border:'none', borderRadius:6, padding:'8px 12px', color:'#fff', fontSize:12, fontWeight:600, cursor:'pointer' }}>
               <Plus size={13}/> {editMode ? 'Add blank dashboard' : 'Add Dashboard'}
             </button>
@@ -856,6 +851,15 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
         </div>
       )}
 
+
+      {/* Dashboard Builder full-screen overlay */}
+      {showBuilder && (
+        <DashboardBuilder
+          clientName={clientName}
+          clientDomain={clientDomain}
+          onClose={() => setShowBuilder(false)}
+        />
+      )}
 
       {/* Map Data Sources Modal */}
       {showMappingModal && (
