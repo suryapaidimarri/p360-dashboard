@@ -1,5 +1,6 @@
 'use client'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { X, Search, ChevronRight, Copy, LayoutGrid, FileText, BarChart2, TrendingUp, Check } from 'lucide-react'
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -191,9 +192,13 @@ export default function ClonePageModal({ onClose, onClone }: ClonePageModalProps
     }, 800)
   }
 
-  return (
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
+  if (!mounted) return null
+
+  const modal = (
     <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: 16 }}
       onClick={onClose}
     >
       <div
@@ -419,4 +424,5 @@ export default function ClonePageModal({ onClose, onClone }: ClonePageModalProps
       `}</style>
     </div>
   )
+  return createPortal(modal, document.body)
 }
