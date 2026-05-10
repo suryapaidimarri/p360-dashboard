@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import DashboardBuilder from '@/components/dashboard/DashboardBuilder'
+import ClonePageModal from '@/components/dashboard/ClonePageModal'
 import { ChevronRight, Sparkles, Settings, Calendar, ChevronDown, Plus, MoreHorizontal, Maximize2, X, Grip, RotateCcw, RotateCw, Monitor, Smartphone, ChevronLeft, RefreshCw, CheckCircle2 } from 'lucide-react'
 import Link from 'next/link'
 import { BarChart, Bar, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
@@ -35,35 +36,28 @@ const ALL_INTEGRATIONS = [
   { name:'LinkedIn Ads',         icon:'💼', bg:'#e3f2fd', connected:true },
   { name:'Semrush - Backlinks',  icon:'🔴', bg:'#fce4ec', connected:true },
   { name:'Semrush - Projects',   icon:'🔴', bg:'#fce4ec', connected:true },
-  { name:'ActiveCampaign',       icon:'✉', bg:'#f3f4f6', connected:false },
-  { name:'AdRoll',               icon:'⬡', bg:'#f3f4f6', connected:false },
-  { name:'Adform',               icon:'Ⓐ', bg:'#f3f4f6', connected:false },
-  { name:'Ahrefs',               icon:'🅰', bg:'#f3f4f6', connected:false },
-  { name:'Amazon Ads',           icon:'🅰', bg:'#f3f4f6', connected:false },
+  { name:'ActiveCampaign',       icon:'✉',  bg:'#f3f4f6', connected:false },
+  { name:'AdRoll',               icon:'⬡',  bg:'#f3f4f6', connected:false },
+  { name:'Adform',               icon:'Ⓐ',  bg:'#f3f4f6', connected:false },
+  { name:'Ahrefs',               icon:'🅰',  bg:'#f3f4f6', connected:false },
+  { name:'Amazon Ads',           icon:'🅰',  bg:'#f3f4f6', connected:false },
   { name:'Apple Search Ads',     icon:'🍎', bg:'#f3f4f6', connected:false },
   { name:'Appsflyer',            icon:'📱', bg:'#f3f4f6', connected:false },
-  { name:'Capterra',             icon:'⚑', bg:'#f3f4f6', connected:false },
-  { name:'Criteo',               icon:'Ⓒ', bg:'#f3f4f6', connected:false },
+  { name:'Capterra',             icon:'⚑',  bg:'#f3f4f6', connected:false },
+  { name:'Criteo',               icon:'Ⓒ',  bg:'#f3f4f6', connected:false },
   { name:'DV360',                icon:'📺', bg:'#f3f4f6', connected:false },
   { name:'HubSpot',              icon:'🟠', bg:'#f3f4f6', connected:false },
   { name:'Instagram',            icon:'📷', bg:'#f3f4f6', connected:false },
-  { name:'Klaviyo',              icon:'✉', bg:'#f3f4f6', connected:false },
+  { name:'Klaviyo',              icon:'✉',  bg:'#f3f4f6', connected:false },
   { name:'Mailchimp',            icon:'🐒', bg:'#f3f4f6', connected:false },
   { name:'Pinterest',            icon:'📌', bg:'#f3f4f6', connected:false },
-  { name:'Shopify',              icon:'🛍', bg:'#f3f4f6', connected:false },
+  { name:'Shopify',              icon:'🛍',  bg:'#f3f4f6', connected:false },
   { name:'Snapchat',             icon:'👻', bg:'#f3f4f6', connected:false },
   { name:'TikTok',               icon:'🎵', bg:'#f3f4f6', connected:false },
-  { name:'Twitter/X Ads',        icon:'𝕏', bg:'#f3f4f6', connected:false },
-  { name:'YouTube',              icon:'▶', bg:'#fce4ec', connected:false },
+  { name:'Twitter/X Ads',        icon:'𝕏',  bg:'#f3f4f6', connected:false },
+  { name:'YouTube',              icon:'▶',  bg:'#fce4ec', connected:false },
 ]
 
-const INTEGRATIONS = [
-  {name:'Bing Webmaster Tools',connected:true},{name:'Facebook Ads',connected:true},
-  {name:'Google Ads',connected:true},{name:'Google Analytics 4',connected:true},
-  {name:'Google Search Console',connected:true},{name:'HubSpot',connected:false},
-  {name:'Semrush - Backlinks',connected:true},{name:'ActiveCampaign',connected:false},
-  {name:'AdRoll',connected:false},{name:'Ahrefs',connected:false},
-]
 const STATIC_SESSIONS = [{d:'1A',v:8000},{d:'6A',v:19000},{d:'13A',v:10000},{d:'20A',v:11000},{d:'27A',v:7000},{d:'4M',v:7000},{d:'11M',v:7500},{d:'18M',v:8000},{d:'25M',v:7000}]
 const STATIC_DEVICES = [{name:'Mobile',v:56564},{name:'Desktop',v:31740},{name:'Tablet',v:785}]
 const STATIC_DONUT = [{name:'Organic Search',value:68639,color:'#2196f3'},{name:'Direct',value:30294,color:'#64b5f6'},{name:'Paid Social',value:8288,color:'#90caf9'},{name:'Organic Social',value:6570,color:'#bbdefb'}]
@@ -84,19 +78,13 @@ function formatNum(n: number) {
   return n.toString()
 }
 
-const ADD_DASHBOARD_OPTIONS = [
-  { icon:'🧩', title:'Add a page template', desc:'Choose from a ready-made template or one of your saved pages' },
-  { icon:'✦',  title:'Build a page using AI', desc:"Tell AI what you're trying to achieve, and watch it build your page" },
-  { icon:'⧉',  title:'Clone existing page', desc:'Copy a page from another page' },
-  { icon:'⊞',  title:'Smart Dashboard', desc:'Generate a dashboard from your connected integrations' },
-]
-
-
-function NewDashCanvas() {
+// ── NewDashCanvas — receives onClone callback ────────────────────────────────
+function NewDashCanvas({ onClone }: { onClone: () => void }) {
   const options = [
     {
       title: 'Add a page template',
       desc: 'Choose from a ready-made template or one of your saved pages',
+      onClick: undefined as (() => void) | undefined,
       icon: (
         <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
           <rect x="4" y="4" width="12" height="12" rx="2" fill="#D0D0D0"/>
@@ -110,6 +98,7 @@ function NewDashCanvas() {
     {
       title: 'Build a page using AI',
       desc: "Tell AI what you're trying to achieve, and watch it build your page",
+      onClick: undefined as (() => void) | undefined,
       icon: (
         <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
           <circle cx="18" cy="18" r="12" stroke="#D0D0D0" strokeWidth="2"/>
@@ -122,6 +111,7 @@ function NewDashCanvas() {
     {
       title: 'Clone existing page',
       desc: 'Copy a page from another page',
+      onClick: onClone,  // ← wired here
       icon: (
         <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
           <rect x="5" y="8" width="18" height="22" rx="2" stroke="#D0D0D0" strokeWidth="2"/>
@@ -135,6 +125,7 @@ function NewDashCanvas() {
     {
       title: 'Smart Dashboard',
       desc: 'Generate a dashboard from your connected integrations',
+      onClick: undefined as (() => void) | undefined,
       icon: (
         <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
           <rect x="4" y="9" width="28" height="18" rx="2" stroke="#D0D0D0" strokeWidth="2"/>
@@ -146,6 +137,7 @@ function NewDashCanvas() {
       ),
     },
   ]
+
   return (
     <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:6, background:'#f8f9fa' }}>
       <p style={{ fontSize:15, color:'#555', marginBottom:2 }}>Start building by dragging widgets</p>
@@ -153,6 +145,7 @@ function NewDashCanvas() {
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, width:520 }}>
         {options.map(opt => (
           <button key={opt.title}
+            onClick={opt.onClick}
             style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:14, padding:'30px 24px', background:'#fff', border:'1px solid #e8e8e8', borderRadius:8, cursor:'pointer', textAlign:'center' as const, transition:'border-color 0.15s, box-shadow 0.15s' }}
             onMouseEnter={e => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor='#c8c8c8'; b.style.boxShadow='0 2px 8px rgba(0,0,0,0.07)' }}
             onMouseLeave={e => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor='#e8e8e8'; b.style.boxShadow='none' }}
@@ -169,6 +162,7 @@ function NewDashCanvas() {
   )
 }
 
+// ── Main page ────────────────────────────────────────────────────────────────
 export default function ClientWorkspace({ params }: { params: { id: string } }) {
   const clientId = params.id
   const [activeTab, setActiveTab] = useState('Dashboards')
@@ -199,6 +193,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [savingMapping, setSavingMapping] = useState(false)
   const [mappingSaved, setMappingSaved] = useState(false)
   const [showBuilder, setShowBuilder] = useState(false)
+  const [showCloneModal, setShowCloneModal] = useState(false)   // ← NEW
   const [dashboards, setDashboards] = useState(DASHBOARDS)
   const [widgets, setWidgets] = useState<Widget[]>([
     {id:'w1',title:'Total Sessions',dataSource:'google-analytics-4 / traffic-analytics',chartType:'sparkline',tooltip:'Total sessions during the selected period.',color:'white',value:'120.5 K',change:'29%',up:true},
@@ -309,6 +304,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     setEditingWidget(null)
   }
 
+  // ── Sub-components ───────────────────────────────────────────────────────────
+
   function WidgetDot({ wid, onEdit }: { wid: string; onEdit: () => void }) {
     const isOpen = openMenu === wid
     return (
@@ -382,6 +379,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       </div>
     )
   }
+
+  // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
     <div style={{ display:'flex', flexDirection:'column', height:'100%', overflow:'hidden', background:'#fff' }}
@@ -536,106 +535,111 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
             {loadingData && <span style={{ fontSize:11, color:'#48b5ea', marginLeft:8 }}>↻ Loading...</span>}
             {connection?.connected && !loadingData && <span style={{ fontSize:11, color:'#20BB71', marginLeft:8 }}>● Live GA4 data</span>}
           </div>
+
+          {/* ── Canvas body ── */}
           <div style={{ padding: activeDash.startsWith('Untitled') ? 0 : 16, height: activeDash.startsWith('Untitled') ? '100%' : 'auto' }}>
             {activeDash.startsWith('Untitled') ? (
-              <NewDashCanvas/>
+              // Empty dashboard — pass onClone to open the ClonePageModal
+              <NewDashCanvas onClone={() => setShowCloneModal(true)} />
             ) : (
-            <><div style={{ background:'#48b5ea', borderRadius:8, padding:'18px 24px', marginBottom:12 }}>
-              <h2 style={{ fontSize:20, fontWeight:700, color:'#fff' }}>Website Performance</h2>
-              {connection?.connected && <p style={{ fontSize:11, color:'rgba(255,255,255,0.8)', marginTop:4 }}>Real-time data from {connection.email}</p>}
-            </div>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginBottom:10 }}>
-              {widgets.map(w => <KPICard key={w.id} w={w}/>)}
-            </div>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10, marginBottom:10 }}>
-              <ChartCard id="c1">
-                <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
-                  <span style={{ fontSize:11, color:'#666', fontWeight:500 }}>Sessions Over Time</span>
-                  {connection?.connected && <span style={{ fontSize:9, color:'#20BB71', fontWeight:600 }}>● Live</span>}
+              <>
+                <div style={{ background:'#48b5ea', borderRadius:8, padding:'18px 24px', marginBottom:12 }}>
+                  <h2 style={{ fontSize:20, fontWeight:700, color:'#fff' }}>Website Performance</h2>
+                  {connection?.connected && <p style={{ fontSize:11, color:'rgba(255,255,255,0.8)', marginTop:4 }}>Real-time data from {connection.email}</p>}
                 </div>
-                <ResponsiveContainer width="100%" height={80}>
-                  <LineChart data={sessionData}><Line type="monotone" dataKey="v" stroke="#48b5ea" strokeWidth={2} dot={false}/><Tooltip contentStyle={{ fontSize:10, borderRadius:4 }} formatter={(v:number) => [v.toLocaleString(),'Sessions']}/></LineChart>
-                </ResponsiveContainer>
-              </ChartCard>
-              <ChartCard id="c2">
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:110 }}>
-                  <div style={{ position:'relative', width:90, height:90 }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart><Pie data={[{v:44},{v:56}]} cx="50%" cy="50%" innerRadius={28} outerRadius={40} dataKey="v" startAngle={90} endAngle={-270}><Cell fill="#f9b62a"/><Cell fill="#e5e5e5"/></Pie></PieChart>
-                    </ResponsiveContainer>
-                    <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center' }}><span style={{ fontSize:18, fontWeight:700 }}>44</span></div>
-                  </div>
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginBottom:10 }}>
+                  {widgets.map(w => <KPICard key={w.id} w={w}/>)}
                 </div>
-              </ChartCard>
-              <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-                <ChartCard id="c3">
-                  <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
-                    <span style={{ fontSize:11, color:'#666' }}>Conversion Rate</span>
-                    <span style={{ fontSize:10, fontWeight:700, color:'#ef4444', background:'#fef2f2', padding:'2px 5px', borderRadius:4 }}>▼ 34%</span>
-                  </div>
-                  <span style={{ fontSize:24, fontWeight:700, color:'#1a1a1a' }}>3%</span>
-                </ChartCard>
-                <div
-                  onClick={() => { if (editMode) startEdit(widgets[3]) }}
-                  style={{ background:'#ef5350', border:`2px solid ${editingWidget?.id==='bounce' && editMode ? '#48b5ea' : '#ef5350'}`, borderRadius:8, padding:16, position:'relative', cursor: editMode ? 'pointer' : 'default' }}>
-                  {editMode && <div style={{ position:'absolute', top:6, left:6, cursor:'grab', color:'rgba(255,255,255,0.35)' }}><Grip size={13}/></div>}
-                  {editMode && (
-                    <div onClick={e => e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', gap:4 }}>
-                      <button style={{ background:'rgba(255,255,255,0.2)', border:'none', borderRadius:4, padding:'3px 5px', cursor:'pointer', display:'flex' }}><Maximize2 size={10} style={{ color:'rgba(255,255,255,0.8)' }}/></button>
-                      <WidgetDot wid="bounce" onEdit={() => startEdit(widgets[3])}/>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10, marginBottom:10 }}>
+                  <ChartCard id="c1">
+                    <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
+                      <span style={{ fontSize:11, color:'#666', fontWeight:500 }}>Sessions Over Time</span>
+                      {connection?.connected && <span style={{ fontSize:9, color:'#20BB71', fontWeight:600 }}>● Live</span>}
                     </div>
-                  )}
-                  <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}><span style={{ fontSize:11, color:'rgba(255,255,255,0.85)' }}>Bounce Rate</span><span style={{ fontSize:10, fontWeight:700, color:'rgba(255,255,255,0.95)', background:'rgba(255,255,255,0.18)', padding:'2px 6px', borderRadius:4 }}>▲ 6.84%</span></div>
-                  <p style={{ fontSize:26, fontWeight:700, color:'#fff', letterSpacing:'-0.5px' }}>39.23%</p>
-                </div>
-              </div>
-            </div>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10, marginBottom:10 }}>
-              <ChartCard id="d1">
-                <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
-                  <span style={{ fontSize:11, fontWeight:600 }}>Users By Device</span>
-                  {connection?.connected && <span style={{ fontSize:9, color:'#20BB71', fontWeight:600 }}>● Live</span>}
-                </div>
-                <ResponsiveContainer width="100%" height={110}>
-                  <BarChart data={deviceData} barSize={26}><XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'#999' }}/><YAxis hide/><Tooltip contentStyle={{ fontSize:10, borderRadius:4 }} formatter={(v:number) => [v.toLocaleString(),'']}/><Bar dataKey="v" radius={[3,3,0,0]}>{deviceData.map((_:any,i:number) => <Cell key={i} fill={['#2196f3','#42a5f5','#90caf9'][i%3]}/>)}</Bar></BarChart>
-                </ResponsiveContainer>
-              </ChartCard>
-              <ChartCard id="d2">
-                <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
-                  <span style={{ fontSize:11, fontWeight:600 }}>Top Referral Sources</span>
-                  {connection?.connected && <span style={{ fontSize:9, color:'#20BB71', fontWeight:600 }}>● Live</span>}
-                </div>
-                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                  <div style={{ position:'relative', width:80, height:80, flexShrink:0 }}>
-                    <ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={sourceData} cx="50%" cy="50%" innerRadius={24} outerRadius={36} dataKey="value">{sourceData.map((_:any,i:number) => <Cell key={i} fill={['#2196f3','#64b5f6','#90caf9','#bbdefb'][i%4]}/>)}</Pie></PieChart></ResponsiveContainer>
-                    <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}><span style={{ fontSize:9, fontWeight:700 }}>Sources</span></div>
+                    <ResponsiveContainer width="100%" height={80}>
+                      <LineChart data={sessionData}><Line type="monotone" dataKey="v" stroke="#48b5ea" strokeWidth={2} dot={false}/><Tooltip contentStyle={{ fontSize:10, borderRadius:4 }} formatter={(v:number) => [v.toLocaleString(),'Sessions']}/></LineChart>
+                    </ResponsiveContainer>
+                  </ChartCard>
+                  <ChartCard id="c2">
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:110 }}>
+                      <div style={{ position:'relative', width:90, height:90 }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart><Pie data={[{v:44},{v:56}]} cx="50%" cy="50%" innerRadius={28} outerRadius={40} dataKey="v" startAngle={90} endAngle={-270}><Cell fill="#f9b62a"/><Cell fill="#e5e5e5"/></Pie></PieChart>
+                        </ResponsiveContainer>
+                        <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center' }}><span style={{ fontSize:18, fontWeight:700 }}>44</span></div>
+                      </div>
+                    </div>
+                  </ChartCard>
+                  <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                    <ChartCard id="c3">
+                      <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
+                        <span style={{ fontSize:11, color:'#666' }}>Conversion Rate</span>
+                        <span style={{ fontSize:10, fontWeight:700, color:'#ef4444', background:'#fef2f2', padding:'2px 5px', borderRadius:4 }}>▼ 34%</span>
+                      </div>
+                      <span style={{ fontSize:24, fontWeight:700, color:'#1a1a1a' }}>3%</span>
+                    </ChartCard>
+                    <div
+                      onClick={() => { if (editMode) startEdit(widgets[3]) }}
+                      style={{ background:'#ef5350', border:`2px solid ${editingWidget?.id==='bounce' && editMode ? '#48b5ea' : '#ef5350'}`, borderRadius:8, padding:16, position:'relative', cursor: editMode ? 'pointer' : 'default' }}>
+                      {editMode && <div style={{ position:'absolute', top:6, left:6, cursor:'grab', color:'rgba(255,255,255,0.35)' }}><Grip size={13}/></div>}
+                      {editMode && (
+                        <div onClick={e => e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', gap:4 }}>
+                          <button style={{ background:'rgba(255,255,255,0.2)', border:'none', borderRadius:4, padding:'3px 5px', cursor:'pointer', display:'flex' }}><Maximize2 size={10} style={{ color:'rgba(255,255,255,0.8)' }}/></button>
+                          <WidgetDot wid="bounce" onEdit={() => startEdit(widgets[3])}/>
+                        </div>
+                      )}
+                      <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}><span style={{ fontSize:11, color:'rgba(255,255,255,0.85)' }}>Bounce Rate</span><span style={{ fontSize:10, fontWeight:700, color:'rgba(255,255,255,0.95)', background:'rgba(255,255,255,0.18)', padding:'2px 6px', borderRadius:4 }}>▲ 6.84%</span></div>
+                      <p style={{ fontSize:26, fontWeight:700, color:'#fff', letterSpacing:'-0.5px' }}>39.23%</p>
+                    </div>
                   </div>
-                  <div style={{ flex:1 }}>{sourceData.slice(0,4).map((d:any,i:number) => <div key={d.name} style={{ display:'flex', alignItems:'center', gap:4, marginBottom:3 }}><div style={{ width:6, height:6, borderRadius:'50%', background:['#2196f3','#64b5f6','#90caf9','#bbdefb'][i%4], flexShrink:0 }}/><span style={{ fontSize:9, color:'#666', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{d.name}</span><span style={{ fontSize:9, fontWeight:600 }}>{d.value?.toLocaleString()}</span></div>)}</div>
                 </div>
-              </ChartCard>
-              <ChartCard id="d3">
-                <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
-                  <span style={{ fontSize:12, fontWeight:600 }}>Traffic by Cities</span>
-                  {connection?.connected && <span style={{ fontSize:9, color:'#20BB71', fontWeight:600 }}>● Live</span>}
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10, marginBottom:10 }}>
+                  <ChartCard id="d1">
+                    <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
+                      <span style={{ fontSize:11, fontWeight:600 }}>Users By Device</span>
+                      {connection?.connected && <span style={{ fontSize:9, color:'#20BB71', fontWeight:600 }}>● Live</span>}
+                    </div>
+                    <ResponsiveContainer width="100%" height={110}>
+                      <BarChart data={deviceData} barSize={26}><XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'#999' }}/><YAxis hide/><Tooltip contentStyle={{ fontSize:10, borderRadius:4 }} formatter={(v:number) => [v.toLocaleString(),'']}/><Bar dataKey="v" radius={[3,3,0,0]}>{deviceData.map((_:any,i:number) => <Cell key={i} fill={['#2196f3','#42a5f5','#90caf9'][i%3]}/>)}</Bar></BarChart>
+                    </ResponsiveContainer>
+                  </ChartCard>
+                  <ChartCard id="d2">
+                    <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
+                      <span style={{ fontSize:11, fontWeight:600 }}>Top Referral Sources</span>
+                      {connection?.connected && <span style={{ fontSize:9, color:'#20BB71', fontWeight:600 }}>● Live</span>}
+                    </div>
+                    <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                      <div style={{ position:'relative', width:80, height:80, flexShrink:0 }}>
+                        <ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={sourceData} cx="50%" cy="50%" innerRadius={24} outerRadius={36} dataKey="value">{sourceData.map((_:any,i:number) => <Cell key={i} fill={['#2196f3','#64b5f6','#90caf9','#bbdefb'][i%4]}/>)}</Pie></PieChart></ResponsiveContainer>
+                        <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}><span style={{ fontSize:9, fontWeight:700 }}>Sources</span></div>
+                      </div>
+                      <div style={{ flex:1 }}>{sourceData.slice(0,4).map((d:any,i:number) => <div key={d.name} style={{ display:'flex', alignItems:'center', gap:4, marginBottom:3 }}><div style={{ width:6, height:6, borderRadius:'50%', background:['#2196f3','#64b5f6','#90caf9','#bbdefb'][i%4], flexShrink:0 }}/><span style={{ fontSize:9, color:'#666', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{d.name}</span><span style={{ fontSize:9, fontWeight:600 }}>{d.value?.toLocaleString()}</span></div>)}</div>
+                    </div>
+                  </ChartCard>
+                  <ChartCard id="d3">
+                    <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
+                      <span style={{ fontSize:12, fontWeight:600 }}>Traffic by Cities</span>
+                      {connection?.connected && <span style={{ fontSize:9, color:'#20BB71', fontWeight:600 }}>● Live</span>}
+                    </div>
+                    {cityData.map((c:any) => (
+                      <div key={c.city} style={{ marginBottom:8 }}>
+                        <div style={{ display:'flex', justifyContent:'space-between', marginBottom:2 }}><span style={{ fontSize:12 }}>{c.city}</span><span style={{ fontSize:12, fontWeight:600 }}>{c.val?.toLocaleString()}</span></div>
+                        <div style={{ height:4, background:'#e5e5e5', borderRadius:2, overflow:'hidden' }}><div style={{ height:'100%', width:`${(c.val/maxCity)*100}%`, background:'#4caf82', borderRadius:2 }}/></div>
+                      </div>
+                    ))}
+                  </ChartCard>
                 </div>
-                {cityData.map((c:any) => (
-                  <div key={c.city} style={{ marginBottom:8 }}>
-                    <div style={{ display:'flex', justifyContent:'space-between', marginBottom:2 }}><span style={{ fontSize:12 }}>{c.city}</span><span style={{ fontSize:12, fontWeight:600 }}>{c.val?.toLocaleString()}</span></div>
-                    <div style={{ height:4, background:'#e5e5e5', borderRadius:2, overflow:'hidden' }}><div style={{ height:'100%', width:`${(c.val/maxCity)*100}%`, background:'#4caf82', borderRadius:2 }}/></div>
+                <ChartCard id="v1">
+                  <div style={{ display:'flex', justifyContent:'space-between', marginBottom:10 }}>
+                    <span style={{ fontSize:12, fontWeight:600 }}>Website Views</span>
+                    {connection?.connected && <span style={{ fontSize:9, color:'#20BB71', fontWeight:600 }}>● Live GA4</span>}
                   </div>
-                ))}
-              </ChartCard>
-            </div>
-            <ChartCard id="v1">
-              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:10 }}>
-                <span style={{ fontSize:12, fontWeight:600 }}>Website Views</span>
-                {connection?.connected && <span style={{ fontSize:9, color:'#20BB71', fontWeight:600 }}>● Live GA4</span>}
-              </div>
-              <ResponsiveContainer width="100%" height={130}>
-                <AreaChart data={sessionData}><defs><linearGradient id="vg" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#48b5ea" stopOpacity={0.3}/><stop offset="95%" stopColor="#48b5ea" stopOpacity={0}/></linearGradient></defs><XAxis dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'#999' }}/><YAxis axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'#999' }}/><CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0"/><Tooltip contentStyle={{ fontSize:10, borderRadius:4 }}/><Area type="monotone" dataKey="v" stroke="#48b5ea" fill="url(#vg)" strokeWidth={2}/></AreaChart>
-              </ResponsiveContainer>
-            </ChartCard>
-            </>)}
+                  <ResponsiveContainer width="100%" height={130}>
+                    <AreaChart data={sessionData}><defs><linearGradient id="vg" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#48b5ea" stopOpacity={0.3}/><stop offset="95%" stopColor="#48b5ea" stopOpacity={0}/></linearGradient></defs><XAxis dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'#999' }}/><YAxis axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'#999' }}/><CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0"/><Tooltip contentStyle={{ fontSize:10, borderRadius:4 }}/><Area type="monotone" dataKey="v" stroke="#48b5ea" fill="url(#vg)" strokeWidth={2}/></AreaChart>
+                  </ResponsiveContainer>
+                </ChartCard>
+              </>
+            )}
           </div>
         </div>
 
@@ -728,8 +732,14 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
               <div style={{ width:300, background:'#fff', borderRight:'1px solid #e5e5e5', display:'flex', flexDirection:'column', overflow:'hidden' }}>
                 {activeRightPanel==='build' && (
                   <div style={{ flex:1, overflowY:'auto', padding:20 }}>
-                    {[{icon:'⊞',title:'Summarize your data with AI',desc:'Transform your data into clear, meaningful insights your clients will actually understand'},{icon:'📊',title:'Build metrics with AI',desc:'Use natural prompts to find the right widgets and instantly add the metrics that matter most'}].map(item => (
-                      <div key={item.title} style={{ display:'flex', alignItems:'flex-start', gap:12, padding:'16px 0', borderBottom:'1px solid #f0f0f0', cursor:'pointer' }}>
+                    {[
+                      {icon:'⊞', title:'Summarize your data with AI', desc:'Transform your data into clear, meaningful insights your clients will actually understand'},
+                      {icon:'📊', title:'Build metrics with AI', desc:'Use natural prompts to find the right widgets and instantly add the metrics that matter most'},
+                      {icon:'⧉', title:'Clone existing page', desc:'Copy a dashboard from any client and use it as a starting point'},
+                    ].map(item => (
+                      <div key={item.title}
+                        onClick={item.title === 'Clone existing page' ? () => setShowCloneModal(true) : undefined}
+                        style={{ display:'flex', alignItems:'flex-start', gap:12, padding:'16px 0', borderBottom:'1px solid #f0f0f0', cursor:'pointer' }}>
                         <div style={{ width:36, height:36, borderRadius:8, background:'#f0f0f0', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:16 }}>{item.icon}</div>
                         <div style={{ flex:1 }}><p style={{ fontSize:15, fontWeight:700, color:'#1a1a1a', marginBottom:4 }}>{item.title}</p><p style={{ fontSize:13, color:'#666', lineHeight:1.5 }}>{item.desc}</p></div>
                       </div>
@@ -851,14 +861,26 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
         </div>
       )}
 
-
-      {/* Dashboard Builder full-screen overlay */}
+      {/* Dashboard Builder overlay */}
       {showBuilder && (
         <DashboardBuilder
           clientName={clientName || 'Client'}
           clientDomain={clientDomain}
           clientId={clientId}
           onClose={() => setShowBuilder(false)}
+        />
+      )}
+
+      {/* ── Clone Page Modal ── */}
+      {showCloneModal && (
+        <ClonePageModal
+          onClose={() => setShowCloneModal(false)}
+          onClone={(source, newName) => {
+            // Add the cloned dashboard to the sidebar list
+            setDashboards(prev => [...prev, newName])
+            setActiveDash(newName)
+            setShowCloneModal(false)
+          }}
         />
       )}
 
