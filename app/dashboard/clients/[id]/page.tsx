@@ -149,7 +149,7 @@ function NewDashCanvas({ onClone }: { onClone: () => void }) {
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, width:520 }}>
         {options.map(opt => (
           <button key={opt.title}
-            onClick={opt.onClick}
+            onClick={e => { e.stopPropagation(); opt.onClick?.() }}
             style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:14, padding:'30px 24px', background:'#fff', border:'1px solid #e8e8e8', borderRadius:8, cursor:'pointer', textAlign:'center' as const, transition:'border-color 0.15s, box-shadow 0.15s' }}
             onMouseEnter={e => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor='#c8c8c8'; b.style.boxShadow='0 2px 8px rgba(0,0,0,0.07)' }}
             onMouseLeave={e => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor='#e8e8e8'; b.style.boxShadow='none' }}
@@ -537,7 +537,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
           {isEmptyDash ? (
             // ── Empty canvas: absolute-fills the remaining space ──
-            <div style={{ position:'absolute', top:49, left:0, right:0, bottom:0 }}>
+            <div style={{ position:'absolute', top:49, left:0, right:0, bottom:0 }}
+              onClick={e => e.stopPropagation()}>
               <NewDashCanvas onClone={() => setShowCloneModal(true)} />
             </div>
           ) : (
@@ -736,7 +737,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                       {icon:'⧉', title:'Clone existing page', desc:'Copy a dashboard from any client and use it as a starting point'},
                     ].map(item => (
                       <div key={item.title}
-                        onClick={item.title === 'Clone existing page' ? () => setShowCloneModal(true) : undefined}
+                        onClick={item.title === 'Clone existing page' ? e => { e.stopPropagation(); setShowCloneModal(true) } : undefined}
                         style={{ display:'flex', alignItems:'flex-start', gap:12, padding:'16px 0', borderBottom:'1px solid #f0f0f0', cursor:'pointer' }}>
                         <div style={{ width:36, height:36, borderRadius:8, background:'#f0f0f0', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:16 }}>{item.icon}</div>
                         <div style={{ flex:1 }}><p style={{ fontSize:15, fontWeight:700, color:'#1a1a1a', marginBottom:4 }}>{item.title}</p><p style={{ fontSize:13, color:'#666', lineHeight:1.5 }}>{item.desc}</p></div>
