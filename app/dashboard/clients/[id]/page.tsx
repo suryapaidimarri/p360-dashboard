@@ -112,9 +112,9 @@ function NewDashCanvas({ onClone }: { onClone: () => void }) {
           </div>
         </button>
 
-        {/* Clone existing page — direct onClick, no prop chain */}
+        {/* Clone existing page */}
         <button
-          onClick={onClone}
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onClone(); }}
           style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:14, padding:'30px 24px', background:'#fff', border:'1px solid #e8e8e8', borderRadius:8, cursor:'pointer', textAlign:'center' as const }}>
           <div style={{ width:56, height:56, display:'flex', alignItems:'center', justifyContent:'center' }}>
             <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect x="5" y="8" width="18" height="22" rx="2" stroke="#D0D0D0" strokeWidth="2"/><rect x="13" y="6" width="18" height="22" rx="2" stroke="#D0D0D0" strokeWidth="2" fill="#FAFAFA"/><path d="M18 13 h8" stroke="#E0E0E0" strokeWidth="1.5" strokeLinecap="round"/><path d="M18 17 h6" stroke="#E0E0E0" strokeWidth="1.5" strokeLinecap="round"/><path d="M18 21 h7" stroke="#E0E0E0" strokeWidth="1.5" strokeLinecap="round"/></svg>
@@ -476,7 +476,12 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
         {/* Left panel */}
         <div style={{ width:220, minWidth:220, borderRight:'1px solid #e5e5e5', display:'flex', flexDirection:'column', background:'#fff' }}>
           <div style={{ padding:12 }}>
-            <button onClick={() => setShowBuilder(true)}
+            <button onClick={() => {
+                const untitledCount = dashboards.filter(d => d.startsWith('Untitled Dashboard')).length
+                const newName = untitledCount === 0 ? 'Untitled Dashboard' : 'Untitled Dashboard ' + (untitledCount + 1)
+                setDashboards(prev => [...prev, newName])
+                setActiveDash(newName)
+              }}
               style={{ width:'100%', display:'flex', alignItems:'center', gap:6, background:'#48b5ea', border:'none', borderRadius:6, padding:'8px 12px', color:'#fff', fontSize:12, fontWeight:600, cursor:'pointer' }}>
               <Plus size={13}/> {editMode ? 'Add blank dashboard' : 'Add Dashboard'}
             </button>
