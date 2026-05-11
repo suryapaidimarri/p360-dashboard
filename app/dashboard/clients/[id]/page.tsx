@@ -236,7 +236,15 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       const { createClient } = await import('@/lib/supabase/client')
       const sb = createClient()
       const { data } = await sb.from('clients').select('name,domain').eq('id', clientId).single()
-      if (data) { setClientName(data.name); setClientDomain(data.domain||'') }
+      if (data) {
+        setClientName(data.name)
+        // Strip protocol/www so logo APIs get clean domain
+        const cleanDomain = (data.domain || '')
+          .replace(/^https?:\/\//, '')
+          .replace(/^www\./, '')
+          .split('/')[0]
+        setClientDomain(cleanDomain)
+      }
     } catch {}
   }
 
@@ -447,11 +455,31 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
           <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
             <Link href="/dashboard/clients" style={{ fontSize:13, color:'#666', textDecoration:'none' }}>Clients</Link>
             <ChevronRight size={14} style={{ color:'#ccc' }}/>
-            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-              <div style={{ width:22, height:22, borderRadius:'50%', overflow:'hidden', background:'#f0f0f0' }}>
-                <img src={`https://logo.clearbit.com/${clientDomain}`} alt="" style={{ width:'100%', height:'100%', objectFit:'contain' }} onError={e=>(e.currentTarget.style.display='none')}/>
-              </div>
-              <span style={{ fontSize:14, fontWeight:700, color:'#1a1a1a' }}>{clientName}</span>
+            <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+              {/* Client logo — tries multiple sources */}
+              {clientDomain && (
+                <div style={{ width:24, height:24, borderRadius:4, overflow:'hidden', background:'#f0f0f0', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  <img
+                    src={`https://img.logo.dev/${clientDomain}?token=pk_R9ZPqh9xR5Kfh1M6GvCXFA`}
+                    alt={clientName}
+                    style={{ width:'100%', height:'100%', objectFit:'contain' }}
+                    onError={e => {
+                      const img = e.currentTarget
+                      if (!img.dataset.fb1) { img.dataset.fb1='1'; img.src=`https://www.google.com/s2/favicons?domain=${clientDomain}&sz=64`; return }
+                      if (!img.dataset.fb2) { img.dataset.fb2='1'; img.src=`https://logo.clearbit.com/${clientDomain}`; return }
+                      img.style.display='none'
+                    }}
+                  />
+                </div>
+              )}
+              {!clientDomain && (
+                <div style={{ width:24, height:24, borderRadius:4, background:'#e0e0e0', flexShrink:0 }}/>
+              )}
+              {clientName ? (
+                <span style={{ fontSize:14, fontWeight:700, color:'#1a1a1a' }}>{clientName}</span>
+              ) : (
+                <div style={{ width:120, height:16, borderRadius:4, background:'#f0f0f0' }}/>
+              )}
               <ChevronDown size={14} style={{ color:'#999' }}/>
             </div>
             {!checkingConn && (
