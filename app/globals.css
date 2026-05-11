@@ -177,3 +177,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     </div>
   )
 }
+body.dashboard-edit-mode .alloy-icon-rail,
+body.dashboard-edit-mode .alloy-nav-panel {
+  display: none !important;
+}
