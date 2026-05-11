@@ -209,6 +209,16 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     checkConnection().then(() => loadMapping())
   }, [clientId])
 
+  // Hide the layout nav panels when in edit mode
+  useEffect(() => {
+    if (editMode) {
+      document.body.classList.add('dashboard-edit-mode')
+    } else {
+      document.body.classList.remove('dashboard-edit-mode')
+    }
+    return () => { document.body.classList.remove('dashboard-edit-mode') }
+  }, [editMode])
+
   // Persist dashboards list to localStorage
   useEffect(() => {
     if (typeof window === 'undefined') return
