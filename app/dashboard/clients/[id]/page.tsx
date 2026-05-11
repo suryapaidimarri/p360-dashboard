@@ -163,8 +163,14 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [selectedProperty, setSelectedProperty] = useState('')
   const [selectedSite, setSelectedSite] = useState('')
   const [dateRange, setDateRange] = useState('30daysAgo')
-  const [clientName, setClientName] = useState('')
-  const [clientDomain, setClientDomain] = useState('')
+  const [clientName, setClientName] = useState<string>(() => {
+    if (typeof window === 'undefined') return ''
+    try { return localStorage.getItem(`alloy_client_name_${params.id}`) || '' } catch { return '' }
+  })
+  const [clientDomain, setClientDomain] = useState<string>(() => {
+    if (typeof window === 'undefined') return ''
+    try { return localStorage.getItem(`alloy_client_domain_${params.id}`) || '' } catch { return '' }
+  })
   const [showMappingModal, setShowMappingModal] = useState(false)
   const [mappingProp, setMappingProp] = useState('')
   const [mappingPropName, setMappingPropName] = useState('')
@@ -232,18 +238,39 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   }, [clonedDashboards])
 
   async function loadClientInfo() {
+    // Try Supabase client directly
     try {
       const { createClient } = await import('@/lib/supabase/client')
       const sb = createClient()
       const { data } = await sb.from('clients').select('name,domain').eq('id', clientId).single()
-      if (data) {
-        setClientName(data.name)
-        // Strip protocol/www so logo APIs get clean domain
+      if (data?.name) {
         const cleanDomain = (data.domain || '')
-          .replace(/^https?:\/\//, '')
-          .replace(/^www\./, '')
-          .split('/')[0]
+          .replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]
+        setClientName(data.name)
         setClientDomain(cleanDomain)
+        try {
+          localStorage.setItem(`alloy_client_name_${clientId}`, data.name)
+          localStorage.setItem(`alloy_client_domain_${clientId}`, cleanDomain)
+        } catch {}
+        return
+      }
+    } catch {}
+
+    // Fallback: try the /api/client route
+    try {
+      const res = await fetch(`/api/client?id=${clientId}`)
+      if (res.ok) {
+        const data = await res.json()
+        if (data?.name) {
+          const cleanDomain = (data.domain || '')
+            .replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]
+          setClientName(data.name)
+          setClientDomain(cleanDomain)
+          try {
+            localStorage.setItem(`alloy_client_name_${clientId}`, data.name)
+            localStorage.setItem(`alloy_client_domain_${clientId}`, cleanDomain)
+          } catch {}
+        }
       }
     } catch {}
   }
