@@ -174,6 +174,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [showBuilder, setShowBuilder] = useState(false)
   const [showCloneModal, setShowCloneModal] = useState(false)
   const [dashboards, setDashboards] = useState(INITIAL_DASHBOARDS)
+  const [clonedDashboards, setClonedDashboards] = useState<Set<string>>(new Set())
   const [widgets, setWidgets] = useState<Widget[]>([
     {id:'w1',title:'Total Sessions',dataSource:'google-analytics-4 / traffic-analytics',chartType:'sparkline',tooltip:'Total sessions during the selected period.',color:'white',value:'120.5 K',change:'29%',up:true},
     {id:'w2',title:'Total Conversions',dataSource:'google-analytics-4 / conversions',chartType:'column',tooltip:'Total conversions tracked.',color:'blue',value:'3,610',change:'16%',up:false},
@@ -181,8 +182,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     {id:'w4',title:'Engagement Rate',dataSource:'google-analytics-4 / engagement',chartType:'area',tooltip:'Percentage of engaged sessions.',color:'green',value:'60.77%',change:'3.97%',up:false},
   ])
 
-  // ── THE FIX: derive empty-state from REAL_DASHBOARDS list ──────────────────
-  const isEmptyDash = !REAL_DASHBOARDS.includes(activeDash)
+  // Empty canvas only for dashboards that have no content yet (not real, not cloned)
+  const isEmptyDash = !REAL_DASHBOARDS.includes(activeDash) && !clonedDashboards.has(activeDash)
 
   useEffect(() => {
     loadClientInfo()
@@ -855,6 +856,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
           onClose={() => setShowCloneModal(false)}
           onClone={(source, newName) => {
             setDashboards(prev => [...prev, newName])
+            setClonedDashboards(prev => new Set([...prev, newName]))
             setActiveDash(newName)
             setShowCloneModal(false)
           }}
