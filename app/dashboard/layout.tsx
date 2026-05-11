@@ -27,7 +27,6 @@ const NAV = [
   ]},
 ]
 
-// Alloy design tokens as JS constants
 const T = {
   ink: '#111111',
   paper: '#FAFAFA',
@@ -53,9 +52,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div style={{ display:'flex', height:'100vh', overflow:'hidden', background:T.paper, ...T.body }}>
 
-      {/* Black icon rail */}
-      <div style={{ width:48, minWidth:48, background:T.ink, display:'flex', flexDirection:'column', alignItems:'center', padding:'14px 0', gap:2, borderRight:`1px solid #222` }}>
-        {/* Alloy mark */}
+      {/* Black icon rail — hidden in edit mode via CSS */}
+      <div className="alloy-icon-rail" style={{ width:48, minWidth:48, background:T.ink, display:'flex', flexDirection:'column', alignItems:'center', padding:'14px 0', gap:2, borderRight:`1px solid #222` }}>
         <Link href="/dashboard/clients" style={{ marginBottom:20, display:'flex', alignItems:'center', justifyContent:'center' }}>
           <img src="/logos/Alloy-Logo-WHT-Green.png" alt="Alloy Intelligence" style={{ width:28, height:'auto', objectFit:'contain' }}
             onError={e => {
@@ -94,9 +92,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </div>
 
-      {/* White nav panel */}
-      <div style={{ width:216, minWidth:216, background:T.white, borderRight:`1px solid ${T.line}`, display:'flex', flexDirection:'column' }}>
-        {/* Brand lockup */}
+      {/* White nav panel — hidden in edit mode via CSS */}
+      <div className="alloy-nav-panel" style={{ width:216, minWidth:216, background:T.white, borderRight:`1px solid ${T.line}`, display:'flex', flexDirection:'column' }}>
         <div style={{ padding:'16px 16px 14px', borderBottom:`1px solid ${T.line}`, display:'flex', alignItems:'center', gap:10 }}>
           <img src="/logos/Alloy-Logo-BLK-Green.png" alt="Alloy Intelligence"
             style={{ height:18, width:'auto', objectFit:'contain' }}
@@ -138,7 +135,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <span style={{ marginLeft:'auto', ...T.label, fontSize:'9px',
                       background: on(href) ? T.green1 : T.line,
                       color: on(href) ? T.white : T.mute,
-                      padding:'2px 6px', borderRadius:T.green1 ? 999 : 999 }}>
+                      padding:'2px 6px', borderRadius:999 }}>
                       {badge}
                     </span>
                   )}
@@ -157,7 +154,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <BellRing size={14} style={{ color:T.mute }} strokeWidth={1.5}/><span>Notifications</span>
             <span style={{ marginLeft:'auto', background:T.red1, color:T.white, ...T.label, fontSize:'9px', padding:'2px 5px', borderRadius:999 }}>3</span>
           </Link>
-          {/* User row */}
           <div style={{ padding:'8px 16px', display:'flex', alignItems:'center', gap:8 }}>
             <div style={{ width:26, height:26, borderRadius:'50%', background:T.ink, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
               <span style={{ ...T.label, fontSize:'9px', color:T.green1 }}>A</span>
