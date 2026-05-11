@@ -173,8 +173,24 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [mappingSaved, setMappingSaved] = useState(false)
   const [showBuilder, setShowBuilder] = useState(false)
   const [showCloneModal, setShowCloneModal] = useState(false)
-  const [dashboards, setDashboards] = useState(INITIAL_DASHBOARDS)
-  const [clonedDashboards, setClonedDashboards] = useState<string[]>([])
+  const LS_KEY = `alloy_dashboards_${clientId}`
+  const LS_CLONED_KEY = `alloy_cloned_dashboards_${clientId}`
+
+  const [dashboards, setDashboards] = useState<string[]>(() => {
+    if (typeof window === 'undefined') return INITIAL_DASHBOARDS
+    try {
+      const saved = localStorage.getItem(LS_KEY)
+      return saved ? JSON.parse(saved) : INITIAL_DASHBOARDS
+    } catch { return INITIAL_DASHBOARDS }
+  })
+
+  const [clonedDashboards, setClonedDashboards] = useState<string[]>(() => {
+    if (typeof window === 'undefined') return []
+    try {
+      const saved = localStorage.getItem(LS_CLONED_KEY)
+      return saved ? JSON.parse(saved) : []
+    } catch { return [] }
+  })
   const [widgets, setWidgets] = useState<Widget[]>([
     {id:'w1',title:'Total Sessions',dataSource:'google-analytics-4 / traffic-analytics',chartType:'sparkline',tooltip:'Total sessions during the selected period.',color:'white',value:'120.5 K',change:'29%',up:true},
     {id:'w2',title:'Total Conversions',dataSource:'google-analytics-4 / conversions',chartType:'column',tooltip:'Total conversions tracked.',color:'blue',value:'3,610',change:'16%',up:false},
@@ -189,6 +205,18 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     loadClientInfo()
     checkConnection().then(() => loadMapping())
   }, [clientId])
+
+  // Persist dashboards list to localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try { localStorage.setItem(LS_KEY, JSON.stringify(dashboards)) } catch {}
+  }, [dashboards])
+
+  // Persist cloned dashboards list to localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try { localStorage.setItem(LS_CLONED_KEY, JSON.stringify(clonedDashboards)) } catch {}
+  }, [clonedDashboards])
 
   async function loadClientInfo() {
     try {
