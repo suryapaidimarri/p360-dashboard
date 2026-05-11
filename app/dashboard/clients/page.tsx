@@ -115,7 +115,9 @@ function ClientCard({ client, selected, onToggle, menuOpen, onMenuToggle, onDele
   if (client.group) return <div onMouseEnter={()=>setHovered(true)} onMouseLeave={()=>setHovered(false)}>{inner}</div>
   return (
     <div onMouseEnter={()=>setHovered(true)} onMouseLeave={()=>setHovered(false)}>
-      <Link href={`/dashboard/clients/${client.id}`} style={{ textDecoration:'none', display:'block' }}>{inner}</Link>
+      <Link 
+  href={`/dashboard/clients/${client.id}?name=${encodeURIComponent(client.name)}&domain=${encodeURIComponent((client.domain||'').replace(/^https?:\/\//,'').replace(/^www\./,'').split('/')[0])}`}
+  style={{ textDecoration:'none', display:'block' }}>{inner}</Link>
     </div>
   )
 }
