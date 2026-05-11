@@ -173,6 +173,9 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [mappingSaved, setMappingSaved] = useState(false)
   const [showBuilder, setShowBuilder] = useState(false)
   const [showCloneModal, setShowCloneModal] = useState(false)
+  const [dashMenu, setDashMenu] = useState<string|null>(null)
+  const [renamingDash, setRenamingDash] = useState<string|null>(null)
+  const [renameValue, setRenameValue] = useState('')
   const LS_KEY = `alloy_dashboards_${clientId}`
   const LS_CLONED_KEY = `alloy_cloned_dashboards_${clientId}`
 
@@ -387,7 +390,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
   return (
     <div style={{ display:'flex', flexDirection:'column', height:'100%', overflow:'hidden', background:'#fff' }}
-      onClick={() => { if (openMenu) setOpenMenu(null) }}>
+      onClick={() => { if (openMenu) setOpenMenu(null); if (dashMenu) setDashMenu(null) }}>
 
       {/* Edit mode bars */}
       {editMode && (
@@ -517,11 +520,99 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
           </div>
           <div style={{ flex:1, overflowY:'auto' }}>
             {dashboards.map(d => (
-              <button key={d} onClick={() => setActiveDash(d)} style={{ width:'100%', textAlign:'left', padding:'9px 12px', fontSize:13, cursor:'pointer', background:'none', border:'none', fontWeight:activeDash===d?700:400, color:activeDash===d?'#1a1a1a':'#555', borderLeft:activeDash===d?'3px solid #48b5ea':'3px solid transparent', display:'flex', alignItems:'center', gap:6 }}>
-                {editMode && <Grip size={12} style={{ color:'#ccc', flexShrink:0 }}/>}
-                <span style={{ flex:1 }}>{d}</span>
-                {editMode && <MoreHorizontal size={13} style={{ color:'#ccc' }}/>}
-              </button>
+              <div key={d} style={{ position:'relative' }}>
+                {renamingDash === d ? (
+                  // ── Inline rename input ──
+                  <div style={{ display:'flex', alignItems:'center', padding:'6px 10px', gap:6 }}>
+                    <input
+                      autoFocus
+                      value={renameValue}
+                      onChange={e => setRenameValue(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && renameValue.trim()) {
+                          const newName = renameValue.trim()
+                          setDashboards(prev => prev.map(x => x === d ? newName : x))
+                          if (clonedDashboards.includes(d)) setClonedDashboards(prev => prev.map(x => x === d ? newName : x))
+                          if (activeDash === d) setActiveDash(newName)
+                          setRenamingDash(null)
+                        }
+                        if (e.key === 'Escape') setRenamingDash(null)
+                      }}
+                      onBlur={() => setRenamingDash(null)}
+                      style={{ flex:1, fontSize:13, border:'1px solid #48b5ea', borderRadius:4, padding:'4px 8px', outline:'none', color:'#1a1a1a' }}
+                    />
+                  </div>
+                ) : (
+                  // ── Normal dashboard row ──
+                  <div
+                    style={{ display:'flex', alignItems:'center', padding:'0 4px 0 0', background: activeDash===d ? '#f0f9ff' : 'transparent', borderLeft: activeDash===d ? '3px solid #48b5ea' : '3px solid transparent' }}
+                    onMouseEnter={e => { if (activeDash!==d) (e.currentTarget as HTMLDivElement).style.background='#f8f9fa' }}
+                    onMouseLeave={e => { if (activeDash!==d) (e.currentTarget as HTMLDivElement).style.background='transparent' }}
+                  >
+                    <button
+                      onClick={() => setActiveDash(d)}
+                      style={{ flex:1, textAlign:'left', padding:'9px 8px 9px 12px', fontSize:13, cursor:'pointer', background:'none', border:'none', fontWeight:activeDash===d?700:400, color:activeDash===d?'#1a1a1a':'#555', display:'flex', alignItems:'center', gap:6 }}>
+                      {editMode && <Grip size={12} style={{ color:'#ccc', flexShrink:0 }}/>}
+                      <span style={{ flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{d}</span>
+                    </button>
+                    {/* ··· menu button — always visible on hover, always in edit mode */}
+                    <button
+                      onClick={e => { e.stopPropagation(); setDashMenu(dashMenu === d ? null : d) }}
+                      style={{ flexShrink:0, width:24, height:24, display:'flex', alignItems:'center', justifyContent:'center', background:'none', border:'none', cursor:'pointer', borderRadius:4, opacity: dashMenu===d ? 1 : 0.4 }}
+                      onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.opacity='1'}
+                      onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.opacity = dashMenu===d?'1':'0.4'}
+                    >
+                      <MoreHorizontal size={14} style={{ color:'#555' }}/>
+                    </button>
+                  </div>
+                )}
+
+                {/* ── Dropdown menu ── */}
+                {dashMenu === d && (
+                  <div
+                    onClick={e => e.stopPropagation()}
+                    style={{ position:'absolute', left:8, top:'calc(100% + 2px)', background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, boxShadow:'0 8px 24px rgba(0,0,0,0.12)', padding:4, minWidth:200, zIndex:500 }}>
+                    {/* Edit */}
+                    <button onClick={() => { setActiveDash(d); setEditMode(true); setDashMenu(null) }}
+                      style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'9px 14px', fontSize:13, color:'#1a1a1a', background:'none', border:'none', cursor:'pointer', borderRadius:4, textAlign:'left' as const }}>
+                      ✏️ <span>Edit</span>
+                    </button>
+                    {/* Rename */}
+                    <button onClick={() => { setRenamingDash(d); setRenameValue(d); setDashMenu(null) }}
+                      style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'9px 14px', fontSize:13, color:'#1a1a1a', background:'none', border:'none', cursor:'pointer', borderRadius:4, textAlign:'left' as const }}>
+                      ✍️ <span>Rename</span>
+                    </button>
+                    {/* Clone */}
+                    <button onClick={() => {
+                        const newName = d + ' (Copy)'
+                        setDashboards(prev => [...prev, newName])
+                        setClonedDashboards(prev => [...prev, newName])
+                        setActiveDash(newName)
+                        setDashMenu(null)
+                      }}
+                      style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'9px 14px', fontSize:13, color:'#1a1a1a', background:'none', border:'none', cursor:'pointer', borderRadius:4, textAlign:'left' as const }}>
+                      ⧉ <span>Clone</span>
+                    </button>
+                    {/* Save as Template */}
+                    <button onClick={() => setDashMenu(null)}
+                      style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'9px 14px', fontSize:13, color:'#1a1a1a', background:'none', border:'none', cursor:'pointer', borderRadius:4, textAlign:'left' as const }}>
+                      💾 <span>Save as Template</span>
+                    </button>
+                    <div style={{ height:1, background:'#f0f0f0', margin:'2px 0' }}/>
+                    {/* Delete */}
+                    <button onClick={() => {
+                        const remaining = dashboards.filter(x => x !== d)
+                        setDashboards(remaining)
+                        setClonedDashboards(prev => prev.filter(x => x !== d))
+                        if (activeDash === d) setActiveDash(remaining[0] || '')
+                        setDashMenu(null)
+                      }}
+                      style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'9px 14px', fontSize:13, color:'#ef4444', background:'none', border:'none', cursor:'pointer', borderRadius:4 }}>
+                      🗑️ <span>Delete</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             ))}
             <div style={{ padding:'10px 16px 4px' }}>
               <p style={{ fontSize:10, fontWeight:600, color:'#999', textTransform:'uppercase' as const, letterSpacing:'0.06em' }}>DATA SOURCES</p>
