@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import DashboardBuilder from '@/components/dashboard/DashboardBuilder'
 import ClonePageModal from '@/components/dashboard/ClonePageModal'
 import { ChevronRight, Sparkles, Settings, Calendar, ChevronDown, Plus, MoreHorizontal, Maximize2, X, Grip, RotateCcw, RotateCw, Monitor, Smartphone, ChevronLeft, RefreshCw, CheckCircle2 } from 'lucide-react'
@@ -144,6 +145,7 @@ function NewDashCanvas({ onClone }: { onClone: () => void }) {
 // ── Main page ────────────────────────────────────────────────────────────────
 export default function ClientWorkspace({ params }: { params: { id: string } }) {
   const clientId = params.id
+  const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState('Dashboards')
   const [activeDash, setActiveDash] = useState('Website Performance')
   const [editMode, setEditMode] = useState(false)
@@ -164,10 +166,16 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [selectedSite, setSelectedSite] = useState('')
   const [dateRange, setDateRange] = useState('30daysAgo')
   const [clientName, setClientName] = useState<string>(() => {
+    // 1. Try searchParams (passed from client card link)
+    const fromUrl = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('name') : null
+    if (fromUrl) return decodeURIComponent(fromUrl)
+    // 2. Try localStorage cache
     if (typeof window === 'undefined') return ''
     try { return localStorage.getItem(`alloy_client_name_${params.id}`) || '' } catch { return '' }
   })
   const [clientDomain, setClientDomain] = useState<string>(() => {
+    const fromUrl = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('domain') : null
+    if (fromUrl) return decodeURIComponent(fromUrl)
     if (typeof window === 'undefined') return ''
     try { return localStorage.getItem(`alloy_client_domain_${params.id}`) || '' } catch { return '' }
   })
@@ -238,25 +246,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   }, [clonedDashboards])
 
   async function loadClientInfo() {
-    // Try Supabase client directly
-    try {
-      const { createClient } = await import('@/lib/supabase/client')
-      const sb = createClient()
-      const { data } = await sb.from('clients').select('name,domain').eq('id', clientId).single()
-      if (data?.name) {
-        const cleanDomain = (data.domain || '')
-          .replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]
-        setClientName(data.name)
-        setClientDomain(cleanDomain)
-        try {
-          localStorage.setItem(`alloy_client_name_${clientId}`, data.name)
-          localStorage.setItem(`alloy_client_domain_${clientId}`, cleanDomain)
-        } catch {}
-        return
-      }
-    } catch {}
-
-    // Fallback: try the /api/client route
+    // Use /api/client which uses service role key - always works regardless of RLS
     try {
       const res = await fetch(`/api/client?id=${clientId}`)
       if (res.ok) {
@@ -270,7 +260,25 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
             localStorage.setItem(`alloy_client_name_${clientId}`, data.name)
             localStorage.setItem(`alloy_client_domain_${clientId}`, cleanDomain)
           } catch {}
+          return
         }
+      }
+    } catch {}
+
+    // Final fallback: Supabase browser client
+    try {
+      const { createClient } = await import('@/lib/supabase/client')
+      const sb = createClient()
+      const { data } = await sb.from('clients').select('name,domain').eq('id', clientId).single()
+      if (data?.name) {
+        const cleanDomain = (data.domain || '')
+          .replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]
+        setClientName(data.name)
+        setClientDomain(cleanDomain)
+        try {
+          localStorage.setItem(`alloy_client_name_${clientId}`, data.name)
+          localStorage.setItem(`alloy_client_domain_${clientId}`, cleanDomain)
+        } catch {}
       }
     } catch {}
   }
@@ -478,37 +486,34 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
       {/* View mode topbar */}
       {!editMode && (
-        <div style={{ padding:'12px 24px', borderBottom:'1px solid #e5e5e5', background:'#fff', flexShrink:0 }}>
-          <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
-            <Link href="/dashboard/clients" style={{ fontSize:13, color:'#666', textDecoration:'none' }}>Clients</Link>
-            <ChevronRight size={14} style={{ color:'#ccc' }}/>
-            <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-              {/* Client logo — tries multiple sources */}
-              {clientDomain && (
-                <div style={{ width:24, height:24, borderRadius:4, overflow:'hidden', background:'#f0f0f0', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
+        <div style={{ padding:'10px 20px', borderBottom:'1px solid #e5e5e5', background:'#fff', flexShrink:0 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
+            {/* Breadcrumb: Clients > Client Name > Active Dashboard */}
+            <Link href="/dashboard/clients" style={{ fontSize:12, color:'#999', textDecoration:'none', fontWeight:500 }}>Clients</Link>
+            <ChevronRight size={12} style={{ color:'#ccc' }}/>
+            <div style={{ display:'flex', alignItems:'center', gap:8, background:'#f8f9fa', border:'1px solid #e5e5e5', borderRadius:6, padding:'5px 10px' }}>
+              {/* Logo */}
+              <div style={{ width:20, height:20, borderRadius:3, overflow:'hidden', background:'#e8e8e8', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                {clientDomain ? (
                   <img
-                    src={`https://img.logo.dev/${clientDomain}?token=pk_R9ZPqh9xR5Kfh1M6GvCXFA`}
+                    src={`https://www.google.com/s2/favicons?domain=${clientDomain}&sz=64`}
                     alt={clientName}
                     style={{ width:'100%', height:'100%', objectFit:'contain' }}
-                    onError={e => {
-                      const img = e.currentTarget
-                      if (!img.dataset.fb1) { img.dataset.fb1='1'; img.src=`https://www.google.com/s2/favicons?domain=${clientDomain}&sz=64`; return }
-                      if (!img.dataset.fb2) { img.dataset.fb2='1'; img.src=`https://logo.clearbit.com/${clientDomain}`; return }
-                      img.style.display='none'
-                    }}
+                    onError={e => { (e.currentTarget as HTMLImageElement).style.display='none' }}
                   />
-                </div>
-              )}
-              {!clientDomain && (
-                <div style={{ width:24, height:24, borderRadius:4, background:'#e0e0e0', flexShrink:0 }}/>
-              )}
-              {clientName ? (
-                <span style={{ fontSize:14, fontWeight:700, color:'#1a1a1a' }}>{clientName}</span>
-              ) : (
-                <div style={{ width:120, height:16, borderRadius:4, background:'#f0f0f0' }}/>
-              )}
-              <ChevronDown size={14} style={{ color:'#999' }}/>
+                ) : (
+                  <span style={{ fontSize:10, fontWeight:700, color:'#999' }}>{clientName?.[0] || '?'}</span>
+                )}
+              </div>
+              {/* Client name — always shows something */}
+              <span style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', maxWidth:200, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                {clientName || clientId}
+              </span>
+              <ChevronDown size={12} style={{ color:'#999' }}/>
             </div>
+            <ChevronRight size={12} style={{ color:'#ccc' }}/>
+            {/* Active dashboard name */}
+            <span style={{ fontSize:12, color:'#48b5ea', fontWeight:600 }}>{activeDash}</span>
             {!checkingConn && (
               connection?.connected ? (
                 <div style={{ display:'flex', alignItems:'center', gap:6, background:'#f0fdf4', border:'1px solid #20BB71', borderRadius:20, padding:'3px 10px' }}>
