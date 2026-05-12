@@ -915,16 +915,65 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                     </div>
                   )}
                   {editTab==='Display' && (
-                    <div>
-                      <div style={{ marginBottom:16 }}>
-                        <label style={{ display:'block', fontSize:13, fontWeight:600, color:'#1a1a1a', marginBottom:10 }}>Background Color</label>
-                        <div style={{ display:'flex', gap:8 }}>
-                          {[{col:'#fff',key:'white'},{col:'#48b5ea',key:'blue'},{col:'#4caf82',key:'green'},{col:'#ef5350',key:'red'}].map(({col,key}) => (
-                            <div key={key} onClick={() => setEditingWidget({...editingWidget, color:key})}
-                              style={{ width:30, height:30, borderRadius:6, background:col, border:`3px solid ${editingWidget.color===key?'#333':'#e5e5e5'}`, cursor:'pointer' }}/>
-                          ))}
-                        </div>
+                    <div style={{ padding:'4px 0' }}>
+
+                      {/* Toggle row helper */}
+                      {[
+                        { key:'showAnomalies',  label:'Show Anomalies' },
+                        { key:'showForecast',   label:'Show Forecast' },
+                        { key:'showIntegIcon',  label:'Show Integration Icon' },
+                      ].map(({ key, label }) => {
+                        const on = !!(editingWidget as any)[key]
+                        return (
+                          <div key={key} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 0', borderBottom:'1px solid #f5f5f5' }}>
+                            <span style={{ fontSize:14, fontWeight:500, color:'#1a1a1a' }}>{label}</span>
+                            <div
+                              onClick={() => setEditingWidget({...editingWidget, [key]: !on } as any)}
+                              style={{ width:44, height:24, borderRadius:12, background: on ? '#48b5ea' : '#e0e0e0', position:'relative', cursor:'pointer', transition:'background 0.2s', flexShrink:0 }}>
+                              <div style={{ width:20, height:20, borderRadius:'50%', background:'#fff', position:'absolute', top:2, left: on ? 22 : 2, boxShadow:'0 1px 4px rgba(0,0,0,0.2)', transition:'left 0.2s' }}/>
+                            </div>
+                          </div>
+                        )
+                      })}
+
+                      {/* Color pickers */}
+                      <div style={{ marginTop:20 }}>
+                        {[
+                          { label:'Text Color',  field:'textColor',  default:'#1a1a1a' },
+                          { label:'Background',  field:'color',      default:'#ffffff' },
+                          { label:'Border',      field:'borderColor',default:'#e5e5e5' },
+                        ].map(({ label, field, default: def }) => {
+                          const BG_OPTIONS: Record<string,string> = {
+                            white:'#ffffff', blue:'#48b5ea', green:'#4caf82', red:'#ef5350'
+                          }
+                          const currentVal = field === 'color'
+                            ? (BG_OPTIONS[(editingWidget as any).color] || def)
+                            : ((editingWidget as any)[field] || def)
+                          return (
+                            <div key={field} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 0', borderBottom:'1px solid #f5f5f5' }}>
+                              <span style={{ fontSize:14, fontWeight:500, color:'#1a1a1a' }}>{label}</span>
+                              <label style={{ position:'relative', cursor:'pointer' }}>
+                                <div style={{ width:36, height:36, borderRadius:6, background: currentVal, border:'1px solid #e0e0e0', cursor:'pointer', overflow:'hidden' }}/>
+                                <input
+                                  type="color"
+                                  value={currentVal}
+                                  onChange={e => {
+                                    if (field === 'color') {
+                                      const hex = e.target.value
+                                      const key = hex === '#48b5ea' ? 'blue' : hex === '#4caf82' ? 'green' : hex === '#ef5350' ? 'red' : 'white'
+                                      setEditingWidget({...editingWidget, color: key, [field]: hex} as any)
+                                    } else {
+                                      setEditingWidget({...editingWidget, [field]: e.target.value} as any)
+                                    }
+                                  }}
+                                  style={{ position:'absolute', opacity:0, width:'100%', height:'100%', top:0, left:0, cursor:'pointer' }}
+                                />
+                              </label>
+                            </div>
+                          )
+                        })}
                       </div>
+
                     </div>
                   )}
                 </div>
