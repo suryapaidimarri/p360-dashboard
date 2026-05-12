@@ -961,7 +961,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                                     if (field === 'color') {
                                       const hex = e.target.value
                                       const key = hex === '#48b5ea' ? 'blue' : hex === '#4caf82' ? 'green' : hex === '#ef5350' ? 'red' : 'white'
-                                      setEditingWidget({...editingWidget, color: key, [field]: hex} as any)
+                                      setEditingWidget({...editingWidget, color: key} as any)
                                     } else {
                                       setEditingWidget({...editingWidget, [field]: e.target.value} as any)
                                     }
