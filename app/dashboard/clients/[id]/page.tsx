@@ -39,37 +39,37 @@ const CHART_TYPES = [
 ]
 
 const ALL_INTEGRATIONS = [
-  { name:'Bing Webmaster Tools', icon:'🔷', bg:'#e3f2fd', connected:true },
-  { name:'Facebook',             icon:'📘', bg:'#e3f2fd', connected:true },
-  { name:'Facebook Ads',         icon:'📘', bg:'#e3f2fd', connected:true },
-  { name:'Google Ads',           icon:'🎯', bg:'#fce4ec', connected:true },
-  { name:'Google Analytics 4',   icon:'📊', bg:'#fff3e0', connected:true },
-  { name:'Google Lighthouse',    icon:'🌐', bg:'#e8f5e9', connected:true },
-  { name:'Google Search Console',icon:'🔍', bg:'#e3f2fd', connected:true },
-  { name:'Google Sheets',        icon:'📗', bg:'#e8f5e9', connected:true },
-  { name:'LinkedIn Ads',         icon:'💼', bg:'#e3f2fd', connected:true },
-  { name:'Semrush - Backlinks',  icon:'🔴', bg:'#fce4ec', connected:true },
-  { name:'Semrush - Projects',   icon:'🔴', bg:'#fce4ec', connected:true },
-  { name:'ActiveCampaign',       icon:'✉',  bg:'#f3f4f6', connected:false },
-  { name:'AdRoll',               icon:'⬡',  bg:'#f3f4f6', connected:false },
-  { name:'Adform',               icon:'Ⓐ',  bg:'#f3f4f6', connected:false },
-  { name:'Ahrefs',               icon:'🅰',  bg:'#f3f4f6', connected:false },
-  { name:'Amazon Ads',           icon:'🅰',  bg:'#f3f4f6', connected:false },
-  { name:'Apple Search Ads',     icon:'🍎', bg:'#f3f4f6', connected:false },
-  { name:'Appsflyer',            icon:'📱', bg:'#f3f4f6', connected:false },
-  { name:'Capterra',             icon:'⚑',  bg:'#f3f4f6', connected:false },
-  { name:'Criteo',               icon:'Ⓒ',  bg:'#f3f4f6', connected:false },
-  { name:'DV360',                icon:'📺', bg:'#f3f4f6', connected:false },
-  { name:'HubSpot',              icon:'🟠', bg:'#f3f4f6', connected:false },
-  { name:'Instagram',            icon:'📷', bg:'#f3f4f6', connected:false },
-  { name:'Klaviyo',              icon:'✉',  bg:'#f3f4f6', connected:false },
-  { name:'Mailchimp',            icon:'🐒', bg:'#f3f4f6', connected:false },
-  { name:'Pinterest',            icon:'📌', bg:'#f3f4f6', connected:false },
-  { name:'Shopify',              icon:'🛍',  bg:'#f3f4f6', connected:false },
-  { name:'Snapchat',             icon:'👻', bg:'#f3f4f6', connected:false },
-  { name:'TikTok',               icon:'🎵', bg:'#f3f4f6', connected:false },
-  { name:'Twitter/X Ads',        icon:'𝕏',  bg:'#f3f4f6', connected:false },
-  { name:'YouTube',              icon:'▶',  bg:'#fce4ec', connected:false },
+  { name:'Bing Webmaster Tools',  domain:'bing.com',          connected:true  },
+  { name:'Facebook',              domain:'facebook.com',       connected:true  },
+  { name:'Facebook Ads',          domain:'facebook.com',       connected:true  },
+  { name:'Google Ads',            domain:'ads.google.com',     connected:true  },
+  { name:'Google Analytics 4',    domain:'analytics.google.com', connected:true },
+  { name:'Google Lighthouse',     domain:'developers.google.com', connected:true },
+  { name:'Google Search Console', domain:'search.google.com',  connected:true  },
+  { name:'Google Sheets',         domain:'sheets.google.com',  connected:true  },
+  { name:'LinkedIn Ads',          domain:'linkedin.com',       connected:true  },
+  { name:'Semrush - Backlinks',   domain:'semrush.com',        connected:true  },
+  { name:'Semrush - Projects',    domain:'semrush.com',        connected:true  },
+  { name:'ActiveCampaign',        domain:'activecampaign.com', connected:false },
+  { name:'AdRoll',                domain:'adroll.com',         connected:false },
+  { name:'Adform',                domain:'adform.com',         connected:false },
+  { name:'Ahrefs',                domain:'ahrefs.com',         connected:false },
+  { name:'Amazon Ads',            domain:'advertising.amazon.com', connected:false },
+  { name:'Apple Search Ads',      domain:'searchads.apple.com', connected:false },
+  { name:'Appsflyer',             domain:'appsflyer.com',      connected:false },
+  { name:'Capterra',              domain:'capterra.com',       connected:false },
+  { name:'Criteo',                domain:'criteo.com',         connected:false },
+  { name:'DV360',                 domain:'displayvideo.google.com', connected:false },
+  { name:'HubSpot',               domain:'hubspot.com',        connected:false },
+  { name:'Instagram',             domain:'instagram.com',      connected:false },
+  { name:'Klaviyo',               domain:'klaviyo.com',        connected:false },
+  { name:'Mailchimp',             domain:'mailchimp.com',      connected:false },
+  { name:'Pinterest',             domain:'pinterest.com',      connected:false },
+  { name:'Shopify',               domain:'shopify.com',        connected:false },
+  { name:'Snapchat',              domain:'snapchat.com',       connected:false },
+  { name:'TikTok',                domain:'tiktok.com',         connected:false },
+  { name:'Twitter/X Ads',         domain:'ads.twitter.com',    connected:false },
+  { name:'YouTube',               domain:'youtube.com',        connected:false },
 ]
 
 const STATIC_SESSIONS = [{d:'1A',v:8000},{d:'6A',v:19000},{d:'13A',v:10000},{d:'20A',v:11000},{d:'27A',v:7000},{d:'4M',v:7000},{d:'11M',v:7500},{d:'18M',v:8000},{d:'25M',v:7000}]
@@ -832,7 +832,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                 style={{ width:300, minWidth:300, background:'#fff', borderRight:'1px solid #e5e5e5', display:'flex', flexDirection:'column', overflow:'hidden' }}>
                 <div style={{ padding:'14px 16px', borderBottom:'1px solid #e5e5e5' }}>
                   <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:12 }}>
-                    <button onClick={() => setEditingWidget(null)} style={{ width:28, height:28, borderRadius:'50%', background:'#f5f5f5', border:'1px solid #e5e5e5', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0 }}>
+                    <button onClick={() => { setEditingWidget(null); setActiveRightPanel('integrations') }} style={{ width:28, height:28, borderRadius:'50%', background:'#f5f5f5', border:'1px solid #e5e5e5', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0 }}>
                       <ChevronLeft size={14} style={{ color:'#333' }}/>
                     </button>
                     <div>
@@ -950,24 +950,34 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                 )}
                 {activeRightPanel==='integrations' && (
                   <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
+                    {/* Search */}
                     <div style={{ padding:'10px 12px', borderBottom:'1px solid #f0f0f0' }}>
                       <div style={{ display:'flex', alignItems:'center', gap:8, background:'#f5f5f5', border:'1px solid #e5e5e5', borderRadius:6, padding:'7px 10px', marginBottom:8 }}>
-                        <span style={{ color:'#999', fontSize:13 }}>🔍</span>
+                        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4.5" stroke="#999" strokeWidth="1.5"/><path d="M9.5 9.5 L12 12" stroke="#999" strokeWidth="1.5" strokeLinecap="round"/></svg>
                         <input value={integrationSearch} onChange={e => setIntegrationSearch(e.target.value)} placeholder="Search" style={{ background:'transparent', border:'none', outline:'none', fontSize:13, color:'#333', width:'100%' }}/>
                       </div>
-                      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'2px 2px' }}>
                         <span style={{ fontSize:12, fontWeight:600, color:'#333' }}>All Integrations</span>
-                        <span style={{ color:'#999', fontSize:16 }}>⌄</span>
+                        <ChevronDown size={14} style={{ color:'#999' }}/>
                       </div>
                     </div>
+                    {/* List */}
                     <div style={{ flex:1, overflowY:'auto' }}>
                       {ALL_INTEGRATIONS.filter((i:any) => i.name.toLowerCase().includes(integrationSearch.toLowerCase())).map((i:any) => (
-                        <div key={i.name} style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 14px', borderBottom:'1px solid #f5f5f5', cursor:'pointer' }}
+                        <div key={i.name} style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 14px', borderBottom:'1px solid #f5f5f5', cursor:'pointer', transition:'background 0.1s' }}
                           onMouseEnter={e=>(e.currentTarget as HTMLDivElement).style.background='#f8f9fa'}
                           onMouseLeave={e=>(e.currentTarget as HTMLDivElement).style.background='transparent'}>
-                          <div style={{ width:22, height:22, borderRadius:4, background:i.bg||'#f0f0f0', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, flexShrink:0 }}>{i.icon}</div>
-                          <span style={{ flex:1, fontSize:13, color:i.connected?'#1a1a1a':'#888' }}>{i.name}</span>
-                          <span style={{ color:'#ccc', fontSize:14 }}>›</span>
+                          {/* Brand icon via favicon */}
+                          <div style={{ width:28, height:28, borderRadius:6, background:'#f5f5f5', border:'1px solid #ebebeb', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, overflow:'hidden' }}>
+                            <img
+                              src={`https://www.google.com/s2/favicons?domain=${i.domain}&sz=64`}
+                              alt={i.name}
+                              style={{ width:20, height:20, objectFit:'contain', opacity: i.connected ? 1 : 0.45 }}
+                              onError={e => { (e.currentTarget as HTMLImageElement).style.display='none' }}
+                            />
+                          </div>
+                          <span style={{ flex:1, fontSize:13, color: i.connected ? '#1a1a1a' : '#aaa', fontWeight: i.connected ? 500 : 400 }}>{i.name}</span>
+                          <ChevronRight size={13} style={{ color:'#ccc', flexShrink:0 }}/>
                         </div>
                       ))}
                     </div>
