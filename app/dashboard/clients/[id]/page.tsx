@@ -201,6 +201,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [renameValue, setRenameValue] = useState('')
   const LS_KEY = `alloy_dashboards_${clientId}`
   const LS_CLONED_KEY = `alloy_cloned_dashboards_${clientId}`
+  const LS_WIDGETS_KEY = `alloy_widgets_${clientId}`
 
   const [dashboards, setDashboards] = useState<string[]>(() => {
     if (typeof window === 'undefined') return INITIAL_DASHBOARDS
@@ -217,12 +218,41 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       return saved ? JSON.parse(saved) : []
     } catch { return [] }
   })
-  const [widgets, setWidgets] = useState<Widget[]>([
+  const DEFAULT_WIDGETS: Widget[] = [
     {id:'w1',title:'Total Sessions',dataSource:'google-analytics-4 / traffic-analytics',chartType:'sparkline',tooltip:'Total sessions during the selected period.',color:'white',value:'120.5 K',change:'29%',up:true},
     {id:'w2',title:'Total Conversions',dataSource:'google-analytics-4 / conversions',chartType:'column',tooltip:'Total conversions tracked.',color:'blue',value:'3,610',change:'16%',up:false},
     {id:'w3',title:'Referring Domains',dataSource:'google-analytics-4 / referring',chartType:'line',tooltip:'Unique domains sending traffic.',color:'white',value:'6,961',change:'',up:true},
     {id:'w4',title:'Engagement Rate',dataSource:'google-analytics-4 / engagement',chartType:'area',tooltip:'Percentage of engaged sessions.',color:'green',value:'60.77%',change:'3.97%',up:false},
-  ])
+  ]
+  const [widgets, setWidgets] = useState<Widget[]>(() => {
+    if (typeof window === 'undefined') return DEFAULT_WIDGETS
+    try {
+      const saved = localStorage.getItem(LS_WIDGETS_KEY)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        // Merge saved display props with default structure (keeps live values from GA4)
+        return DEFAULT_WIDGETS.map(def => {
+          const saved_w = parsed.find((s: Widget) => s.id === def.id)
+          if (!saved_w) return def
+          // Preserve display customizations but not GA4 live values
+          return {
+            ...def,
+            title: saved_w.title ?? def.title,
+            tooltip: saved_w.tooltip ?? def.tooltip,
+            chartType: saved_w.chartType ?? def.chartType,
+            color: saved_w.color ?? def.color,
+            textColor: saved_w.textColor,
+            borderColor: saved_w.borderColor,
+            bgHex: saved_w.bgHex,
+            showAnomalies: saved_w.showAnomalies,
+            showForecast: saved_w.showForecast,
+            showIntegIcon: saved_w.showIntegIcon,
+          }
+        })
+      }
+    } catch {}
+    return DEFAULT_WIDGETS
+  })
 
   // Empty canvas only for dashboards that have no content yet (not real, not cloned)
   const isEmptyDash = !REAL_DASHBOARDS.includes(activeDash) && !clonedDashboards.includes(activeDash)
@@ -253,6 +283,27 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     if (typeof window === 'undefined') return
     try { localStorage.setItem(LS_CLONED_KEY, JSON.stringify(clonedDashboards)) } catch {}
   }, [clonedDashboards])
+
+  // Persist widget config (display settings, not live GA4 values) to localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      const toSave = widgets.map(w => ({
+        id: w.id,
+        title: w.title,
+        tooltip: w.tooltip,
+        chartType: w.chartType,
+        color: w.color,
+        textColor: w.textColor,
+        borderColor: w.borderColor,
+        bgHex: w.bgHex,
+        showAnomalies: w.showAnomalies,
+        showForecast: w.showForecast,
+        showIntegIcon: w.showIntegIcon,
+      }))
+      localStorage.setItem(LS_WIDGETS_KEY, JSON.stringify(toSave))
+    } catch {}
+  }, [widgets])
 
   async function loadClientInfo() {
     // Use /api/client which uses service role key - always works regardless of RLS
