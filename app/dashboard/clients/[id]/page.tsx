@@ -84,7 +84,7 @@ const KPI_BG: Record<string,{bg:string;border:string;text:string;sub:string}> = 
   red:{bg:'#ef5350',border:'#ef5350',text:'#fff',sub:'rgba(255,255,255,0.85)'},
 }
 
-interface Widget { id:string; title:string; dataSource:string; chartType:string; tooltip:string; color:string; value:string; change:string; up:boolean }
+interface Widget { id:string; title:string; dataSource:string; chartType:string; tooltip:string; color:string; value:string; change:string; up:boolean; textColor?:string; borderColor?:string; showAnomalies?:boolean; showForecast?:boolean; showIntegIcon?:boolean }
 
 function formatNum(n: number) {
   if (n>=1000000) return (n/1000000).toFixed(1)+'M'
@@ -408,9 +408,14 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     const c = KPI_BG[w.color] || KPI_BG.white
     const isWhite = w.color === 'white'
     const isSelected = editingWidget?.id === w.id
+    // Apply custom display overrides if set
+    const bgColor = c.bg
+    const borderCol = isSelected && editMode ? '#48b5ea' : (w.borderColor || c.border)
+    const textCol = w.textColor || c.text
+    const subCol = c.sub
     return (
       <div onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
-        style={{ background:c.bg, border:`2px solid ${isSelected && editMode ? '#48b5ea' : c.border}`, borderRadius:8, padding:16, position:'relative', minHeight:110, cursor: editMode ? 'pointer' : 'default', transition:'border-color 0.15s' }}>
+        style={{ background:bgColor, border:`2px solid ${borderCol}`, borderRadius:8, padding:16, position:'relative', minHeight:110, cursor: editMode ? 'pointer' : 'default', transition:'border-color 0.15s' }}>
         {editMode && <div style={{ position:'absolute', top:6, left:6, cursor:'grab', color:isWhite?'#d0d0d0':'rgba(255,255,255,0.35)' }}><Grip size={13}/></div>}
         {editMode && (
           <div onClick={e => e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', alignItems:'center', gap:4 }}>
@@ -424,7 +429,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
           <span style={{ fontSize:12, color:c.sub, fontWeight:500 }}>{w.title}</span>
           {w.change && <span style={{ fontSize:10, fontWeight:700, marginLeft:8, padding:'2px 6px', borderRadius:4, color:isWhite?(w.up?'#22c55e':'#ef4444'):'rgba(255,255,255,0.95)', background:isWhite?(w.up?'#f0fdf4':'#fef2f2'):'rgba(255,255,255,0.18)' }}>{w.up?'▲':'▼'} {w.change}</span>}
         </div>
-        <p style={{ fontSize:30, fontWeight:700, color:c.text, letterSpacing:'-0.5px', lineHeight:1 }}>{w.value}</p>
+        <p style={{ fontSize:30, fontWeight:700, color:textCol, letterSpacing:'-0.5px', lineHeight:1 }}>{w.value}</p>
         {connection?.connected && <p style={{ fontSize:9, color:isWhite?'#22c55e':'rgba(255,255,255,0.7)', marginTop:6 }}>● Live</p>}
       </div>
     )
@@ -973,6 +978,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                           )
                         })}
                       </div>
+
+                      <button onClick={saveWidget} style={{ width:'100%', background:'#48b5ea', border:'none', borderRadius:6, padding:'11px', fontSize:13, fontWeight:600, color:'#fff', cursor:'pointer', marginTop:24 }}>Save Changes</button>
 
                     </div>
                   )}
