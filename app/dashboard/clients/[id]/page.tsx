@@ -1,6 +1,5 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { useSearchParams } from 'next/navigation'
 import DashboardBuilder from '@/components/dashboard/DashboardBuilder'
 import ClonePageModal from '@/components/dashboard/ClonePageModal'
 import { ChevronRight, Sparkles, Settings, Calendar, ChevronDown, Plus, MoreHorizontal, Maximize2, X, Grip, RotateCcw, RotateCw, Monitor, Smartphone, ChevronLeft, RefreshCw, CheckCircle2 } from 'lucide-react'
@@ -154,7 +153,6 @@ function NewDashCanvas({ onClone }: { onClone: () => void }) {
 // ── Main page ────────────────────────────────────────────────────────────────
 export default function ClientWorkspace({ params }: { params: { id: string } }) {
   const clientId = params.id
-  const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState('Dashboards')
   const [activeDash, setActiveDash] = useState('Website Performance')
   const [editMode, setEditMode] = useState(false)
@@ -175,17 +173,19 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [selectedSite, setSelectedSite] = useState('')
   const [dateRange, setDateRange] = useState('30daysAgo')
   const [clientName, setClientName] = useState<string>(() => {
-    // 1. Try searchParams (passed from client card link)
-    const fromUrl = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('name') : null
-    if (fromUrl) return decodeURIComponent(fromUrl)
-    // 2. Try localStorage cache
     if (typeof window === 'undefined') return ''
+    // 1. URL param (passed from client card ?name=...)
+    const urlName = new URLSearchParams(window.location.search).get('name')
+    if (urlName) return urlName
+    // 2. localStorage cache
     try { return localStorage.getItem(`alloy_client_name_${params.id}`) || '' } catch { return '' }
   })
   const [clientDomain, setClientDomain] = useState<string>(() => {
-    const fromUrl = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('domain') : null
-    if (fromUrl) return decodeURIComponent(fromUrl)
     if (typeof window === 'undefined') return ''
+    // 1. URL param
+    const urlDomain = new URLSearchParams(window.location.search).get('domain')
+    if (urlDomain) return urlDomain
+    // 2. localStorage cache
     try { return localStorage.getItem(`alloy_client_domain_${params.id}`) || '' } catch { return '' }
   })
   const [showMappingModal, setShowMappingModal] = useState(false)
@@ -567,7 +567,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                     onError={e => { (e.currentTarget as HTMLImageElement).style.display='none' }}
                   />
                 ) : (
-                  <span style={{ fontSize:10, fontWeight:700, color:'#999' }}>{clientName?.[0] || '?'}</span>
+                  <span style={{ fontSize:10, fontWeight:700, color:'#999' }}>{clientName?.[0]?.toUpperCase() || ''}</span>
                 )}
               </div>
               {/* Client name — always shows something */}
