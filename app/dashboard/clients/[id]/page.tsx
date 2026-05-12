@@ -572,7 +572,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
               </div>
               {/* Client name — always shows something */}
               <span style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', maxWidth:200, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                {clientName || clientId}
+                {clientName || '...'}
               </span>
               <ChevronDown size={12} style={{ color:'#999' }}/>
             </div>
