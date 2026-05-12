@@ -541,10 +541,24 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
           <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 16px', borderBottom:'1px solid #e5e5e5', background:'#fff', flexShrink:0 }}>
             <span style={{ fontSize:14, fontWeight:700, color:'#1a1a1a' }}>Dashboard</span>
             <div style={{ width:1, height:16, background:'#e5e5e5' }}/>
-            <div style={{ width:22, height:22, borderRadius:'50%', overflow:'hidden', background:'#f0f0f0', flexShrink:0 }}>
-              <img src={`https://logo.clearbit.com/${clientDomain}`} alt="" style={{ width:'100%', height:'100%', objectFit:'contain' }} onError={e=>(e.currentTarget.style.display='none')}/>
+            {/* Client logo with multi-source fallback */}
+            <div style={{ width:24, height:24, borderRadius:4, overflow:'hidden', background:'#f0f0f0', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
+              {clientDomain ? (
+                <img
+                  src={`https://www.google.com/s2/favicons?domain=${clientDomain}&sz=64`}
+                  alt={clientName}
+                  style={{ width:20, height:20, objectFit:'contain' }}
+                  onError={e => {
+                    const img = e.currentTarget as HTMLImageElement
+                    if (!img.dataset.fb1) { img.dataset.fb1='1'; img.src=`https://img.logo.dev/${clientDomain}?token=pk_R9ZPqh9xR5Kfh1M6GvCXFA`; return }
+                    img.style.display='none'
+                  }}
+                />
+              ) : (
+                <span style={{ fontSize:11, fontWeight:700, color:'#666' }}>{clientName?.[0]?.toUpperCase() || ''}</span>
+              )}
             </div>
-            <span style={{ fontSize:13, fontWeight:600 }}>{clientName}</span>
+            <span style={{ fontSize:13, fontWeight:600, color:'#1a1a1a' }}>{clientName}</span>
             <span style={{ fontSize:11, background:'#f0f0f0', color:'#666', padding:'2px 8px', borderRadius:4 }}>Client</span>
             <button onClick={() => { setEditMode(false); setEditingWidget(null); setOpenMenu(null) }}
               style={{ marginLeft:'auto', width:28, height:28, borderRadius:'50%', background:'#f5f5f5', border:'1px solid #e5e5e5', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
