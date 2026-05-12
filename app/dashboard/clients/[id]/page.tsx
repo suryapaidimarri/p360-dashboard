@@ -24,54 +24,18 @@ const RIGHT_PANEL_ITEMS = [
   {id:'goals',icon:'◎',label:'Goals'},
 ]
 const CHART_TYPES = [
-  {
-    id:'column', label:'Bar Chart',
-    svg: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="2" y="10" width="4" height="10" rx="1" fill="currentColor"/><rect x="9" y="6" width="4" height="14" rx="1" fill="currentColor"/><rect x="16" y="2" width="4" height="18" rx="1" fill="currentColor"/></svg>
-  },
-  {
-    id:'line', label:'Line',
-    svg: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><polyline points="2,18 7,10 12,14 17,5 20,8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
-  },
-  {
-    id:'area', label:'Area',
-    svg: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M2 18 L7 10 L12 14 L17 5 L20 8 L20 18 Z" fill="currentColor" fillOpacity="0.25"/><polyline points="2,18 7,10 12,14 17,5 20,8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
-  },
-  {
-    id:'combo', label:'Line + Bar',
-    svg: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="2" y="12" width="4" height="8" rx="1" fill="currentColor" fillOpacity="0.5"/><rect x="9" y="8" width="4" height="12" rx="1" fill="currentColor" fillOpacity="0.5"/><rect x="16" y="10" width="4" height="10" rx="1" fill="currentColor" fillOpacity="0.5"/><polyline points="4,10 11,5 18,8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
-  },
-  {
-    id:'pie', label:'Pie',
-    svg: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 11 L11 2 A9 9 0 0 1 20 11 Z" fill="currentColor"/><path d="M11 11 L20 11 A9 9 0 0 1 5 18.8 Z" fill="currentColor" fillOpacity="0.6"/><path d="M11 11 L5 18.8 A9 9 0 0 1 11 2 Z" fill="currentColor" fillOpacity="0.3"/></svg>
-  },
-  {
-    id:'donut', label:'Donut',
-    svg: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="4" strokeDasharray="28 22" strokeDashoffset="0" fill="none"/><circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="4" strokeDasharray="14 36" strokeDashoffset="-28" fill="none" opacity="0.5"/></svg>
-  },
-  {
-    id:'sparkline', label:'Sparkline',
-    svg: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><polyline points="2,16 5,10 8,13 11,7 14,11 17,6 20,9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
-  },
-  {
-    id:'scorecard', label:'Scorecard',
-    svg: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="2" y="4" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" fill="none"/><text x="11" y="14" textAnchor="middle" fontSize="8" fontWeight="700" fill="currentColor">123</text></svg>
-  },
-  {
-    id:'table', label:'Table',
-    svg: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="2" y="4" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" fill="none"/><line x1="2" y1="9" x2="20" y2="9" stroke="currentColor" strokeWidth="1.5"/><line x1="2" y1="14" x2="20" y2="14" stroke="currentColor" strokeWidth="1.5"/><line x1="9" y1="4" x2="9" y2="18" stroke="currentColor" strokeWidth="1.5"/></svg>
-  },
-  {
-    id:'treemap', label:'Tree Map',
-    svg: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="2" y="2" width="10" height="12" rx="1" fill="currentColor" fillOpacity="0.8"/><rect x="14" y="2" width="6" height="5" rx="1" fill="currentColor" fillOpacity="0.6"/><rect x="14" y="9" width="6" height="5" rx="1" fill="currentColor" fillOpacity="0.4"/><rect x="2" y="16" width="7" height="4" rx="1" fill="currentColor" fillOpacity="0.5"/><rect x="11" y="16" width="9" height="4" rx="1" fill="currentColor" fillOpacity="0.3"/></svg>
-  },
-  {
-    id:'funnel', label:'Funnel',
-    svg: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 4 H19 L14 10 L14 17 L8 20 L8 10 Z" fill="currentColor" fillOpacity="0.7" stroke="currentColor" strokeWidth="1" strokeLinejoin="round"/></svg>
-  },
-  {
-    id:'map', label:'Map',
-    svg: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><ellipse cx="11" cy="11" rx="8" ry="8" stroke="currentColor" strokeWidth="1.5" fill="none"/><path d="M3 11 Q7 8 11 11 Q15 14 19 11" stroke="currentColor" strokeWidth="1.5" fill="none"/><line x1="11" y1="3" x2="11" y2="19" stroke="currentColor" strokeWidth="1.5"/></svg>
-  },
+  { id:'column',    label:'Bar Chart',    d:'bars',     paths:[['rect',{x:2,y:10,w:4,h:10}],['rect',{x:9,y:6,w:4,h:14}],['rect',{x:16,y:2,w:4,h:18}]] },
+  { id:'line',      label:'Line',         d:'line',     paths:[] },
+  { id:'area',      label:'Area',         d:'area',     paths:[] },
+  { id:'combo',     label:'Line + Bar',   d:'combo',    paths:[] },
+  { id:'pie',       label:'Pie',          d:'pie',      paths:[] },
+  { id:'donut',     label:'Donut',        d:'donut',    paths:[] },
+  { id:'sparkline', label:'Sparkline',    d:'spark',    paths:[] },
+  { id:'scorecard', label:'Scorecard',    d:'score',    paths:[] },
+  { id:'table',     label:'Table',        d:'table',    paths:[] },
+  { id:'treemap',   label:'Tree Map',     d:'tree',     paths:[] },
+  { id:'funnel',    label:'Funnel',       d:'funnel',   paths:[] },
+  { id:'map',       label:'Map',          d:'map',      paths:[] },
 ]
 
 const ALL_INTEGRATIONS = [
@@ -445,7 +409,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     const isWhite = w.color === 'white'
     const isSelected = editingWidget?.id === w.id
     return (
-      <div onClick={() => { if (editMode) startEdit(w); else openDrill(w) }}
+      <div onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
         style={{ background:c.bg, border:`2px solid ${isSelected && editMode ? '#48b5ea' : c.border}`, borderRadius:8, padding:16, position:'relative', minHeight:110, cursor: editMode ? 'pointer' : 'default', transition:'border-color 0.15s' }}>
         {editMode && <div style={{ position:'absolute', top:6, left:6, cursor:'grab', color:isWhite?'#d0d0d0':'rgba(255,255,255,0.35)' }}><Grip size={13}/></div>}
         {editMode && (
@@ -470,7 +434,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     const w = widgets.find(x => x.id === id) || widgets[0]
     const isSelected = editingWidget?.id === id
     return (
-      <div onClick={() => { if (editMode) startEdit(w); else openDrill(w) }}
+      <div onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
         style={{ background:'#fff', border:`2px solid ${isSelected && editMode ? '#48b5ea' : '#e5e5e5'}`, borderRadius:8, padding:16, position:'relative', cursor: editMode ? 'pointer' : 'default', transition:'border-color 0.15s' }}>
         {editMode && <div style={{ position:'absolute', top:6, left:6, cursor:'grab', color:'#d0d0d0' }}><Grip size={13}/></div>}
         {editMode && (
@@ -741,8 +705,11 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
           </div>
         </div>
 
-        {/* Canvas */}
-        <div style={{ flex:1, display:'flex', flexDirection:'column', overflowY: isEmptyDash ? 'hidden' : 'auto', background:'#f8f9fa' }}>
+        {/* Canvas — click background to close edit panel */}
+        <div
+          style={{ flex:1, display:'flex', flexDirection:'column', overflowY: isEmptyDash ? 'hidden' : 'auto', background:'#f8f9fa' }}
+          onClick={() => { if (editingWidget) setEditingWidget(null) }}
+        >
           <div style={{ padding:'14px 20px', borderBottom:'1px solid #e5e5e5', background:'#fff', display:'flex', alignItems:'center', gap:8 }}>
             <div style={{ width:16, height:16, border:'2px solid #333', borderRadius:2 }}/>
             <span style={{ fontSize:14, fontWeight:700, color:'#1a1a1a' }}>{activeDash}</span>
@@ -793,7 +760,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                     </div>
                     <span style={{ fontSize:24, fontWeight:700, color:'#1a1a1a' }}>3%</span>
                   </ChartCard>
-                  <div onClick={() => { if (editMode) startEdit(widgets[3]) }}
+                  <div onClick={e => { e.stopPropagation(); if (editMode) startEdit(widgets[3]) }}
                     style={{ background:'#ef5350', border:`2px solid ${editingWidget?.id==='bounce' && editMode ? '#48b5ea' : '#ef5350'}`, borderRadius:8, padding:16, position:'relative', cursor: editMode ? 'pointer' : 'default' }}>
                     {editMode && <div style={{ position:'absolute', top:6, left:6, cursor:'grab', color:'rgba(255,255,255,0.35)' }}><Grip size={13}/></div>}
                     {editMode && (
@@ -860,7 +827,9 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
         {editMode && (
           <div style={{ display:'flex', height:'100%', borderLeft:'1px solid #e5e5e5' }}>
             {editingWidget && (
-              <div style={{ width:300, minWidth:300, background:'#fff', borderRight:'1px solid #e5e5e5', display:'flex', flexDirection:'column', overflow:'hidden' }}>
+              <div
+                onClick={e => e.stopPropagation()}
+                style={{ width:300, minWidth:300, background:'#fff', borderRight:'1px solid #e5e5e5', display:'flex', flexDirection:'column', overflow:'hidden' }}>
                 <div style={{ padding:'14px 16px', borderBottom:'1px solid #e5e5e5' }}>
                   <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:12 }}>
                     <button onClick={() => setEditingWidget(null)} style={{ width:28, height:28, borderRadius:'50%', background:'#f5f5f5', border:'1px solid #e5e5e5', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0 }}>
@@ -895,11 +864,28 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                         <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:6 }}>
                           {CHART_TYPES.map(ct => {
                             const active = editingWidget.chartType === ct.id
+                            const c = active ? '#1a85c8' : '#888'
+                            const ChartIcon = () => {
+                              const s = { width:22, height:22 }
+                              if (ct.id==='column')    return <svg {...s} viewBox="0 0 22 22" fill="none"><rect x="2" y="10" width="4" height="10" rx="1" fill={c}/><rect x="9" y="6" width="4" height="14" rx="1" fill={c}/><rect x="16" y="2" width="4" height="18" rx="1" fill={c}/></svg>
+                              if (ct.id==='line')      return <svg {...s} viewBox="0 0 22 22" fill="none"><polyline points="2,18 7,10 12,14 17,5 20,8" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
+                              if (ct.id==='area')      return <svg {...s} viewBox="0 0 22 22" fill="none"><path d="M2 18 L7 10 L12 14 L17 5 L20 8 L20 18 Z" fill={c} fillOpacity="0.2"/><polyline points="2,18 7,10 12,14 17,5 20,8" stroke={c} strokeWidth="2" strokeLinecap="round" fill="none"/></svg>
+                              if (ct.id==='combo')     return <svg {...s} viewBox="0 0 22 22" fill="none"><rect x="2" y="12" width="4" height="8" rx="1" fill={c} fillOpacity="0.4"/><rect x="9" y="8" width="4" height="12" rx="1" fill={c} fillOpacity="0.4"/><rect x="16" y="10" width="4" height="10" rx="1" fill={c} fillOpacity="0.4"/><polyline points="4,10 11,5 18,8" stroke={c} strokeWidth="2" strokeLinecap="round" fill="none"/></svg>
+                              if (ct.id==='pie')       return <svg {...s} viewBox="0 0 22 22" fill="none"><path d="M11 11 L11 2 A9 9 0 0 1 20 11 Z" fill={c}/><path d="M11 11 L20 11 A9 9 0 0 1 5 18.8 Z" fill={c} fillOpacity="0.6"/><path d="M11 11 L5 18.8 A9 9 0 0 1 11 2 Z" fill={c} fillOpacity="0.3"/></svg>
+                              if (ct.id==='donut')     return <svg {...s} viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="7" stroke={c} strokeWidth="4.5" strokeDasharray="25 19" fill="none"/><circle cx="11" cy="11" r="7" stroke={c} strokeWidth="4.5" strokeDasharray="13 31" strokeDashoffset="-25" fill="none" opacity="0.45"/></svg>
+                              if (ct.id==='sparkline') return <svg {...s} viewBox="0 0 22 22" fill="none"><polyline points="2,16 5,10 8,13 11,7 14,11 17,6 20,9" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
+                              if (ct.id==='scorecard') return <svg {...s} viewBox="0 0 22 22" fill="none"><rect x="2" y="5" width="18" height="12" rx="2" stroke={c} strokeWidth="1.5" fill="none"/><rect x="6" y="9" width="10" height="4" rx="1" fill={c} fillOpacity="0.3"/></svg>
+                              if (ct.id==='table')     return <svg {...s} viewBox="0 0 22 22" fill="none"><rect x="2" y="4" width="18" height="14" rx="2" stroke={c} strokeWidth="1.5" fill="none"/><line x1="2" y1="9" x2="20" y2="9" stroke={c} strokeWidth="1.2"/><line x1="2" y1="14" x2="20" y2="14" stroke={c} strokeWidth="1.2"/><line x1="9" y1="4" x2="9" y2="18" stroke={c} strokeWidth="1.2"/></svg>
+                              if (ct.id==='treemap')   return <svg {...s} viewBox="0 0 22 22" fill="none"><rect x="2" y="2" width="10" height="12" rx="1" fill={c} fillOpacity="0.8"/><rect x="14" y="2" width="6" height="5" rx="1" fill={c} fillOpacity="0.55"/><rect x="14" y="9" width="6" height="5" rx="1" fill={c} fillOpacity="0.4"/><rect x="2" y="16" width="7" height="4" rx="1" fill={c} fillOpacity="0.5"/><rect x="11" y="16" width="9" height="4" rx="1" fill={c} fillOpacity="0.3"/></svg>
+                              if (ct.id==='funnel')    return <svg {...s} viewBox="0 0 22 22" fill="none"><path d="M3 4 H19 L14 10 L14 17 L8 20 L8 10 Z" fill={c} fillOpacity="0.6" stroke={c} strokeWidth="1" strokeLinejoin="round"/></svg>
+                              if (ct.id==='map')       return <svg {...s} viewBox="0 0 22 22" fill="none"><ellipse cx="11" cy="11" rx="8" ry="8" stroke={c} strokeWidth="1.5" fill="none"/><path d="M3 11 Q7 8 11 11 Q15 14 19 11" stroke={c} strokeWidth="1.5" fill="none"/><line x1="11" y1="3" x2="11" y2="19" stroke={c} strokeWidth="1.5"/></svg>
+                              return null
+                            }
                             return (
                               <button key={ct.id} onClick={() => setEditingWidget({...editingWidget, chartType:ct.id})}
-                                style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:5, padding:'10px 4px', borderRadius:8, border:`2px solid ${active?'#48b5ea':'#e5e5e5'}`, background:active?'#ebf7ff':'#fff', cursor:'pointer', transition:'all 0.1s', color:active?'#1a85c8':'#999' }}>
-                                <span style={{ display:'flex', color:active?'#1a85c8':'#999' }}>{ct.svg}</span>
-                                <span style={{ fontSize:10, color:active?'#1a85c8':'#555', fontWeight:active?600:400, textAlign:'center', lineHeight:1.2 }}>{ct.label}</span>
+                                style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:5, padding:'10px 4px', borderRadius:8, border:`2px solid ${active?'#48b5ea':'#e5e5e5'}`, background:active?'#ebf7ff':'#fff', cursor:'pointer', transition:'all 0.1s' }}>
+                                <ChartIcon/>
+                                <span style={{ fontSize:10, color:active?'#1a85c8':'#555', fontWeight:active?600:400, textAlign:'center' as const, lineHeight:1.2 }}>{ct.label}</span>
                               </button>
                             )
                           })}
