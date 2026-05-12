@@ -23,9 +23,11 @@ function getColor(name: string) {
   return ALLOY_COLORS[h]
 }
 
-// ── localStorage helpers ─────────────────────────────────────────────────────
-const LS_KEY = 'p360_clients_v2'
+function cleanDomain(domain: string) {
+  return (domain || '').replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]
+}
 
+const LS_KEY = 'p360_clients_v2'
 function lsLoad(): Client[] {
   try { const v = localStorage.getItem(LS_KEY); return v ? JSON.parse(v) : [] } catch { return [] }
 }
@@ -33,7 +35,6 @@ function lsSave(clients: Client[]) {
   try { localStorage.setItem(LS_KEY, JSON.stringify(clients)) } catch {}
 }
 
-// ── logo component ───────────────────────────────────────────────────────────
 function ClientLogo({ client }: { client: Client }) {
   const [srcIndex, setSrcIndex] = useState(0)
   const [loaded, setLoaded] = useState(false)
@@ -50,7 +51,7 @@ function ClientLogo({ client }: { client: Client }) {
     )
   }
 
-  const domain = (client.domain||'').replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]
+  const domain = cleanDomain(client.domain || '')
   const SRCS = domain ? [
     `https://img.logo.dev/${domain}?token=pk_R9ZPqh9xR5Kfh1M6GvCXFA`,
     `https://www.google.com/s2/favicons?domain=${domain}&sz=128`,
@@ -78,12 +79,14 @@ function ClientLogo({ client }: { client: Client }) {
   )
 }
 
-// ── card component ───────────────────────────────────────────────────────────
 function ClientCard({ client, selected, onToggle, menuOpen, onMenuToggle, onDelete }: {
   client: Client; selected:boolean; onToggle:()=>void; menuOpen:boolean; onMenuToggle:()=>void; onDelete:()=>void
 }) {
   const [hovered, setHovered] = useState(false)
   const color = getColor(client.name)
+
+  // Build href with name and domain as query params so the client page shows name instantly
+  const href = client.group ? '#' : `/dashboard/clients/${client.id}?name=${encodeURIComponent(client.name)}&domain=${encodeURIComponent(cleanDomain(client.domain || ''))}`
 
   const inner = (
     <div style={{ background:'#FFF', border:`1px solid ${selected||hovered?'#20BB71':'#E6E6E6'}`, borderRadius:2, padding:14, cursor:'pointer', position:'relative', overflow:'hidden', transition:'border-color 0.12s' }}>
@@ -115,14 +118,11 @@ function ClientCard({ client, selected, onToggle, menuOpen, onMenuToggle, onDele
   if (client.group) return <div onMouseEnter={()=>setHovered(true)} onMouseLeave={()=>setHovered(false)}>{inner}</div>
   return (
     <div onMouseEnter={()=>setHovered(true)} onMouseLeave={()=>setHovered(false)}>
-      <Link 
-  href={`/dashboard/clients/${client.id}?name=${encodeURIComponent(client.name)}&domain=${encodeURIComponent((client.domain||'').replace(/^https?:\/\//,'').replace(/^www\./,'').split('/')[0])}`}
-  style={{ textDecoration:'none', display:'block' }}>{inner}</Link>
+      <Link href={href} style={{ textDecoration:'none', display:'block' }}>{inner}</Link>
     </div>
   )
 }
 
-// ── page ─────────────────────────────────────────────────────────────────────
 const DEMO: Client[] = [
   { id:'group1', name:'Lumistella', domain:'', logo_url:null, status:'active', agency_id:'1', group:'group', group_count:5, created_at:'2024-01-01' },
   { id:'demo-1', name:'Alloy (internal)', domain:'alloy.com', logo_url:null, status:'active', agency_id:'1', created_at:'2024-01-01' },
@@ -141,7 +141,6 @@ const DEMO: Client[] = [
 ]
 
 export default function ClientsPage() {
-  // Start with demo clients immediately — no loading flash
   const [clients, setClients] = useState<Client[]>(DEMO)
   const [extraClients, setExtraClients] = useState<Client[]>([])
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set())
@@ -153,7 +152,6 @@ export default function ClientsPage() {
   const [newDomain, setNewDomain] = useState('')
   const [adding, setAdding] = useState(false)
 
-  // Load persisted data from localStorage on mount
   useEffect(() => {
     const saved = lsLoad()
     if (saved.length > 0) {
@@ -164,7 +162,6 @@ export default function ClientsPage() {
     }
   }, [])
 
-  // Compute displayed clients: demo (minus deleted) + user-added
   const allClients = [
     ...DEMO.filter(c => !deletedIds.has(c.id)),
     ...extraClients,
@@ -182,25 +179,21 @@ export default function ClientsPage() {
   async function handleAdd() {
     if (!newName.trim()) return
     setAdding(true)
-    const cleanDomain = newDomain.trim().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]
+    const cd = cleanDomain(newDomain.trim())
     const color = getColor(newName.trim())
     const newClient: Client = {
       id: `user-${Date.now()}`,
       name: newName.trim(),
-      domain: cleanDomain,
+      domain: cd,
       logo_url: null,
       status: 'active',
       agency_id: '1',
       color,
       created_at: new Date().toISOString(),
     }
-
-    // Save to localStorage immediately
     const updatedExtras = [...extraClients, newClient]
     setExtraClients(updatedExtras)
     persist(updatedExtras, deletedIds)
-
-    // Also try Supabase in background
     try {
       const { createClient } = await import('@/lib/supabase/client')
       const supabase = createClient()
@@ -208,28 +201,23 @@ export default function ClientsPage() {
         .insert([{ name: newClient.name, domain: newClient.domain, color, status: 'active', agency_id: '1', logo_url: null }])
         .select().single()
       if (data) {
-        // Replace temp client with Supabase version
         const replaced = updatedExtras.map(c => c.id === newClient.id ? { ...data } : c)
         setExtraClients(replaced)
         persist(replaced, deletedIds)
       }
     } catch {}
-
     setNewName(''); setNewDomain(''); setAdding(false); setShowModal(false)
   }
 
   function handleDelete(id: string) {
     if (id.startsWith('demo-') || id === 'group1') {
-      // Mark demo client as deleted
       const newDeleted = new Set(Array.from(deletedIds).concat(id))
       setDeletedIds(newDeleted)
       persist(extraClients, newDeleted)
     } else {
-      // Remove user-added client
       const newExtras = extraClients.filter(c => c.id !== id)
       setExtraClients(newExtras)
       persist(newExtras, deletedIds)
-      // Also delete from Supabase in background
       import('@/lib/supabase/client').then(({ createClient }) => {
         createClient().from('clients').delete().eq('id', id).then(() => {})
       }).catch(() => {})
@@ -241,8 +229,6 @@ export default function ClientsPage() {
   return (
     <div style={{ display:'flex', flexDirection:'column', height:'100%', overflow:'hidden', background:'#FAFAFA', fontFamily:"'DM Sans',sans-serif" }}
       onClick={()=>setMenuOpen(null)}>
-
-      {/* Topbar */}
       <div style={{ display:'flex', alignItems:'center', gap:10, padding:'13px 24px', borderBottom:'1px solid #E6E6E6', background:'#FFF', flexShrink:0 }}>
         <span style={{ fontSize:15, fontWeight:500, color:'#111' }}>Clients</span>
         <span style={{ ...label, color:'#6B6B6B', marginLeft:4 }}>— {allClients.filter(c=>!c.group).length} ACCOUNTS</span>
@@ -279,7 +265,6 @@ export default function ClientsPage() {
       </div>
 
       <div style={{ flex:1, overflowY:'auto', padding:24 }}>
-        {/* KPI row */}
         <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginBottom:24 }}>
           {KPIS.map(k => (
             <div key={k.label} style={{ background:'#FFF', border:'1px solid #E6E6E6', borderRadius:2, padding:14 }}>
@@ -312,7 +297,6 @@ export default function ClientsPage() {
         </div>
       </div>
 
-      {/* Add Modal */}
       {showModal && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:50, padding:16 }} onClick={()=>setShowModal(false)}>
           <div style={{ background:'#FFF', borderRadius:2, width:'100%', maxWidth:400, overflow:'hidden', boxShadow:'0 18px 40px rgba(0,0,0,0.12)' }} onClick={e=>e.stopPropagation()}>
@@ -337,9 +321,9 @@ export default function ClientsPage() {
                     style={{ flex:1, background:'#FAFAFA', border:'1px solid #E6E6E6', borderRadius:2, padding:'9px 12px', color:'#111', fontSize:13, outline:'none', boxSizing:'border-box' as const, fontFamily:"'DM Sans',sans-serif" }}/>
                   {newDomain.trim() && (
                     <div style={{ width:40, height:40, borderRadius:4, border:'1px solid #E6E6E6', background:'#FAFAFA', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, overflow:'hidden' }}>
-                      <img src={`https://www.google.com/s2/favicons?domain=${newDomain.trim().replace(/^https?:\/\//, '').replace(/^www\./, '')}&sz=128`} alt="logo"
+                      <img src={`https://www.google.com/s2/favicons?domain=${cleanDomain(newDomain.trim())}&sz=128`} alt="logo"
                         style={{ maxWidth:36, maxHeight:36, objectFit:'contain' }}
-                        onError={e=>{const img=e.currentTarget;const d=newDomain.trim().replace(/^https?:\/\//, '').replace(/^www\./, '');if(!img.dataset.fb){img.dataset.fb='1';img.src=`https://logo.clearbit.com/${d}`}else if(!img.dataset.fb2){img.dataset.fb2='1';img.src=`https://icons.duckduckgo.com/ip3/${d}.ico`}else img.style.display='none'}}
+                        onError={e=>{(e.currentTarget as HTMLImageElement).style.display='none'}}
                       />
                     </div>
                   )}
