@@ -172,20 +172,45 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [selectedProperty, setSelectedProperty] = useState('')
   const [selectedSite, setSelectedSite] = useState('')
   const [dateRange, setDateRange] = useState('30daysAgo')
+  // Known clients — used for instant name display without any fetch
+  const KNOWN_CLIENTS: Record<string, {name:string, domain:string}> = {
+    'demo-1':  { name:'Alloy (internal)',   domain:'alloy.com' },
+    'demo-2':  { name:'Atlanta Beltline',   domain:'beltline.org' },
+    'demo-3':  { name:'Collaborating Docs', domain:'collaboratingdocs.com' },
+    'demo-4':  { name:'DEMO: Grainwise',    domain:'grainwise.com' },
+    'demo-5':  { name:'Georgia Aquarium',   domain:'georgiaaquarium.org' },
+    'demo-6':  { name:'GFVGA',              domain:'gfvga.org' },
+    'demo-7':  { name:'HHAeXchange',        domain:'hhaexchange.com' },
+    'demo-8':  { name:'IOU Financial',      domain:'ioufinancial.com' },
+    'demo-9':  { name:'Latapult',           domain:'latapult.com' },
+    'demo-10': { name:'Litmos',             domain:'litmos.com' },
+    'demo-11': { name:'NCH',                domain:'nchmd.org' },
+    'demo-12': { name:'S&T Bank',           domain:'stbank.com' },
+    'demo-13': { name:'TPX',               domain:'tpx.com' },
+  }
+
   const [clientName, setClientName] = useState<string>(() => {
+    // 1. Known demo client
+    if (KNOWN_CLIENTS[params.id]) return KNOWN_CLIENTS[params.id].name
+    // 2. URL param
+    if (typeof window !== 'undefined') {
+      const urlName = new URLSearchParams(window.location.search).get('name')
+      if (urlName) return urlName
+    }
+    // 3. localStorage cache
     if (typeof window === 'undefined') return ''
-    // 1. URL param (passed from client card ?name=...)
-    const urlName = new URLSearchParams(window.location.search).get('name')
-    if (urlName) return urlName
-    // 2. localStorage cache
     try { return localStorage.getItem(`alloy_client_name_${params.id}`) || '' } catch { return '' }
   })
   const [clientDomain, setClientDomain] = useState<string>(() => {
+    // 1. Known demo client
+    if (KNOWN_CLIENTS[params.id]) return KNOWN_CLIENTS[params.id].domain
+    // 2. URL param
+    if (typeof window !== 'undefined') {
+      const urlDomain = new URLSearchParams(window.location.search).get('domain')
+      if (urlDomain) return urlDomain
+    }
+    // 3. localStorage cache
     if (typeof window === 'undefined') return ''
-    // 1. URL param
-    const urlDomain = new URLSearchParams(window.location.search).get('domain')
-    if (urlDomain) return urlDomain
-    // 2. localStorage cache
     try { return localStorage.getItem(`alloy_client_domain_${params.id}`) || '' } catch { return '' }
   })
   const [showMappingModal, setShowMappingModal] = useState(false)
