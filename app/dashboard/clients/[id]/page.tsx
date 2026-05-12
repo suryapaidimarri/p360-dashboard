@@ -84,7 +84,7 @@ const KPI_BG: Record<string,{bg:string;border:string;text:string;sub:string}> = 
   red:{bg:'#ef5350',border:'#ef5350',text:'#fff',sub:'rgba(255,255,255,0.85)'},
 }
 
-interface Widget { id:string; title:string; dataSource:string; chartType:string; tooltip:string; color:string; value:string; change:string; up:boolean; textColor?:string; borderColor?:string; showAnomalies?:boolean; showForecast?:boolean; showIntegIcon?:boolean }
+interface Widget { id:string; title:string; dataSource:string; chartType:string; tooltip:string; color:string; value:string; change:string; up:boolean; textColor?:string; borderColor?:string; bgHex?:string; showAnomalies?:boolean; showForecast?:boolean; showIntegIcon?:boolean }
 
 function formatNum(n: number) {
   if (n>=1000000) return (n/1000000).toFixed(1)+'M'
@@ -409,7 +409,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     const isWhite = w.color === 'white'
     const isSelected = editingWidget?.id === w.id
     // Apply custom display overrides if set
-    const bgColor = c.bg
+    const bgColor = w.bgHex || c.bg
     const borderCol = isSelected && editMode ? '#48b5ea' : (w.borderColor || c.border)
     const textCol = w.textColor || c.text
     const subCol = c.sub
@@ -933,7 +933,11 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                           <div key={key} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 0', borderBottom:'1px solid #f5f5f5' }}>
                             <span style={{ fontSize:14, fontWeight:500, color:'#1a1a1a' }}>{label}</span>
                             <div
-                              onClick={() => setEditingWidget({...editingWidget, [key]: !on } as any)}
+                              onClick={() => {
+                                const updated = {...editingWidget, [key]: !on } as any
+                                setEditingWidget(updated)
+                                setWidgets(prev => prev.map(w => w.id === updated.id ? updated : w))
+                              }}
                               style={{ width:44, height:24, borderRadius:12, background: on ? '#48b5ea' : '#e0e0e0', position:'relative', cursor:'pointer', transition:'background 0.2s', flexShrink:0 }}>
                               <div style={{ width:20, height:20, borderRadius:'50%', background:'#fff', position:'absolute', top:2, left: on ? 22 : 2, boxShadow:'0 1px 4px rgba(0,0,0,0.2)', transition:'left 0.2s' }}/>
                             </div>
@@ -952,7 +956,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                             white:'#ffffff', blue:'#48b5ea', green:'#4caf82', red:'#ef5350'
                           }
                           const currentVal = field === 'color'
-                            ? (BG_OPTIONS[(editingWidget as any).color] || def)
+                            ? ((editingWidget as any).bgHex || BG_OPTIONS[(editingWidget as any).color] || def)
                             : ((editingWidget as any)[field] || def)
                           return (
                             <div key={field} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 0', borderBottom:'1px solid #f5f5f5' }}>
@@ -963,13 +967,16 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                                   type="color"
                                   value={currentVal}
                                   onChange={e => {
+                                    let updated: any
                                     if (field === 'color') {
                                       const hex = e.target.value
                                       const key = hex === '#48b5ea' ? 'blue' : hex === '#4caf82' ? 'green' : hex === '#ef5350' ? 'red' : 'white'
-                                      setEditingWidget({...editingWidget, color: key} as any)
+                                      updated = {...editingWidget, color: key, bgHex: hex}
                                     } else {
-                                      setEditingWidget({...editingWidget, [field]: e.target.value} as any)
+                                      updated = {...editingWidget, [field]: e.target.value}
                                     }
+                                    setEditingWidget(updated)
+                                    setWidgets(prev => prev.map(w => w.id === updated.id ? updated : w))
                                   }}
                                   style={{ position:'absolute', opacity:0, width:'100%', height:'100%', top:0, left:0, cursor:'pointer' }}
                                 />
