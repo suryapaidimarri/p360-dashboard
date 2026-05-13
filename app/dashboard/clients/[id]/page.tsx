@@ -652,15 +652,16 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     const c = KPI_BG[w.color] || KPI_BG.white
     const isWhite = w.color === 'white'
     const isSelected = editingWidget?.id === w.id
-    // Apply custom display overrides if set
     const bgColor = w.bgHex || c.bg
     const borderCol = isSelected && editMode ? '#48b5ea' : (w.borderColor || c.border)
     const textCol = w.textColor || c.text
-    const subCol = c.sub
-    return (
-      <div onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
-        style={{ background:bgColor, border:`2px solid ${borderCol}`, borderRadius:8, padding:16, position:'relative', minHeight:110, cursor: editMode ? 'pointer' : 'default', transition:'border-color 0.15s' }}>
-        {editMode && <div style={{ position:'absolute', top:6, left:6, cursor:'grab', color:isWhite?'#d0d0d0':'rgba(255,255,255,0.35)' }}><Grip size={13}/></div>}
+
+    // KPI types — show number scorecard layout
+    const isKpiType = !w.chartType || w.chartType === 'scorecard' || w.chartType === 'sparkline'
+
+    const editControls = (
+      <>
+        {editMode && <div style={{ position:'absolute', top:6, left:6, cursor:'grab', color:isWhite?'#d0d0d0':'rgba(255,255,255,0.35)', zIndex:5 }}><Grip size={13}/></div>}
         {editMode && (
           <div onClick={e => e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', alignItems:'center', gap:4 }}>
             <button style={{ background:isWhite?'rgba(0,0,0,0.05)':'rgba(255,255,255,0.15)', border:'none', borderRadius:4, padding:'3px 5px', cursor:'pointer', display:'flex' }}>
@@ -669,15 +670,41 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
             <WidgetDot wid={w.id} onEdit={() => startEdit(w)}/>
           </div>
         )}
+      </>
+    )
+
+    if (!isKpiType) {
+      // ── Full chart mode: replaces entire card with chart ──
+      return (
+        <div onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
+          style={{ background:'#fff', border:`2px solid ${borderCol}`, borderRadius:8, padding:12, position:'relative', minHeight:130, cursor: editMode ? 'pointer' : 'default', transition:'border-color 0.15s' }}>
+          {editControls}
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
+            <span style={{ fontSize:12, color:'#666', fontWeight:500 }}>{w.title}</span>
+            <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+              {w.change && <span style={{ fontSize:10, fontWeight:700, padding:'2px 6px', borderRadius:4, color:w.up?'#22c55e':'#ef4444', background:w.up?'#f0fdf4':'#fef2f2' }}>{w.up?'▲':'▼'} {w.change}</span>}
+              {connection?.connected && <span style={{ fontSize:9, color:'#20BB71', fontWeight:600 }}>● Live</span>}
+            </div>
+          </div>
+          <DynamicChart chartType={w.chartType} data={sessionData} height={90}/>
+        </div>
+      )
+    }
+
+    // ── KPI scorecard mode ──
+    return (
+      <div onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
+        style={{ background:bgColor, border:`2px solid ${borderCol}`, borderRadius:8, padding:16, position:'relative', minHeight:110, cursor: editMode ? 'pointer' : 'default', transition:'border-color 0.15s' }}>
+        {editControls}
         <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:10 }}>
           <span style={{ fontSize:12, color:c.sub, fontWeight:500 }}>{w.title}</span>
           {w.change && <span style={{ fontSize:10, fontWeight:700, marginLeft:8, padding:'2px 6px', borderRadius:4, color:isWhite?(w.up?'#22c55e':'#ef4444'):'rgba(255,255,255,0.95)', background:isWhite?(w.up?'#f0fdf4':'#fef2f2'):'rgba(255,255,255,0.18)' }}>{w.up?'▲':'▼'} {w.change}</span>}
         </div>
         <p style={{ fontSize:30, fontWeight:700, color:textCol, letterSpacing:'-0.5px', lineHeight:1 }}>{w.value}</p>
         {connection?.connected && <p style={{ fontSize:9, color:isWhite?'#22c55e':'rgba(255,255,255,0.7)', marginTop:4 }}>● Live</p>}
-        {w.chartType && w.chartType !== 'scorecard' && (
+        {w.chartType === 'sparkline' && (
           <div style={{ marginTop:6 }}>
-            <DynamicChart chartType={w.chartType} data={sessionData} height={40}/>
+            <DynamicChart chartType="sparkline" data={sessionData} height={35}/>
           </div>
         )}
       </div>
