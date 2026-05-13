@@ -1407,11 +1407,73 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                   )}
                   {editTab==='Data' && (() => {
                     const isGA4 = editingWidget.dataSource?.includes('google-analytics')
-                    const GA4_DIMENSIONS = ['Date','City','Country','Device Category','Browser','Session Source','Session Medium','Landing Page','Page Title','Age','Gender']
-                    const GA4_METRICS = ['Sessions','Total Users','New Users','Conversions','Engagement Rate','Bounce Rate','Average Session Duration','Screen Page Views','Event Count','Revenue']
+                    const ALL_GA4_DIMENSIONS = [
+                      'Achievement ID','Action','Ad format','Ad Label','Ad source','Ad unit','Age',
+                      'Aggregated Link URL','Aggregated Page Path','App version','Browser','Campaign',
+                      'Campaign ID','City','City ID','Content Group','Content ID','Content Type',
+                      'Country','Country ID','Date','Date Hour','Day','Day of Week','Default Channel Group',
+                      'Device Brand','Device Category','Device Model','Event Name','File Extension',
+                      'File Name','First User Campaign','First User Medium','First User Source',
+                      'Form Destination','Form ID','Form Name','Form Submit Text','Gender',
+                      'Google Ads Account Name','Google Ads Ad Group ID','Google Ads Ad Group Name',
+                      'Google Ads Ad Network Type','Google Ads Keyword Text','Google Ads Query',
+                      'Hostname','Hour','Item Affiliation','Item Brand','Item Category','Item Category 2',
+                      'Item Category 3','Item Category 4','Item Category 5','Item ID','Item List ID',
+                      'Item List Name','Item Location ID','Item Name','Item Promotion Creative Name',
+                      'Item Promotion Creative Slot','Item Promotion ID','Item Promotion Name',
+                      'Item Variant','Landing Page','Language','Language Code','Manual Ad Content',
+                      'Manual Campaign ID','Manual Campaign Name','Manual Creative Format',
+                      'Manual Marketing Tactic','Manual Medium','Manual Source','Manual Source / Medium',
+                      'Manual Term','Method','Minute','Month','New / Returning','Operating System',
+                      'Operating System Version','Outbound','Page Location','Page Path + Query String',
+                      'Page Referrer','Page Title','Platform','Region','Screen Class','Screen Name',
+                      'Search Term','Session Campaign','Session Default Channel Group','Session Duration',
+                      'Session Google Ads Ad Network Type','Session Google Ads Keyword Text',
+                      'Session Manual Ad Content','Session Manual Campaign ID','Session Manual Campaign Name',
+                      'Session Manual Creative Format','Session Manual Marketing Tactic',
+                      'Session Manual Medium','Session Manual Source','Session Manual Source / Medium',
+                      'Session Manual Term','Session Medium','Session SA360 Ad Group Name',
+                      'Session Source','Session Source / Medium','Source / Medium','Stream ID',
+                      'Stream Name','Test Data Filter Name','Transaction ID','Unification Service Level',
+                      'Video Provider','Video Title','Video URL','Visible','Week','Year'
+                    ]
+                    const ALL_GA4_METRICS = [
+                      '1-day active users','28-day active users','30-day active users',
+                      '7-day active users','Active users','Ad unit exposure','Add to carts',
+                      'Ads clicks','Ads cost','Ads cost per click','Ads impressions',
+                      'Ads revenue','Ads revenue per click','Average purchase revenue',
+                      'Average purchase revenue per user','Average revenue per user',
+                      'Average session duration','Bounce rate','Cart-to-view rate',
+                      'Checkouts','Conversions','Crash-affected users','Crash-free users rate',
+                      'DAU / MAU','DAU / WAU','Engaged sessions','Engagement rate',
+                      'Event count','Event count per user','Events per session',
+                      'First time purchasers','First time purchasers conversion',
+                      'Item list click events','Item list clicks through rate',
+                      'Item list view events','Item promotion clicks','Item promotion CTR',
+                      'Item promotion views','Item purchase quantity','Item revenue',
+                      'Item view events','Items added to cart','Items checked out',
+                      'Items purchased','Items viewed in list','Items viewed in promotion',
+                      'New users','Organic Google search average position',
+                      'Organic Google search click through rate','Organic Google search clicks',
+                      'Organic Google search impressions','Publisher ad clicks',
+                      'Publisher ad impressions','Purchase revenue','Purchase revenue per user',
+                      'Purchase to view rate','Purchasers','Purchasers per new user',
+                      'Refund amount','Return on ad spend','Revenue','Screen page views',
+                      'Screen page views per session','Screen page views per user',
+                      'Session conversion rate','Session key event rate','Sessions',
+                      'Sessions per user','Shipping amount','Tax amount','Total ad revenue',
+                      'Total purchasers','Total revenue','Total users','Transactions',
+                      'Transactions per purchaser','User conversion rate','User engagement',
+                      'User key event rate','Views per session','WAU / MAU'
+                    ]
+                    const DATA_SOURCES = [
+                      { id:'ga4-main', label:'S&T GA4 Main Property', domain:'analytics.google.com' },
+                      { id:'gads', label:'S&T Google Ads', domain:'ads.google.com' },
+                      { id:'ga4-2', label:'1 - S&T GA4 Main Property', domain:'analytics.google.com' },
+                    ]
                     const widgetData = editingWidget as any
-                    const dimensions: string[] = widgetData.dimensions || (isGA4 ? ['Date'] : [])
-                    const metrics: string[] = widgetData.metrics || (isGA4 ? ['Sessions'] : [])
+                    const dimensions: string[] = widgetData.dimensions || (isGA4 ? ['Date','Device Category'] : [])
+                    const metrics: string[] = widgetData.metrics || (isGA4 ? ['Sessions','Active users'] : [])
 
                     const updateField = (key: string, val: any) => {
                       const updated = { ...editingWidget, [key]: val } as any
@@ -1419,28 +1481,55 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                       setWidgets(prev => prev.map(w => w.id === updated.id ? updated : w))
                     }
 
+                    const [showDsDropdown, setShowDsDropdown] = (React as any).useState(false)
+                    const [showDimDropdown, setShowDimDropdown] = (React as any).useState(false)
+                    const [showMetDropdown, setShowMetDropdown] = (React as any).useState(false)
+                    const [dsSearch, setDsSearch] = (React as any).useState('')
+                    const [dimSearch, setDimSearch] = (React as any).useState('')
+                    const [metSearch, setMetSearch] = (React as any).useState('')
+
                     return (
                       <div style={{ fontSize:13 }}>
 
                         {/* Data Source */}
-                        <div style={{ marginBottom:0, padding:'14px 0', borderBottom:'1px solid #f0f0f0' }}>
+                        <div style={{ padding:'14px 0', borderBottom:'1px solid #f0f0f0', position:'relative' as const }}>
                           <p style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', marginBottom:10 }}>Data source</p>
-                          <div style={{ display:'flex', alignItems:'center', gap:8, background:'#f5f5f5', border:'1px solid #e0e0e0', borderRadius:20, padding:'6px 12px' }}>
+                          <div onClick={() => setShowDsDropdown(!showDsDropdown)}
+                            style={{ display:'flex', alignItems:'center', gap:8, background:'#f5f5f5', border:'1px solid #e0e0e0', borderRadius:20, padding:'7px 12px', cursor:'pointer' }}>
                             <img src="https://www.google.com/s2/favicons?domain=analytics.google.com&sz=32" style={{ width:16, height:16 }} alt=""/>
-                            <span style={{ flex:1, fontSize:12, color:'#333', fontWeight:500 }}>{editingWidget.dataSource || 'No source'}</span>
+                            <span style={{ flex:1, fontSize:12, color:'#333', fontWeight:500 }}>{editingWidget.dataSource?.split('/').pop()?.trim() || 'Select source'}</span>
                             <ChevronDown size={14} style={{ color:'#666' }}/>
-                            <button style={{ background:'none', border:'none', cursor:'pointer', color:'#999', padding:'0 2px' }}><X size={12}/></button>
+                            <button onClick={e=>{e.stopPropagation()}} style={{ background:'none', border:'none', cursor:'pointer', color:'#999', padding:'0 2px' }}><X size={12}/></button>
                           </div>
-                          <button style={{ display:'flex', alignItems:'center', gap:6, marginTop:8, background:'none', border:'none', cursor:'pointer', color:'#1a85c8', fontSize:12, fontWeight:600, padding:0 }}>
-                            <div style={{ width:16, height:16, borderRadius:'50%', border:'2px solid #1a85c8', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                              <span style={{ fontSize:9, fontWeight:700 }}>ⓘ</span>
+                          {showDsDropdown && (
+                            <div style={{ position:'absolute' as const, top:'100%', left:0, right:0, background:'#fff', border:'1px solid #e0e0e0', borderRadius:8, boxShadow:'0 8px 24px rgba(0,0,0,0.12)', zIndex:200, overflow:'hidden' }}>
+                              <div style={{ padding:'10px 12px', borderBottom:'1px solid #f0f0f0' }}>
+                                <div style={{ display:'flex', alignItems:'center', gap:8, background:'#f5f5f5', borderRadius:6, padding:'6px 10px', border:'1px solid #e0e0e0' }}>
+                                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4.5" stroke="#999" strokeWidth="1.5"/><path d="M9.5 9.5 L12 12" stroke="#999" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                                  <input autoFocus value={dsSearch} onChange={e=>setDsSearch(e.target.value)} placeholder="Search" style={{ background:'transparent', border:'none', outline:'none', fontSize:12, color:'#333', width:'100%' }}/>
+                                </div>
+                              </div>
+                              <div style={{ padding:'8px 0' }}>
+                                <p style={{ fontSize:11, color:'#888', padding:'4px 14px', fontWeight:500 }}>Added data sources</p>
+                                {DATA_SOURCES.filter(ds => ds.label.toLowerCase().includes(dsSearch.toLowerCase())).map(ds => (
+                                  <div key={ds.id} onClick={() => { updateField('dataSource', ds.label); setShowDsDropdown(false) }}
+                                    style={{ display:'flex', alignItems:'center', gap:10, padding:'9px 14px', cursor:'pointer', background:'transparent' }}
+                                    onMouseEnter={e=>(e.currentTarget as HTMLDivElement).style.background='#f0f7ff'}
+                                    onMouseLeave={e=>(e.currentTarget as HTMLDivElement).style.background='transparent'}>
+                                    <img src={`https://www.google.com/s2/favicons?domain=${ds.domain}&sz=32`} style={{ width:18, height:18 }} alt=""/>
+                                    <span style={{ fontSize:13, color:'#1a1a1a' }}>{ds.label}</span>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
-                            Blend data
+                          )}
+                          <button style={{ display:'flex', alignItems:'center', gap:6, marginTop:8, background:'none', border:'none', cursor:'pointer', color:'#1a85c8', fontSize:12, fontWeight:600, padding:0 }}>
+                            <span style={{ fontSize:14 }}>⊕</span> Blend data
                           </button>
                         </div>
 
                         {/* Dimension */}
-                        <div style={{ padding:'14px 0', borderBottom:'1px solid #f0f0f0' }}>
+                        <div style={{ padding:'14px 0', borderBottom:'1px solid #f0f0f0', position:'relative' as const }}>
                           <p style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', marginBottom:10 }}>Dimension</p>
                           <div style={{ display:'flex', flexDirection:'column' as const, gap:6 }}>
                             {dimensions.map((dim: string, i: number) => (
@@ -1450,15 +1539,40 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                                 <button onClick={() => updateField('dimensions', dimensions.filter((_:string,j:number)=>j!==i))} style={{ background:'none', border:'none', cursor:'pointer', color:'#999', padding:0 }}><X size={11}/></button>
                               </div>
                             ))}
-                            <button
-                              onClick={() => {
-                                const next = isGA4 ? GA4_DIMENSIONS.find((d:string) => !dimensions.includes(d)) : 'Dimension'
-                                if (next) updateField('dimensions', [...dimensions, next])
-                              }}
-                              style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'1px dashed #ccc', borderRadius:20, padding:'5px 12px', cursor:'pointer', color:'#666', fontSize:12 }}>
+                            <button onClick={() => { setShowDimDropdown(!showDimDropdown); setDimSearch('') }}
+                              style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'1px dashed #ccc', borderRadius:20, padding:'5px 12px', cursor:'pointer', color:'#1a85c8', fontSize:12, fontWeight:600 }}>
                               <Plus size={13}/> Add dimension
                             </button>
                           </div>
+                          {showDimDropdown && (
+                            <div style={{ position:'absolute' as const, top:'100%', left:0, right:0, background:'#fff', border:'1px solid #e0e0e0', borderRadius:8, boxShadow:'0 8px 24px rgba(0,0,0,0.14)', zIndex:200, overflow:'hidden', maxHeight:340 }}>
+                              <div style={{ padding:'10px 12px', borderBottom:'1px solid #f0f0f0', position:'sticky' as const, top:0, background:'#fff' }}>
+                                <div style={{ display:'flex', alignItems:'center', gap:8, background:'#f5f5f5', borderRadius:20, padding:'7px 12px', border:'1px solid #e0e0e0' }}>
+                                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4.5" stroke="#999" strokeWidth="1.5"/><path d="M9.5 9.5 L12 12" stroke="#999" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                                  <input autoFocus value={dimSearch} onChange={e=>setDimSearch(e.target.value)} placeholder="Search" style={{ background:'transparent', border:'none', outline:'none', fontSize:12, color:'#333', width:'100%' }}/>
+                                </div>
+                              </div>
+                              <div style={{ overflowY:'auto' as const, maxHeight:240 }}>
+                                <p style={{ fontSize:11, color:'#555', padding:'8px 14px 4px', fontWeight:600 }}>Default group</p>
+                                {ALL_GA4_DIMENSIONS.filter((d:string) => d.toLowerCase().includes(dimSearch.toLowerCase()) && !dimensions.includes(d)).map((dim:string) => (
+                                  <div key={dim} onClick={() => { updateField('dimensions', [...dimensions, dim]); setShowDimDropdown(false); setDimSearch('') }}
+                                    style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 14px', cursor:'pointer' }}
+                                    onMouseEnter={e=>(e.currentTarget as HTMLDivElement).style.background='#e8f5e9'}
+                                    onMouseLeave={e=>(e.currentTarget as HTMLDivElement).style.background='transparent'}>
+                                    <span style={{ fontSize:10, fontWeight:700, color:'#388e3c', background:'#c8e6c9', borderRadius:3, padding:'1px 5px', flexShrink:0 }}>ABC</span>
+                                    <span style={{ fontSize:13, color:'#1a1a1a' }}>{dim}</span>
+                                  </div>
+                                ))}
+                              </div>
+                              <div style={{ padding:'8px 14px', borderTop:'1px solid #f0f0f0' }}>
+                                {[{icon:'⊕',label:'Add calculated field'},{icon:'⊕',label:'Add group'},{icon:'⊕',label:'Add bin'}].map(a => (
+                                  <div key={a.label} style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 0', color:'#1a85c8', cursor:'pointer', fontSize:13, fontWeight:500 }}>
+                                    <span>{a.icon}</span>{a.label}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:10 }}>
                             <span style={{ fontSize:12, color:'#555' }}>Drill down</span>
                             <div style={{ width:36, height:20, borderRadius:10, background:'#e0e0e0', position:'relative', cursor:'pointer' }}>
@@ -1468,25 +1582,48 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                         </div>
 
                         {/* Metric */}
-                        <div style={{ padding:'14px 0', borderBottom:'1px solid #f0f0f0' }}>
+                        <div style={{ padding:'14px 0', borderBottom:'1px solid #f0f0f0', position:'relative' as const }}>
                           <p style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', marginBottom:10 }}>Metric</p>
                           <div style={{ display:'flex', flexDirection:'column' as const, gap:6 }}>
                             {metrics.map((met: string, i: number) => (
                               <div key={i} style={{ display:'flex', alignItems:'center', gap:8, background:'#e3f2fd', border:'1px solid #bbdefb', borderRadius:20, padding:'5px 12px' }}>
-                                <span style={{ fontSize:10, fontWeight:700, color:'#1565c0', background:'#bbdefb', borderRadius:3, padding:'1px 4px' }}>AUT</span>
+                                <span style={{ fontSize:10, fontWeight:700, color:'#1565c0', background:'#bbdefb', borderRadius:3, padding:'1px 4px' }}>123</span>
                                 <span style={{ flex:1, fontSize:12, color:'#1a1a1a' }}>{met}</span>
                                 <button onClick={() => updateField('metrics', metrics.filter((_:string,j:number)=>j!==i))} style={{ background:'none', border:'none', cursor:'pointer', color:'#999', padding:0 }}><X size={11}/></button>
                               </div>
                             ))}
-                            <button
-                              onClick={() => {
-                                const next = isGA4 ? GA4_METRICS.find((m:string) => !metrics.includes(m)) : 'Metric'
-                                if (next) updateField('metrics', [...metrics, next])
-                              }}
-                              style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'1px dashed #ccc', borderRadius:20, padding:'5px 12px', cursor:'pointer', color:'#666', fontSize:12 }}>
+                            <button onClick={() => { setShowMetDropdown(!showMetDropdown); setMetSearch('') }}
+                              style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'1px dashed #ccc', borderRadius:20, padding:'5px 12px', cursor:'pointer', color:'#1a85c8', fontSize:12, fontWeight:600 }}>
                               <Plus size={13}/> Add metric
                             </button>
                           </div>
+                          {showMetDropdown && (
+                            <div style={{ position:'absolute' as const, top:'100%', left:0, right:0, background:'#fff', border:'1px solid #e0e0e0', borderRadius:8, boxShadow:'0 8px 24px rgba(0,0,0,0.14)', zIndex:200, overflow:'hidden', maxHeight:340 }}>
+                              <div style={{ padding:'10px 12px', borderBottom:'1px solid #f0f0f0', position:'sticky' as const, top:0, background:'#fff' }}>
+                                <div style={{ display:'flex', alignItems:'center', gap:8, background:'#f5f5f5', borderRadius:20, padding:'7px 12px', border:'1px solid #e0e0e0' }}>
+                                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4.5" stroke="#999" strokeWidth="1.5"/><path d="M9.5 9.5 L12 12" stroke="#999" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                                  <input autoFocus value={metSearch} onChange={e=>setMetSearch(e.target.value)} placeholder="Search" style={{ background:'transparent', border:'none', outline:'none', fontSize:12, color:'#333', width:'100%' }}/>
+                                </div>
+                              </div>
+                              <div style={{ overflowY:'auto' as const, maxHeight:240 }}>
+                                <p style={{ fontSize:11, color:'#555', padding:'8px 14px 4px', fontWeight:600 }}>Default group</p>
+                                {ALL_GA4_METRICS.filter((m:string) => m.toLowerCase().includes(metSearch.toLowerCase()) && !metrics.includes(m)).map((met:string) => (
+                                  <div key={met} onClick={() => { updateField('metrics', [...metrics, met]); setShowMetDropdown(false); setMetSearch('') }}
+                                    style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 14px', cursor:'pointer' }}
+                                    onMouseEnter={e=>(e.currentTarget as HTMLDivElement).style.background='#e3f2fd'}
+                                    onMouseLeave={e=>(e.currentTarget as HTMLDivElement).style.background='transparent'}>
+                                    <span style={{ fontSize:10, fontWeight:700, color:'#1565c0', background:'#bbdefb', borderRadius:3, padding:'1px 5px', flexShrink:0 }}>123</span>
+                                    <span style={{ fontSize:13, color:'#1a1a1a' }}>{met}</span>
+                                  </div>
+                                ))}
+                              </div>
+                              <div style={{ padding:'8px 14px', borderTop:'1px solid #f0f0f0' }}>
+                                <div style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 0', color:'#1a85c8', cursor:'pointer', fontSize:13, fontWeight:500 }}>
+                                  <span>⊕</span> Add calculated field
+                                </div>
+                              </div>
+                            </div>
+                          )}
                           {[{label:'Optional metrics'},{label:'Metric sliders'}].map(row => (
                             <div key={row.label} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:10 }}>
                               <span style={{ fontSize:12, color:'#555' }}>{row.label}</span>
