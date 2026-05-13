@@ -233,6 +233,177 @@ function DynamicChart({ chartType, data, height = 80 }: { chartType: string; dat
       </ResponsiveContainer>
     )
   }
+  if (chartType === 'multiline' || chartType === 'waveline' || chartType === 'timeseries2') {
+    return (
+      <ResponsiveContainer width="100%" height={height}>
+        <LineChart data={data}>
+          <Line type={chartType === 'waveline' ? 'basis' : 'monotone'} dataKey="v" stroke={c} strokeWidth={2} dot={false}/>
+          <Line type="monotone" dataKey="v" stroke="#ea8600" strokeWidth={1.5} dot={false} strokeDasharray="4 2"/>
+          <Tooltip contentStyle={{ fontSize:10, borderRadius:4 }}/>
+        </LineChart>
+      </ResponsiveContainer>
+    )
+  }
+  if (chartType === 'hbar') {
+    return (
+      <ResponsiveContainer width="100%" height={height}>
+        <BarChart data={data} layout="vertical" barSize={12}>
+          <XAxis type="number" hide/>
+          <YAxis type="category" dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:'#999' }} width={30}/>
+          <Tooltip contentStyle={{ fontSize:10, borderRadius:4 }}/>
+          <Bar dataKey="v" radius={[0,3,3,0]}>
+            {data.map((_:any,i:number) => <Cell key={i} fill={colors[i%colors.length]}/>)}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    )
+  }
+  if (chartType === 'hstacked') {
+    return (
+      <ResponsiveContainer width="100%" height={height}>
+        <BarChart data={data.slice(0,4)} layout="vertical" barSize={10}>
+          <XAxis type="number" hide/>
+          <YAxis type="category" dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:'#999' }} width={30}/>
+          <Tooltip contentStyle={{ fontSize:10, borderRadius:4 }}/>
+          <Bar dataKey="v" stackId="a" fill={c} radius={[0,3,3,0]}/>
+        </BarChart>
+      </ResponsiveContainer>
+    )
+  }
+  if (chartType === 'scatter' || chartType === 'bubble') {
+    const scatterData = data.map((d:any, i:number) => ({ x: i, y: d.v, z: chartType === 'bubble' ? (d.v % 100) + 20 : 10 }))
+    return (
+      <ResponsiveContainer width="100%" height={height}>
+        <BarChart data={data} barSize={4}>
+          <XAxis dataKey="d" hide/>
+          <YAxis hide/>
+          <Tooltip contentStyle={{ fontSize:10, borderRadius:4 }}/>
+          <Bar dataKey="v" radius={[99,99,99,99]}>
+            {data.map((_:any,i:number) => <Cell key={i} fill={colors[i%colors.length]}/>)}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    )
+  }
+  if (chartType === 'candlestick' || chartType === 'ohlc') {
+    return (
+      <ResponsiveContainer width="100%" height={height}>
+        <BarChart data={data} barSize={6}>
+          <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:'#999' }}/>
+          <YAxis hide/>
+          <Tooltip contentStyle={{ fontSize:10, borderRadius:4 }}/>
+          <Bar dataKey="v" radius={[2,2,0,0]}>
+            {data.map((d:any,i:number) => <Cell key={i} fill={i%2===0?'#34a853':'#ea4335'}/>)}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    )
+  }
+  if (chartType === 'waterfall') {
+    return (
+      <ResponsiveContainer width="100%" height={height}>
+        <BarChart data={data} barSize={16}>
+          <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:'#999' }}/>
+          <YAxis hide/>
+          <Tooltip contentStyle={{ fontSize:10, borderRadius:4 }}/>
+          <Bar dataKey="v" radius={[3,3,0,0]}>
+            {data.map((d:any,i:number) => <Cell key={i} fill={i===data.length-1?'#ea4335':i%2===0?c:'#34a853'}/>)}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    )
+  }
+  if (chartType === 'funnel') {
+    const maxV = Math.max(...data.map((d:any)=>d.v))
+    return (
+      <div style={{ height, display:'flex', flexDirection:'column', justifyContent:'center', gap:3, padding:'0 8px' }}>
+        {data.slice(0,5).map((d:any,i:number) => (
+          <div key={i} style={{ display:'flex', alignItems:'center', gap:6 }}>
+            <div style={{ height:14, borderRadius:2, background:colors[i%colors.length], transition:'width 0.3s' , width:`${Math.max(20,(d.v/maxV)*100)}%`}}/>
+            <span style={{ fontSize:9, color:'#666', whiteSpace:'nowrap' }}>{d.d}</span>
+          </div>
+        ))}
+      </div>
+    )
+  }
+  if (chartType === 'treemap') {
+    return (
+      <div style={{ height, display:'grid', gridTemplateColumns:'1fr 1fr', gridTemplateRows:'1fr 1fr', gap:2, padding:'4px' }}>
+        {data.slice(0,4).map((d:any,i:number) => (
+          <div key={i} style={{ background:colors[i%colors.length], borderRadius:3, display:'flex', alignItems:'center', justifyContent:'center', opacity:0.8 }}>
+            <span style={{ fontSize:9, color:'#fff', fontWeight:600 }}>{d.d}</span>
+          </div>
+        ))}
+      </div>
+    )
+  }
+  if (chartType === 'gauge') {
+    const maxV = Math.max(...data.map((d:any)=>d.v), 1)
+    const latest = data[data.length-1]?.v || 0
+    const pct = Math.min(latest/maxV, 1)
+    const angle = -140 + pct * 280
+    return (
+      <div style={{ height, display:'flex', alignItems:'center', justifyContent:'center' }}>
+        <svg width={height*2} height={height} viewBox={`0 0 ${height*2} ${height}`}>
+          <path d={`M ${height*0.15} ${height*0.9} A ${height*0.7} ${height*0.7} 0 0 1 ${height*1.85} ${height*0.9}`} stroke="#e0e0e0" strokeWidth="8" fill="none" strokeLinecap="round"/>
+          <path d={`M ${height*0.15} ${height*0.9} A ${height*0.7} ${height*0.7} 0 0 1 ${height*1.85} ${height*0.9}`} stroke={c} strokeWidth="8" fill="none" strokeLinecap="round" strokeDasharray={`${pct*2.19*(height*0.7)} 999`}/>
+          <text x={height} y={height*0.85} textAnchor="middle" fontSize={height*0.22} fontWeight="bold" fill="#333">{data[data.length-1]?.d || ''}</text>
+        </svg>
+      </div>
+    )
+  }
+  if (chartType === 'timeline' || chartType === 'sankey') {
+    return (
+      <div style={{ height, display:'flex', flexDirection:'column', justifyContent:'center', gap:4, padding:'0 8px' }}>
+        {data.slice(0,4).map((d:any,i:number) => (
+          <div key={i} style={{ display:'flex', alignItems:'center', gap:6 }}>
+            <div style={{ width:8, height:8, borderRadius:'50%', background:colors[i%colors.length], flexShrink:0 }}/>
+            <div style={{ flex:1, height:10, borderRadius:2, background:colors[i%colors.length], opacity:0.7, width:`${30+i*15}%` }}/>
+            <span style={{ fontSize:9, color:'#666' }}>{d.d}</span>
+          </div>
+        ))}
+      </div>
+    )
+  }
+  if (chartType === 'bullet') {
+    const maxV = Math.max(...data.map((d:any)=>d.v), 1)
+    const latest = data[data.length-1]?.v || 0
+    return (
+      <div style={{ height, display:'flex', flexDirection:'column', justifyContent:'center', padding:'0 8px', gap:8 }}>
+        {data.slice(0,3).map((d:any,i:number) => (
+          <div key={i}>
+            <div style={{ height:12, background:'#e0e0e0', borderRadius:2, position:'relative', overflow:'hidden' }}>
+              <div style={{ position:'absolute', left:0, top:2, height:8, width:`${(d.v/maxV)*80}%`, background:'#bdbdbd', borderRadius:2 }}/>
+              <div style={{ position:'absolute', left:0, top:3, height:6, width:`${(d.v/maxV)*60}%`, background:c, borderRadius:2 }}/>
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+  if (chartType === 'map') {
+    return (
+      <div style={{ height, display:'flex', alignItems:'center', justifyContent:'center', background:'#e8f4fd', borderRadius:6, position:'relative', overflow:'hidden' }}>
+        <svg width="100%" height="100%" viewBox="0 0 200 120">
+          <ellipse cx="100" cy="60" rx="90" ry="55" fill="#c8e6f5" stroke="#90caf9" strokeWidth="1"/>
+          <path d="M10 60 Q50 50 100 60 Q150 70 190 60" stroke="#90caf9" strokeWidth="1" fill="none"/>
+          <circle cx="80" cy="50" r="5" fill="#4285f4" opacity="0.8"/>
+          <circle cx="120" cy="65" r="4" fill="#ea4335" opacity="0.8"/>
+          <circle cx="60" cy="70" r="3" fill="#34a853" opacity="0.8"/>
+        </svg>
+      </div>
+    )
+  }
+  if (chartType === 'pivot' || chartType === 'scorecard2') {
+    return (
+      <div style={{ height, overflowY:'auto' }}>
+        <table style={{ width:'100%', fontSize:10, borderCollapse:'collapse' }}>
+          <thead><tr style={{ background:'#e8eaf6' }}><th style={{ padding:'3px 6px', textAlign:'left', fontWeight:600, color:'#555' }}>Metric</th><th style={{ padding:'3px 6px', textAlign:'right', fontWeight:600, color:'#555' }}>Total</th><th style={{ padding:'3px 6px', textAlign:'right', fontWeight:600, color:'#555' }}>Avg</th></tr></thead>
+          <tbody>{data.slice(0,5).map((d:any,i:number) => <tr key={i} style={{ borderBottom:'1px solid #f0f0f0' }}><td style={{ padding:'3px 6px', color:'#666' }}>{d.d}</td><td style={{ padding:'3px 6px', textAlign:'right', fontWeight:600, color:'#333' }}>{d.v?.toLocaleString()}</td><td style={{ padding:'3px 6px', textAlign:'right', color:'#888' }}>{Math.round(d.v/30).toLocaleString()}</td></tr>)}</tbody>
+        </table>
+      </div>
+    )
+  }
   // Default fallback — line
   return (
     <ResponsiveContainer width="100%" height={height}>
