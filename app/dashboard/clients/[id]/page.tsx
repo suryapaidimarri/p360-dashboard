@@ -779,6 +779,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const sourceData = ga4Data?.sources?.rows?.map((r: any, i: number) => ({ name: r.dimensionValues[0].value, value: parseInt(r.metricValues[0].value), color: ['#2196f3','#64b5f6','#90caf9','#bbdefb','#e3f2fd'][i%5] })) || STATIC_DONUT
   const cityData = ga4Data?.cities?.rows?.map((r: any) => ({ city: r.dimensionValues[0].value, val: parseInt(r.metricValues[0].value), pct: 100 })) || STATIC_CITIES
   const maxCity = Math.max(...cityData.map((c: any) => c.val), 1)
+  const STATIC_IDS = ['w1','w2','w3','w4','c1','c2','c3','d1','d2','d3','v1','bounce']
+  const dynamicWidgets = widgets.filter(w => !STATIC_IDS.includes(w.id))
 
   function startEdit(w: Widget) { setEditingWidget({...w}); setEditTab('General'); setOpenMenu(null); setActiveRightPanel(null) }
   function openDrill(w: Widget) { if (!editMode) { setDrillWidget(w); setDrillChannel('All') } }
@@ -1316,11 +1318,12 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                 <DynamicChart chartType={widgets.find(x=>x.id==='v1')?.chartType || 'area'} data={sessionData} height={130}/>
               </ChartCard>
             </div>
+          )}
 
             {/* Dynamically added widgets */}
-            {widgets.filter(w => !['w1','w2','w3','w4','c1','c2','c3','d1','d2','d3','v1','bounce'].includes(w.id)).length > 0 && (
+            {dynamicWidgets.length >= 1 && (
               <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10, marginTop:10 }}>
-                {widgets.filter(w => !['w1','w2','w3','w4','c1','c2','c3','d1','d2','d3','v1','bounce'].includes(w.id)).map(w => (
+                {dynamicWidgets.map(w => (
                   <div key={w.id}
                     onClick={e => { e.stopPropagation(); if (editMode) startEdit(w) }}
                     style={{ background:'#fff', border:`2px solid ${editingWidget?.id===w.id && editMode?'#48b5ea':'#e5e5e5'}`, borderRadius:8, padding:14, position:'relative', cursor: editMode ? 'pointer' : 'default', minHeight:140 }}>
