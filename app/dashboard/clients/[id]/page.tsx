@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import ClonePageModal from '@/components/dashboard/ClonePageModal'
 import { ChevronRight, Sparkles, Settings, Calendar, ChevronDown, Plus, MoreHorizontal, Maximize2, X, Grip, RotateCcw, RotateCw, Monitor, Smartphone, ChevronLeft, RefreshCw, CheckCircle2 } from 'lucide-react'
 import Link from 'next/link'
@@ -120,7 +120,7 @@ const STATIC_DEVICES = [{name:'Mobile',v:56564},{name:'Desktop',v:31740},{name:'
 const STATIC_DONUT = [{name:'Organic Search',value:68639,color:'#2196f3'},{name:'Direct',value:30294,color:'#64b5f6'},{name:'Paid Social',value:8288,color:'#90caf9'},{name:'Organic Social',value:6570,color:'#bbdefb'}]
 const STATIC_CITIES = [{city:'Atlanta',val:25348,pct:92},{city:'(not set)',val:7210,pct:26},{city:'Singapore',val:1689,pct:6},{city:'Marietta',val:1558,pct:6}]
 
-const KPI_BG: Record<string,{bg:string;border:string;text:string;sub:string}> = {
+const KPI_BG: {[key:string]:{bg:string;border:string;text:string;sub:string}} = {
   white:{bg:'#fff',border:'#e5e5e5',text:'#1a1a1a',sub:'#666'},
   blue:{bg:'#48b5ea',border:'#48b5ea',text:'#fff',sub:'rgba(255,255,255,0.85)'},
   green:{bg:'#4caf82',border:'#4caf82',text:'#fff',sub:'rgba(255,255,255,0.85)'},
@@ -346,7 +346,7 @@ function DynamicChart({ chartType, data, height = 80 }: { chartType: string; dat
         <svg width={height*2} height={height} viewBox={`0 0 ${height*2} ${height}`}>
           <path d={`M ${height*0.15} ${height*0.9} A ${height*0.7} ${height*0.7} 0 0 1 ${height*1.85} ${height*0.9}`} stroke="#e0e0e0" strokeWidth="8" fill="none" strokeLinecap="round"/>
           <path d={`M ${height*0.15} ${height*0.9} A ${height*0.7} ${height*0.7} 0 0 1 ${height*1.85} ${height*0.9}`} stroke={c} strokeWidth="8" fill="none" strokeLinecap="round" strokeDasharray={`${pct*2.19*(height*0.7)} 999`}/>
-          <text x={height} y={height*0.85} textAnchor="middle" fontSize={height*0.22} fontWeight="bold" fill="#333">{data[data.length-1]?.d || ''}</text>
+          <circle cx={height} cy={height*0.9} r="3" fill="#333"/>
         </svg>
       </div>
     )
@@ -496,7 +496,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [selectedSite, setSelectedSite] = useState('')
   const [dateRange, setDateRange] = useState('30daysAgo')
   // Hardcoded demo clients — zero-latency name resolution
-  const KNOWN_CLIENTS: Record<string, {name:string, domain:string}> = {
+  const KNOWN_CLIENTS: {[key:string]: {name:string, domain:string}} = {
     'demo-1':  { name:'Alloy (internal)',   domain:'alloy.com' },
     'demo-2':  { name:'Atlanta Beltline',   domain:'beltline.org' },
     'demo-3':  { name:'Collaborating Docs', domain:'collaboratingdocs.com' },
@@ -700,7 +700,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     } catch {}
   }
 
-  async function checkConnection(): Promise<void> {
+  async function checkConnection() {
     setCheckingConn(true)
     try {
       const res = await fetch(`/api/connection?client_id=${clientId}`)
@@ -1400,8 +1400,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                                     const B='#4285f4', O='#ea8600', P='#a142f4', G='#34a853', R='#ea4335', T='#24c1e0'
                                     if (ct.id==='table')      return <svg {...s} viewBox="0 0 48 36" fill="none"><rect x="1" y="1" width="46" height="34" rx="2" fill="white" stroke="#e0e0e0"/><rect x="1" y="1" width="46" height="8" rx="2" fill="#e8f0fe"/><line x1="1" y1="9" x2="47" y2="9" stroke="#e0e0e0"/><line x1="1" y1="17" x2="47" y2="17" stroke="#e0e0e0"/><line x1="1" y1="25" x2="47" y2="25" stroke="#e0e0e0"/><line x1="16" y1="1" x2="16" y2="35" stroke="#e0e0e0"/><line x1="32" y1="1" x2="32" y2="35" stroke="#e0e0e0"/><rect x="2" y="10" width="13" height="6" fill={B} fillOpacity="0.15" rx="1"/><rect x="18" y="18" width="13" height="6" fill={B} fillOpacity="0.2" rx="1"/></svg>
                                     if (ct.id==='pivot')      return <svg {...s} viewBox="0 0 48 36" fill="none"><rect x="1" y="1" width="46" height="34" rx="2" fill="white" stroke="#e0e0e0"/><rect x="1" y="1" width="46" height="8" rx="2" fill="#e8eaf6"/><line x1="1" y1="9" x2="47" y2="9" stroke="#e0e0e0"/><line x1="1" y1="17" x2="47" y2="17" stroke="#e0e0e0"/><line x1="1" y1="25" x2="47" y2="25" stroke="#e0e0e0"/><line x1="16" y1="1" x2="16" y2="35" stroke="#e0e0e0"/><rect x="2" y="2" width="13" height="6" fill={P} fillOpacity="0.3" rx="1"/><rect x="2" y="10" width="13" height="6" fill={P} fillOpacity="0.2" rx="1"/><rect x="18" y="10" width="28" height="6" fill={B} fillOpacity="0.15" rx="1"/><rect x="18" y="18" width="28" height="6" fill={B} fillOpacity="0.1" rx="1"/></svg>
-                                    if (ct.id==='scorecard')  return <svg {...s} viewBox="0 0 48 36" fill="none"><rect x="1" y="1" width="46" height="34" rx="2" fill="white" stroke="#e0e0e0"/><text x="8" y="13" fontSize="7" fill="#888" fontFamily="sans-serif">Total</text><text x="8" y="26" fontSize="12" fontWeight="bold" fill="#202124" fontFamily="sans-serif">1,168</text></svg>
-                                    if (ct.id==='scorecard2') return <svg {...s} viewBox="0 0 48 36" fill="none"><rect x="1" y="1" width="46" height="34" rx="2" fill="white" stroke="#e0e0e0"/><text x="5" y="12" fontSize="6" fill="#888" fontFamily="sans-serif">Sessions</text><text x="5" y="25" fontSize="11" fontWeight="bold" fill="#202124" fontFamily="sans-serif">69.3K</text><text x="30" y="12" fontSize="6" fill="#888" fontFamily="sans-serif">Camp.</text><text x="30" y="25" fontSize="9" fontWeight="bold" fill="#202124" fontFamily="sans-serif">Abc...</text></svg>
+                                    if (ct.id==='scorecard'||ct.id==='scorecard2')  return <svg {...s} viewBox="0 0 48 36" fill="none"><rect x="1" y="1" width="46" height="34" rx="2" fill="white" stroke="#e0e0e0"/><rect x="6" y="8" width="18" height="4" rx="1" fill="#ccc"/><rect x="6" y="16" width="28" height="8" rx="1" fill="#202124" fillOpacity="0.7"/><rect x="6" y="26" width="14" height="4" rx="1" fill="#4285f4" fillOpacity="0.5"/></svg>
                                     if (ct.id==='timeseries') return <svg {...s} viewBox="0 0 48 36" fill="none"><polyline points="2,30 10,22 18,25 26,14 34,18 42,10" stroke={B} strokeWidth="2" strokeLinecap="round" fill="none"/></svg>
                                     if (ct.id==='timeseries2')return <svg {...s} viewBox="0 0 48 36" fill="none"><polyline points="2,20 6,26 10,18 14,24 18,16 22,22 26,14 30,20 34,12 38,18 42,10 46,16" stroke={B} strokeWidth="2" strokeLinecap="round" fill="none"/></svg>
                                     if (ct.id==='sparkline')  return <svg {...s} viewBox="0 0 48 36" fill="none"><polyline points="2,28 8,20 14,24 20,12 26,18 32,8 38,14 44,6" stroke={B} strokeWidth="2.5" strokeLinecap="round" fill="none"/></svg>
@@ -1851,7 +1850,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                           { label:'Background',  field:'color',      default:'#ffffff' },
                           { label:'Border',      field:'borderColor',default:'#e5e5e5' },
                         ].map(({ label, field, default: def }) => {
-                          const BG_OPTIONS: Record<string,string> = {
+                          const BG_OPTIONS: {[key:string]:string} = {
                             white:'#ffffff', blue:'#48b5ea', green:'#4caf82', red:'#ef5350'
                           }
                           const currentVal = field === 'color'
