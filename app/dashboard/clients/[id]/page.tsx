@@ -608,7 +608,19 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   function openDrill(w: Widget) { if (!editMode) { setDrillWidget(w); setDrillChannel('All') } }
   function saveWidget() {
     if (!editingWidget) return
-    setWidgets(prev => prev.map(w => w.id===editingWidget.id ? editingWidget : w))
+    setWidgets(prev => {
+      const updated = prev.map(w => w.id===editingWidget.id ? editingWidget : w)
+      // Persist immediately
+      try {
+        const toSave = updated.map(w => ({
+          id:w.id, title:w.title, tooltip:w.tooltip, chartType:w.chartType,
+          color:w.color, textColor:w.textColor, borderColor:w.borderColor,
+          bgHex:w.bgHex, showAnomalies:w.showAnomalies, showForecast:w.showForecast, showIntegIcon:w.showIntegIcon
+        }))
+        localStorage.setItem(LS_WIDGETS_KEY, JSON.stringify(toSave))
+      } catch {}
+      return updated
+    })
     setEditingWidget(null)
   }
 
@@ -1103,12 +1115,20 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                     <>
                       <div style={{ marginBottom:18 }}>
                         <label style={{ display:'block', fontSize:13, fontWeight:600, color:'#1a1a1a', marginBottom:8 }}>Title</label>
-                        <input value={editingWidget.title} onChange={e => setEditingWidget({...editingWidget, title:e.target.value})}
+                        <input value={editingWidget.title} onChange={e => {
+                          const updated = {...editingWidget, title:e.target.value}
+                          setEditingWidget(updated)
+                          setWidgets(prev => prev.map(w => w.id === updated.id ? updated : w))
+                        }}
                           style={{ width:'100%', background:'#fafafa', border:'1px solid #e5e5e5', borderRadius:6, padding:'8px 12px', fontSize:13, outline:'none', color:'#333', boxSizing:'border-box' as const }}/>
                       </div>
                       <div style={{ marginBottom:18 }}>
                         <label style={{ display:'block', fontSize:13, fontWeight:600, color:'#1a1a1a', marginBottom:8 }}>Tooltip</label>
-                        <textarea value={editingWidget.tooltip} onChange={e => setEditingWidget({...editingWidget, tooltip:e.target.value})}
+                        <textarea value={editingWidget.tooltip} onChange={e => {
+                          const updated = {...editingWidget, tooltip:e.target.value}
+                          setEditingWidget(updated)
+                          setWidgets(prev => prev.map(w => w.id === updated.id ? updated : w))
+                        }}
                           style={{ width:'100%', background:'#fafafa', border:'1px solid #e5e5e5', borderRadius:6, padding:'8px 12px', fontSize:13, outline:'none', color:'#333', resize:'vertical' as const, minHeight:80, fontFamily:'system-ui,sans-serif', boxSizing:'border-box' as const }}/>
                       </div>
                       <div style={{ marginBottom:12 }}>
@@ -1163,7 +1183,12 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                                   }
                                   return (
                                     <button key={ct.id}
-                                      onClick={() => setEditingWidget({...editingWidget, chartType:ct.id})}
+                                      onClick={() => {
+                                        const updated = {...editingWidget, chartType:ct.id}
+                                        setEditingWidget(updated)
+                                        // Auto-apply immediately to canvas
+                                        setWidgets(prev => prev.map(w => w.id === updated.id ? updated : w))
+                                      }}
                                       title={ct.label}
                                       style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4, padding:'4px', borderRadius:6, border:`2px solid ${active?'#48b5ea':'#e5e5e5'}`, background:active?'#ebf7ff':'#fff', cursor:'pointer', transition:'all 0.1s', width:62 }}>
                                       <ChartThumb/>
