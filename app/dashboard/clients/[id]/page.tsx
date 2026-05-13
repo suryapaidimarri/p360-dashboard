@@ -4,7 +4,7 @@ import DashboardBuilder from '@/components/dashboard/DashboardBuilder'
 import ClonePageModal from '@/components/dashboard/ClonePageModal'
 import { ChevronRight, Sparkles, Settings, Calendar, ChevronDown, Plus, MoreHorizontal, Maximize2, X, Grip, RotateCcw, RotateCw, Monitor, Smartphone, ChevronLeft, RefreshCw, CheckCircle2 } from 'lucide-react'
 import Link from 'next/link'
-import { BarChart, Bar, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
+import { BarChart, Bar, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ScatterChart, Scatter as ScatterPlot, ZAxis } from 'recharts'
 
 // Only these dashboards have real widget content.
 // Everything else (cloned, newly added, 'oiijuyuh', etc.) shows the empty canvas.
@@ -271,17 +271,16 @@ function DynamicChart({ chartType, data, height = 80 }: { chartType: string; dat
     )
   }
   if (chartType === 'scatter' || chartType === 'bubble') {
-    const scatterData = data.map((d:any, i:number) => ({ x: i, y: d.v, z: chartType === 'bubble' ? (d.v % 100) + 20 : 10 }))
+    const scatterData = data.map((d:any, i:number) => ({ x: i * 10, y: d.v, z: chartType === 'bubble' ? Math.max(10, (d.v % 500) + 20) : 20 }))
     return (
       <ResponsiveContainer width="100%" height={height}>
-        <BarChart data={data} barSize={4}>
-          <XAxis dataKey="d" hide/>
-          <YAxis hide/>
-          <Tooltip contentStyle={{ fontSize:10, borderRadius:4 }}/>
-          <Bar dataKey="v" radius={[99,99,99,99]}>
-            {data.map((_:any,i:number) => <Cell key={i} fill={colors[i%colors.length]}/>)}
-          </Bar>
-        </BarChart>
+        <ScatterChart margin={{ top:4, right:4, bottom:4, left:4 }}>
+          <XAxis type="number" dataKey="x" hide/>
+          <YAxis type="number" dataKey="y" hide/>
+          {chartType === 'bubble' && <ZAxis type="number" dataKey="z" range={[20, 80]}/>}
+          <Tooltip contentStyle={{ fontSize:10, borderRadius:4 }} formatter={(v:number) => [v.toLocaleString(),'']}/>
+          <ScatterPlot data={scatterData} fill={c}/>
+        </ScatterChart>
       </ResponsiveContainer>
     )
   }
@@ -1274,12 +1273,10 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
               </div>
               <ChartCard id="v1">
                 <div style={{ display:'flex', justifyContent:'space-between', marginBottom:10 }}>
-                  <span style={{ fontSize:12, fontWeight:600 }}>Website Views</span>
+                  <span style={{ fontSize:12, fontWeight:600 }}>{widgets.find(x=>x.id==='v1')?.title || 'Website Views'}</span>
                   {connection?.connected && <span style={{ fontSize:9, color:'#20BB71', fontWeight:600 }}>● Live GA4</span>}
                 </div>
-                <ResponsiveContainer width="100%" height={130}>
-                  <AreaChart data={sessionData}><defs><linearGradient id="vg" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#48b5ea" stopOpacity={0.3}/><stop offset="95%" stopColor="#48b5ea" stopOpacity={0}/></linearGradient></defs><XAxis dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'#999' }}/><YAxis axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'#999' }}/><CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0"/><Tooltip contentStyle={{ fontSize:10, borderRadius:4 }}/><Area type="monotone" dataKey="v" stroke="#48b5ea" fill="url(#vg)" strokeWidth={2}/></AreaChart>
-                </ResponsiveContainer>
+                <DynamicChart chartType={widgets.find(x=>x.id==='v1')?.chartType || 'area'} data={sessionData} height={130}/>
               </ChartCard>
             </div>
           )}
