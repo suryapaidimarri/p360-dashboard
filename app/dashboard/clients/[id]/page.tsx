@@ -135,6 +135,115 @@ function formatNum(n: number) {
   return n.toString()
 }
 
+// ── DynamicChart: renders the right chart based on widget.chartType ────────────
+function DynamicChart({ chartType, data, height = 80 }: { chartType: string; data: any[]; height?: number }) {
+  const colors = ['#4285f4','#ea8600','#a142f4','#34a853','#ea4335','#24c1e0']
+  const c = colors[0]
+  if (!data || data.length === 0) return null
+
+  if (chartType === 'line' || chartType === 'timeseries' || chartType === 'sparkline' || chartType === 'smoothline') {
+    return (
+      <ResponsiveContainer width="100%" height={height}>
+        <LineChart data={data}>
+          <Line type="monotone" dataKey="v" stroke={c} strokeWidth={2} dot={false}/>
+          <Tooltip contentStyle={{ fontSize:10, borderRadius:4 }} formatter={(v:number) => [v.toLocaleString(),'']}/>
+        </LineChart>
+      </ResponsiveContainer>
+    )
+  }
+  if (chartType === 'area' || chartType === 'stackarea' || chartType === 'steparea') {
+    return (
+      <ResponsiveContainer width="100%" height={height}>
+        <AreaChart data={data}>
+          <defs><linearGradient id="dcg" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={c} stopOpacity={0.3}/><stop offset="95%" stopColor={c} stopOpacity={0}/></linearGradient></defs>
+          <Area type={chartType === 'steparea' ? 'step' : 'monotone'} dataKey="v" stroke={c} fill="url(#dcg)" strokeWidth={2} dot={false}/>
+          <Tooltip contentStyle={{ fontSize:10, borderRadius:4 }} formatter={(v:number) => [v.toLocaleString(),'']}/>
+        </AreaChart>
+      </ResponsiveContainer>
+    )
+  }
+  if (chartType === 'column' || chartType === 'bar' || chartType === 'histogram' || chartType === 'stackedbar') {
+    return (
+      <ResponsiveContainer width="100%" height={height}>
+        <BarChart data={data} barSize={18}>
+          <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:'#999' }}/>
+          <YAxis hide/>
+          <Tooltip contentStyle={{ fontSize:10, borderRadius:4 }} formatter={(v:number) => [v.toLocaleString(),'']}/>
+          <Bar dataKey="v" radius={[3,3,0,0]}>
+            {data.map((_:any, i:number) => <Cell key={i} fill={colors[i % colors.length]}/>)}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    )
+  }
+  if (chartType === 'pie') {
+    return (
+      <ResponsiveContainer width="100%" height={height}>
+        <PieChart>
+          <Pie data={data} dataKey="v" cx="50%" cy="50%" outerRadius={height/2 - 8}>
+            {data.map((_:any, i:number) => <Cell key={i} fill={colors[i % colors.length]}/>)}
+          </Pie>
+          <Tooltip contentStyle={{ fontSize:10, borderRadius:4 }}/>
+        </PieChart>
+      </ResponsiveContainer>
+    )
+  }
+  if (chartType === 'donut') {
+    return (
+      <ResponsiveContainer width="100%" height={height}>
+        <PieChart>
+          <Pie data={data} dataKey="v" cx="50%" cy="50%" innerRadius={height/4 - 4} outerRadius={height/2 - 8}>
+            {data.map((_:any, i:number) => <Cell key={i} fill={colors[i % colors.length]}/>)}
+          </Pie>
+          <Tooltip contentStyle={{ fontSize:10, borderRadius:4 }}/>
+        </PieChart>
+      </ResponsiveContainer>
+    )
+  }
+  if (chartType === 'scorecard') {
+    const total = data.reduce((s:number, d:any) => s + (d.v || 0), 0)
+    return (
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height }}>
+        <span style={{ fontSize:32, fontWeight:700, color:c, letterSpacing:'-1px' }}>
+          {total >= 1000000 ? (total/1000000).toFixed(1)+'M' : total >= 1000 ? (total/1000).toFixed(1)+'K' : total}
+        </span>
+      </div>
+    )
+  }
+  if (chartType === 'table') {
+    return (
+      <div style={{ height, overflowY:'auto' }}>
+        <table style={{ width:'100%', fontSize:10, borderCollapse:'collapse' }}>
+          <thead><tr style={{ background:'#f5f5f5' }}><th style={{ padding:'3px 6px', textAlign:'left', fontWeight:600, color:'#555' }}>Date</th><th style={{ padding:'3px 6px', textAlign:'right', fontWeight:600, color:'#555' }}>Value</th></tr></thead>
+          <tbody>{data.slice(0,6).map((d:any, i:number) => <tr key={i} style={{ borderBottom:'1px solid #f0f0f0' }}><td style={{ padding:'3px 6px', color:'#666' }}>{d.d}</td><td style={{ padding:'3px 6px', textAlign:'right', fontWeight:600, color:'#333' }}>{d.v?.toLocaleString()}</td></tr>)}</tbody>
+        </table>
+      </div>
+    )
+  }
+  if (chartType === 'combo') {
+    return (
+      <ResponsiveContainer width="100%" height={height}>
+        <BarChart data={data} barSize={14}>
+          <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:'#999' }}/>
+          <YAxis hide/>
+          <Tooltip contentStyle={{ fontSize:10, borderRadius:4 }}/>
+          <Bar dataKey="v" fill={c} fillOpacity={0.4} radius={[2,2,0,0]}/>
+          <Line type="monotone" dataKey="v" stroke="#ea8600" strokeWidth={2} dot={false}/>
+        </BarChart>
+      </ResponsiveContainer>
+    )
+  }
+  // Default fallback — line
+  return (
+    <ResponsiveContainer width="100%" height={height}>
+      <LineChart data={data}>
+        <Line type="monotone" dataKey="v" stroke={c} strokeWidth={2} dot={false}/>
+        <Tooltip contentStyle={{ fontSize:10, borderRadius:4 }}/>
+      </LineChart>
+    </ResponsiveContainer>
+  )
+}
+
 // ── Empty canvas shown for any dashboard not in REAL_DASHBOARDS ──────────────
 function NewDashCanvas({ onClone }: { onClone: () => void }) {
   return (
@@ -270,6 +379,9 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     {id:'w2',title:'Total Conversions',dataSource:'google-analytics-4 / conversions',chartType:'column',tooltip:'Total conversions tracked.',color:'blue',value:'3,610',change:'16%',up:false},
     {id:'w3',title:'Referring Domains',dataSource:'google-analytics-4 / referring',chartType:'line',tooltip:'Unique domains sending traffic.',color:'white',value:'6,961',change:'',up:true},
     {id:'w4',title:'Engagement Rate',dataSource:'google-analytics-4 / engagement',chartType:'area',tooltip:'Percentage of engaged sessions.',color:'green',value:'60.77%',change:'3.97%',up:false},
+    {id:'c1',title:'Sessions Over Time',dataSource:'google-analytics-4 / sessions',chartType:'line',tooltip:'Sessions over time.',color:'white',value:'',change:'',up:true},
+    {id:'d1',title:'Users By Device',dataSource:'google-analytics-4 / devices',chartType:'column',tooltip:'Users by device category.',color:'white',value:'',change:'',up:true},
+    {id:'v1',title:'Website Views',dataSource:'google-analytics-4 / views',chartType:'area',tooltip:'Website views over time.',color:'white',value:'',change:'',up:true},
   ]
   const [widgets, setWidgets] = useState<Widget[]>(() => {
     if (typeof window === 'undefined') return DEFAULT_WIDGETS
@@ -550,7 +662,12 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
           {w.change && <span style={{ fontSize:10, fontWeight:700, marginLeft:8, padding:'2px 6px', borderRadius:4, color:isWhite?(w.up?'#22c55e':'#ef4444'):'rgba(255,255,255,0.95)', background:isWhite?(w.up?'#f0fdf4':'#fef2f2'):'rgba(255,255,255,0.18)' }}>{w.up?'▲':'▼'} {w.change}</span>}
         </div>
         <p style={{ fontSize:30, fontWeight:700, color:textCol, letterSpacing:'-0.5px', lineHeight:1 }}>{w.value}</p>
-        {connection?.connected && <p style={{ fontSize:9, color:isWhite?'#22c55e':'rgba(255,255,255,0.7)', marginTop:6 }}>● Live</p>}
+        {connection?.connected && <p style={{ fontSize:9, color:isWhite?'#22c55e':'rgba(255,255,255,0.7)', marginTop:4 }}>● Live</p>}
+        {w.chartType && w.chartType !== 'scorecard' && (
+          <div style={{ marginTop:6 }}>
+            <DynamicChart chartType={w.chartType} data={sessionData} height={40}/>
+          </div>
+        )}
       </div>
     )
   }
@@ -874,12 +991,10 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10, marginBottom:10 }}>
                 <ChartCard id="c1">
                   <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
-                    <span style={{ fontSize:11, color:'#666', fontWeight:500 }}>Sessions Over Time</span>
+                    <span style={{ fontSize:11, color:'#666', fontWeight:500 }}>{widgets.find(x=>x.id==='c1')?.title || 'Sessions Over Time'}</span>
                     {connection?.connected && <span style={{ fontSize:9, color:'#20BB71', fontWeight:600 }}>● Live</span>}
                   </div>
-                  <ResponsiveContainer width="100%" height={80}>
-                    <LineChart data={sessionData}><Line type="monotone" dataKey="v" stroke="#48b5ea" strokeWidth={2} dot={false}/><Tooltip contentStyle={{ fontSize:10, borderRadius:4 }} formatter={(v:number) => [v.toLocaleString(),'Sessions']}/></LineChart>
-                  </ResponsiveContainer>
+                  <DynamicChart chartType={widgets.find(x=>x.id==='c1')?.chartType || 'line'} data={sessionData} height={80}/>
                 </ChartCard>
                 <ChartCard id="c2">
                   <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:110 }}>
@@ -916,12 +1031,10 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10, marginBottom:10 }}>
                 <ChartCard id="d1">
                   <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
-                    <span style={{ fontSize:11, fontWeight:600 }}>Users By Device</span>
+                    <span style={{ fontSize:11, fontWeight:600 }}>{widgets.find(x=>x.id==='d1')?.title || 'Users By Device'}</span>
                     {connection?.connected && <span style={{ fontSize:9, color:'#20BB71', fontWeight:600 }}>● Live</span>}
                   </div>
-                  <ResponsiveContainer width="100%" height={110}>
-                    <BarChart data={deviceData} barSize={26}><XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'#999' }}/><YAxis hide/><Tooltip contentStyle={{ fontSize:10, borderRadius:4 }} formatter={(v:number) => [v.toLocaleString(),'']}/><Bar dataKey="v" radius={[3,3,0,0]}>{deviceData.map((_:any,i:number) => <Cell key={i} fill={['#2196f3','#42a5f5','#90caf9'][i%3]}/>)}</Bar></BarChart>
-                  </ResponsiveContainer>
+                  <DynamicChart chartType={widgets.find(x=>x.id==='d1')?.chartType || 'column'} data={deviceData.map((d:any)=>({d:d.name, v:d.v}))} height={110}/>
                 </ChartCard>
                 <ChartCard id="d2">
                   <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
