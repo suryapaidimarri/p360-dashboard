@@ -1049,7 +1049,6 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                           ))}
                         </div>
                       </div>
-                      </div>
                       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 0', borderTop:'1px solid #f0f0f0', marginBottom:16 }}>
                         <span style={{ fontSize:13, fontWeight:600, color:'#1a1a1a' }}>Override Date Range</span>
                         <div style={{ width:42, height:24, borderRadius:12, background:'#e5e5e5', position:'relative', cursor:'pointer' }}>
