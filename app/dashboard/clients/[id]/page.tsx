@@ -22,20 +22,64 @@ const RIGHT_PANEL_ITEMS = [
   {id:'benchmarks',icon:'⚖',label:'Benchmarks'},
   {id:'goals',icon:'◎',label:'Goals'},
 ]
-const CHART_TYPES = [
-  { id:'column',    label:'Bar Chart',    d:'bars',     paths:[['rect',{x:2,y:10,w:4,h:10}],['rect',{x:9,y:6,w:4,h:14}],['rect',{x:16,y:2,w:4,h:18}]] },
-  { id:'line',      label:'Line',         d:'line',     paths:[] },
-  { id:'area',      label:'Area',         d:'area',     paths:[] },
-  { id:'combo',     label:'Line + Bar',   d:'combo',    paths:[] },
-  { id:'pie',       label:'Pie',          d:'pie',      paths:[] },
-  { id:'donut',     label:'Donut',        d:'donut',    paths:[] },
-  { id:'sparkline', label:'Sparkline',    d:'spark',    paths:[] },
-  { id:'scorecard', label:'Scorecard',    d:'score',    paths:[] },
-  { id:'table',     label:'Table',        d:'table',    paths:[] },
-  { id:'treemap',   label:'Tree Map',     d:'tree',     paths:[] },
-  { id:'funnel',    label:'Funnel',       d:'funnel',   paths:[] },
-  { id:'map',       label:'Map',          d:'map',      paths:[] },
+const CHART_TYPE_GROUPS = [
+  { group:'Table', types:[
+    { id:'table',       label:'Table' },
+    { id:'pivot',       label:'Pivot' },
+  ]},
+  { group:'Scorecard', types:[
+    { id:'scorecard',   label:'Scorecard' },
+    { id:'scorecard2',  label:'Scorecard' },
+  ]},
+  { group:'Time Series', types:[
+    { id:'timeseries',  label:'Smooth' },
+    { id:'timeseries2', label:'Jagged' },
+    { id:'sparkline',   label:'Sparkline' },
+  ]},
+  { group:'Bar', types:[
+    { id:'column',      label:'Column' },
+    { id:'bar',         label:'Bar' },
+    { id:'stackedbar',  label:'Stacked' },
+    { id:'combo',       label:'Line+Bar' },
+    { id:'hbar',        label:'H.Bar' },
+    { id:'hstacked',    label:'H.Stack' },
+  ]},
+  { group:'Line', types:[
+    { id:'line',        label:'Line' },
+    { id:'multiline',   label:'Multi' },
+    { id:'smoothline',  label:'Smooth' },
+    { id:'waveline',    label:'Wave' },
+    { id:'candlestick', label:'Candle' },
+    { id:'ohlc',        label:'OHLC' },
+  ]},
+  { group:'Area', types:[
+    { id:'area',        label:'Area' },
+    { id:'stackarea',   label:'Stacked' },
+    { id:'steparea',    label:'Step' },
+  ]},
+  { group:'Pie', types:[
+    { id:'pie',         label:'Pie' },
+    { id:'donut',       label:'Donut' },
+  ]},
+  { group:'Scatter', types:[
+    { id:'scatter',     label:'Scatter' },
+    { id:'bubble',      label:'Bubble' },
+  ]},
+  { group:'Other', types:[
+    { id:'treemap',     label:'Treemap' },
+    { id:'funnel',      label:'Funnel' },
+    { id:'sankey',      label:'Sankey' },
+    { id:'gauge',       label:'Gauge' },
+    { id:'waterfall',   label:'Waterfall' },
+    { id:'timeline',    label:'Timeline' },
+    { id:'map',         label:'Geo Map' },
+    { id:'histogram',   label:'Histogram' },
+    { id:'bullet',      label:'Bullet' },
+  ]},
 ]
+
+// Flat list for backward compat
+const CHART_TYPES = CHART_TYPE_GROUPS.flatMap(g => g.types)
 
 const ALL_INTEGRATIONS = [
   { name:'Bing Webmaster Tools',  domain:'bing.com',          connected:true  },
@@ -954,37 +998,57 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                         <textarea value={editingWidget.tooltip} onChange={e => setEditingWidget({...editingWidget, tooltip:e.target.value})}
                           style={{ width:'100%', background:'#fafafa', border:'1px solid #e5e5e5', borderRadius:6, padding:'8px 12px', fontSize:13, outline:'none', color:'#333', resize:'vertical' as const, minHeight:80, fontFamily:'system-ui,sans-serif', boxSizing:'border-box' as const }}/>
                       </div>
-                      <div style={{ marginBottom:18 }}>
+                      <div style={{ marginBottom:12 }}>
                         <label style={{ display:'block', fontSize:13, fontWeight:600, color:'#1a1a1a', marginBottom:10 }}>Chart Type</label>
-                        <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:6 }}>
-                          {CHART_TYPES.map(ct => {
-                            const active = editingWidget.chartType === ct.id
-                            const c = active ? '#1a85c8' : '#888'
-                            const ChartIcon = () => {
-                              const s = { width:22, height:22 }
-                              if (ct.id==='column')    return <svg {...s} viewBox="0 0 22 22" fill="none"><rect x="2" y="10" width="4" height="10" rx="1" fill={c}/><rect x="9" y="6" width="4" height="14" rx="1" fill={c}/><rect x="16" y="2" width="4" height="18" rx="1" fill={c}/></svg>
-                              if (ct.id==='line')      return <svg {...s} viewBox="0 0 22 22" fill="none"><polyline points="2,18 7,10 12,14 17,5 20,8" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
-                              if (ct.id==='area')      return <svg {...s} viewBox="0 0 22 22" fill="none"><path d="M2 18 L7 10 L12 14 L17 5 L20 8 L20 18 Z" fill={c} fillOpacity="0.2"/><polyline points="2,18 7,10 12,14 17,5 20,8" stroke={c} strokeWidth="2" strokeLinecap="round" fill="none"/></svg>
-                              if (ct.id==='combo')     return <svg {...s} viewBox="0 0 22 22" fill="none"><rect x="2" y="12" width="4" height="8" rx="1" fill={c} fillOpacity="0.4"/><rect x="9" y="8" width="4" height="12" rx="1" fill={c} fillOpacity="0.4"/><rect x="16" y="10" width="4" height="10" rx="1" fill={c} fillOpacity="0.4"/><polyline points="4,10 11,5 18,8" stroke={c} strokeWidth="2" strokeLinecap="round" fill="none"/></svg>
-                              if (ct.id==='pie')       return <svg {...s} viewBox="0 0 22 22" fill="none"><path d="M11 11 L11 2 A9 9 0 0 1 20 11 Z" fill={c}/><path d="M11 11 L20 11 A9 9 0 0 1 5 18.8 Z" fill={c} fillOpacity="0.6"/><path d="M11 11 L5 18.8 A9 9 0 0 1 11 2 Z" fill={c} fillOpacity="0.3"/></svg>
-                              if (ct.id==='donut')     return <svg {...s} viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="7" stroke={c} strokeWidth="4.5" strokeDasharray="25 19" fill="none"/><circle cx="11" cy="11" r="7" stroke={c} strokeWidth="4.5" strokeDasharray="13 31" strokeDashoffset="-25" fill="none" opacity="0.45"/></svg>
-                              if (ct.id==='sparkline') return <svg {...s} viewBox="0 0 22 22" fill="none"><polyline points="2,16 5,10 8,13 11,7 14,11 17,6 20,9" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
-                              if (ct.id==='scorecard') return <svg {...s} viewBox="0 0 22 22" fill="none"><rect x="2" y="5" width="18" height="12" rx="2" stroke={c} strokeWidth="1.5" fill="none"/><rect x="6" y="9" width="10" height="4" rx="1" fill={c} fillOpacity="0.3"/></svg>
-                              if (ct.id==='table')     return <svg {...s} viewBox="0 0 22 22" fill="none"><rect x="2" y="4" width="18" height="14" rx="2" stroke={c} strokeWidth="1.5" fill="none"/><line x1="2" y1="9" x2="20" y2="9" stroke={c} strokeWidth="1.2"/><line x1="2" y1="14" x2="20" y2="14" stroke={c} strokeWidth="1.2"/><line x1="9" y1="4" x2="9" y2="18" stroke={c} strokeWidth="1.2"/></svg>
-                              if (ct.id==='treemap')   return <svg {...s} viewBox="0 0 22 22" fill="none"><rect x="2" y="2" width="10" height="12" rx="1" fill={c} fillOpacity="0.8"/><rect x="14" y="2" width="6" height="5" rx="1" fill={c} fillOpacity="0.55"/><rect x="14" y="9" width="6" height="5" rx="1" fill={c} fillOpacity="0.4"/><rect x="2" y="16" width="7" height="4" rx="1" fill={c} fillOpacity="0.5"/><rect x="11" y="16" width="9" height="4" rx="1" fill={c} fillOpacity="0.3"/></svg>
-                              if (ct.id==='funnel')    return <svg {...s} viewBox="0 0 22 22" fill="none"><path d="M3 4 H19 L14 10 L14 17 L8 20 L8 10 Z" fill={c} fillOpacity="0.6" stroke={c} strokeWidth="1" strokeLinejoin="round"/></svg>
-                              if (ct.id==='map')       return <svg {...s} viewBox="0 0 22 22" fill="none"><ellipse cx="11" cy="11" rx="8" ry="8" stroke={c} strokeWidth="1.5" fill="none"/><path d="M3 11 Q7 8 11 11 Q15 14 19 11" stroke={c} strokeWidth="1.5" fill="none"/><line x1="11" y1="3" x2="11" y2="19" stroke={c} strokeWidth="1.5"/></svg>
-                              return null
-                            }
-                            return (
-                              <button key={ct.id} onClick={() => setEditingWidget({...editingWidget, chartType:ct.id})}
-                                style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:5, padding:'10px 4px', borderRadius:8, border:`2px solid ${active?'#48b5ea':'#e5e5e5'}`, background:active?'#ebf7ff':'#fff', cursor:'pointer', transition:'all 0.1s' }}>
-                                <ChartIcon/>
-                                <span style={{ fontSize:10, color:active?'#1a85c8':'#555', fontWeight:active?600:400, textAlign:'center' as const, lineHeight:1.2 }}>{ct.label}</span>
-                              </button>
-                            )
-                          })}
+                        <div style={{ maxHeight:380, overflowY:'auto', border:'1px solid #e5e5e5', borderRadius:8, background:'#fafafa' }}>
+                          {CHART_TYPE_GROUPS.map(group => (
+                            <div key={group.group} style={{ padding:'10px 10px 4px' }}>
+                              <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase' as const, letterSpacing:'0.06em', marginBottom:8 }}>{group.group}</p>
+                              <div style={{ display:'flex', flexWrap:'wrap' as const, gap:6, marginBottom:6 }}>
+                                {group.types.map(ct => {
+                                  const active = editingWidget.chartType === ct.id
+                                  const ac = active ? '#1a85c8' : '#888'
+                                  const ChartThumb = () => {
+                                    const s = { width:40, height:32 }
+                                    if (ct.id==='table'||ct.id==='pivot')      return <svg {...s} viewBox="0 0 40 32" fill="none"><rect x="2" y="4" width="36" height="24" rx="2" stroke={ac} strokeWidth="1.5" fill="none"/><line x1="2" y1="11" x2="38" y2="11" stroke={ac} strokeWidth="1"/><line x1="2" y1="18" x2="38" y2="18" stroke={ac} strokeWidth="1"/><line x1="2" y1="25" x2="38" y2="25" stroke={ac} strokeWidth="1"/><line x1="14" y1="4" x2="14" y2="28" stroke={ac} strokeWidth="1"/><line x1="26" y1="4" x2="26" y2="28" stroke={ac} strokeWidth="1"/><rect x="2" y="4" width="36" height="7" rx="1" fill={ac} fillOpacity="0.15"/></svg>
+                                    if (ct.id==='scorecard'||ct.id==='scorecard2') return <svg {...s} viewBox="0 0 40 32" fill="none"><rect x="2" y="6" width="36" height="20" rx="2" stroke={ac} strokeWidth="1.5" fill="none"/><rect x="6" y="12" width="28" height="8" rx="1" fill={ac} fillOpacity="0.2"/></svg>
+                                    if (ct.id==='sparkline'||ct.id==='timeseries'||ct.id==='timeseries2'||ct.id==='smoothline'||ct.id==='waveline') return <svg {...s} viewBox="0 0 40 32" fill="none"><polyline points="2,26 9,18 16,22 23,10 30,15 37,8" stroke={ac} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
+                                    if (ct.id==='column'||ct.id==='bar')       return <svg {...s} viewBox="0 0 40 32" fill="none"><rect x="3" y="16" width="7" height="14" rx="1" fill={ac}/><rect x="13" y="10" width="7" height="20" rx="1" fill={ac} fillOpacity="0.7"/><rect x="23" y="6" width="7" height="24" rx="1" fill={ac} fillOpacity="0.5"/><rect x="33" y="12" width="7" height="18" rx="1" fill={ac} fillOpacity="0.8"/></svg>
+                                    if (ct.id==='stackedbar'||ct.id==='hstacked') return <svg {...s} viewBox="0 0 40 32" fill="none"><rect x="3" y="16" width="7" height="8" rx="1" fill={ac}/><rect x="3" y="8" width="7" height="8" rx="1" fill={ac} fillOpacity="0.5"/><rect x="13" y="12" width="7" height="10" rx="1" fill={ac}/><rect x="13" y="4" width="7" height="8" rx="1" fill={ac} fillOpacity="0.5"/><rect x="23" y="14" width="7" height="14" rx="1" fill={ac}/><rect x="23" y="6" width="7" height="8" rx="1" fill={ac} fillOpacity="0.5"/></svg>
+                                    if (ct.id==='combo')                        return <svg {...s} viewBox="0 0 40 32" fill="none"><rect x="3" y="16" width="7" height="14" rx="1" fill={ac} fillOpacity="0.4"/><rect x="13" y="10" width="7" height="20" rx="1" fill={ac} fillOpacity="0.4"/><rect x="23" y="14" width="7" height="16" rx="1" fill={ac} fillOpacity="0.4"/><polyline points="7,14 17,8 27,12 37,6" stroke={ac} strokeWidth="2" strokeLinecap="round" fill="none"/></svg>
+                                    if (ct.id==='hbar')                         return <svg {...s} viewBox="0 0 40 32" fill="none"><rect x="2" y="4" width="24" height="6" rx="1" fill={ac}/><rect x="2" y="13" width="18" height="6" rx="1" fill={ac} fillOpacity="0.7"/><rect x="2" y="22" width="30" height="6" rx="1" fill={ac} fillOpacity="0.5"/></svg>
+                                    if (ct.id==='line'||ct.id==='multiline')    return <svg {...s} viewBox="0 0 40 32" fill="none"><polyline points="2,24 12,14 22,18 32,8 38,12" stroke={ac} strokeWidth="2" strokeLinecap="round" fill="none"/><polyline points="2,28 12,20 22,24 32,14 38,18" stroke={ac} strokeWidth="1.5" strokeLinecap="round" fill="none" strokeDasharray="3 2"/></svg>
+                                    if (ct.id==='candlestick'||ct.id==='ohlc')  return <svg {...s} viewBox="0 0 40 32" fill="none"><line x1="8" y1="4" x2="8" y2="28" stroke={ac} strokeWidth="1"/><rect x="5" y="10" width="6" height="12" rx="1" fill={ac}/><line x1="20" y1="6" x2="20" y2="26" stroke={ac} strokeWidth="1"/><rect x="17" y="12" width="6" height="8" rx="1" stroke={ac} strokeWidth="1.5" fill="none"/><line x1="32" y1="8" x2="32" y2="28" stroke={ac} strokeWidth="1"/><rect x="29" y="14" width="6" height="10" rx="1" fill={ac}/></svg>
+                                    if (ct.id==='area'||ct.id==='stackarea'||ct.id==='steparea') return <svg {...s} viewBox="0 0 40 32" fill="none"><path d="M2 28 L10 18 L18 22 L26 10 L34 15 L38 10 L38 28 Z" fill={ac} fillOpacity="0.25"/><polyline points="2,28 10,18 18,22 26,10 34,15 38,10" stroke={ac} strokeWidth="2" strokeLinecap="round" fill="none"/></svg>
+                                    if (ct.id==='pie')                          return <svg {...s} viewBox="0 0 40 32" fill="none"><path d="M20 16 L20 4 A12 12 0 0 1 32 16 Z" fill={ac}/><path d="M20 16 L32 16 A12 12 0 0 1 12 26 Z" fill={ac} fillOpacity="0.6"/><path d="M20 16 L12 26 A12 12 0 0 1 20 4 Z" fill={ac} fillOpacity="0.3"/></svg>
+                                    if (ct.id==='donut')                        return <svg {...s} viewBox="0 0 40 32" fill="none"><circle cx="20" cy="16" r="10" stroke={ac} strokeWidth="5" strokeDasharray="35 28" fill="none"/><circle cx="20" cy="16" r="10" stroke={ac} strokeWidth="5" strokeDasharray="18 45" strokeDashoffset="-35" fill="none" opacity="0.5"/></svg>
+                                    if (ct.id==='scatter'||ct.id==='bubble')    return <svg {...s} viewBox="0 0 40 32" fill="none"><circle cx="8" cy="24" r="2.5" fill={ac}/><circle cx="16" cy="14" r="4" fill={ac} fillOpacity="0.6"/><circle cx="26" cy="20" r="2" fill={ac}/><circle cx="32" cy="8" r="5" fill={ac} fillOpacity="0.4"/><circle cx="22" cy="6" r="1.5" fill={ac}/></svg>
+                                    if (ct.id==='treemap')                      return <svg {...s} viewBox="0 0 40 32" fill="none"><rect x="2" y="2" width="18" height="18" rx="1" fill={ac} fillOpacity="0.8"/><rect x="22" y="2" width="16" height="8" rx="1" fill={ac} fillOpacity="0.6"/><rect x="22" y="12" width="16" height="8" rx="1" fill={ac} fillOpacity="0.4"/><rect x="2" y="22" width="10" height="8" rx="1" fill={ac} fillOpacity="0.5"/><rect x="14" y="22" width="24" height="8" rx="1" fill={ac} fillOpacity="0.3"/></svg>
+                                    if (ct.id==='funnel')                       return <svg {...s} viewBox="0 0 40 32" fill="none"><path d="M4 4 H36 L28 12 L28 26 L12 30 L12 12 Z" fill={ac} fillOpacity="0.6" stroke={ac} strokeWidth="1"/></svg>
+                                    if (ct.id==='sankey')                       return <svg {...s} viewBox="0 0 40 32" fill="none"><path d="M2 8 C15 8 25 12 38 12" stroke={ac} strokeWidth="4" fill="none" strokeLinecap="round"/><path d="M2 16 C15 16 25 18 38 22" stroke={ac} strokeWidth="3" fill="none" strokeLinecap="round" opacity="0.6"/><path d="M2 22 C15 22 25 26 38 28" stroke={ac} strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.4"/></svg>
+                                    if (ct.id==='gauge')                        return <svg {...s} viewBox="0 0 40 32" fill="none"><path d="M6 28 A16 16 0 0 1 34 28" stroke={ac} strokeWidth="3" fill="none" strokeLinecap="round" opacity="0.3"/><path d="M6 28 A16 16 0 0 1 24 13" stroke={ac} strokeWidth="3" fill="none" strokeLinecap="round"/><line x1="20" y1="28" x2="26" y2="14" stroke={ac} strokeWidth="2" strokeLinecap="round"/></svg>
+                                    if (ct.id==='waterfall')                    return <svg {...s} viewBox="0 0 40 32" fill="none"><rect x="3" y="18" width="6" height="10" rx="1" fill={ac}/><rect x="12" y="12" width="6" height="6" rx="1" fill={ac} fillOpacity="0.6"/><rect x="21" y="8" width="6" height="4" rx="1" fill={ac} fillOpacity="0.4"/><rect x="30" y="14" width="6" height="14" rx="1" fill="#ef5350" fillOpacity="0.6"/><line x1="9" y1="18" x2="12" y2="18" stroke={ac} strokeWidth="1" strokeDasharray="2 1"/><line x1="18" y1="12" x2="21" y2="12" stroke={ac} strokeWidth="1" strokeDasharray="2 1"/></svg>
+                                    if (ct.id==='timeline')                     return <svg {...s} viewBox="0 0 40 32" fill="none"><rect x="4" y="6" width="20" height="6" rx="2" fill={ac}/><rect x="12" y="14" width="24" height="6" rx="2" fill={ac} fillOpacity="0.6"/><rect x="2" y="22" width="16" height="6" rx="2" fill={ac} fillOpacity="0.4"/></svg>
+                                    if (ct.id==='histogram')                    return <svg {...s} viewBox="0 0 40 32" fill="none"><rect x="2" y="20" width="6" height="10" rx="0" fill={ac} fillOpacity="0.5"/><rect x="8" y="12" width="6" height="18" rx="0" fill={ac}/><rect x="14" y="8" width="6" height="22" rx="0" fill={ac} fillOpacity="0.8"/><rect x="20" y="14" width="6" height="16" rx="0" fill={ac} fillOpacity="0.6"/><rect x="26" y="18" width="6" height="12" rx="0" fill={ac} fillOpacity="0.4"/><rect x="32" y="22" width="6" height="8" rx="0" fill={ac} fillOpacity="0.3"/></svg>
+                                    if (ct.id==='bullet')                       return <svg {...s} viewBox="0 0 40 32" fill="none"><rect x="2" y="10" width="36" height="12" rx="1" fill={ac} fillOpacity="0.15"/><rect x="2" y="13" width="24" height="6" rx="1" fill={ac} fillOpacity="0.4"/><rect x="2" y="14" width="18" height="4" rx="1" fill={ac}/><line x1="28" y1="8" x2="28" y2="24" stroke={ac} strokeWidth="2" strokeLinecap="round"/></svg>
+                                    if (ct.id==='map')                          return <svg {...s} viewBox="0 0 40 32" fill="none"><ellipse cx="20" cy="16" rx="16" ry="12" stroke={ac} strokeWidth="1.5" fill="none"/><path d="M4 16 Q10 12 20 16 Q30 20 36 16" stroke={ac} strokeWidth="1.2" fill="none"/><line x1="20" y1="4" x2="20" y2="28" stroke={ac} strokeWidth="1.2"/><circle cx="22" cy="14" r="2.5" fill={ac} fillOpacity="0.7"/></svg>
+                                    return <svg {...s} viewBox="0 0 40 32" fill="none"><rect x="4" y="4" width="32" height="24" rx="2" stroke={ac} strokeWidth="1.5" fill="none"/></svg>
+                                  }
+                                  return (
+                                    <button key={ct.id}
+                                      onClick={() => setEditingWidget({...editingWidget, chartType:ct.id})}
+                                      title={ct.label}
+                                      style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4, padding:'6px 4px', borderRadius:6, border:`2px solid ${active?'#48b5ea':'#e5e5e5'}`, background:active?'#ebf7ff':'#fff', cursor:'pointer', transition:'all 0.1s', width:56 }}>
+                                      <ChartThumb/>
+                                      <span style={{ fontSize:9, color:active?'#1a85c8':'#666', fontWeight:active?600:400, textAlign:'center' as const, lineHeight:1.2, whiteSpace:'nowrap' as const, overflow:'hidden', textOverflow:'ellipsis', width:'100%' }}>{ct.label}</span>
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          ))}
                         </div>
+                      </div>
                       </div>
                       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 0', borderTop:'1px solid #f0f0f0', marginBottom:16 }}>
                         <span style={{ fontSize:13, fontWeight:600, color:'#1a1a1a' }}>Override Date Range</span>
