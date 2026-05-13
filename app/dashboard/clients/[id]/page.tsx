@@ -1472,10 +1472,20 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                       'Transactions per purchaser','User conversion rate','User engagement',
                       'User key event rate','Views per session','WAU / MAU'
                     ]
+                    // Build data sources from actual connected properties for this client
                     const DATA_SOURCES = [
-                      { id:'ga4-main', label:'S&T GA4 Main Property', domain:'analytics.google.com' },
-                      { id:'gads', label:'S&T Google Ads', domain:'ads.google.com' },
-                      { id:'ga4-2', label:'1 - S&T GA4 Main Property', domain:'analytics.google.com' },
+                      ...(connection?.ga4_properties || []).map((p: any, i: number) => ({
+                        id: p.name,
+                        label: p.displayName || p.name,
+                        domain: 'analytics.google.com',
+                        prefix: i > 0 ? `${i + 1} - ` : ''
+                      })),
+                      ...(connection?.gsc_sites || []).map((s: any) => ({
+                        id: s.siteUrl,
+                        label: s.siteUrl?.replace(/^https?:\/\//, '').replace(/\/$/, ''),
+                        domain: 'search.google.com',
+                        prefix: ''
+                      })),
                     ]
                     const widgetData = editingWidget as any
                     const dimensions: string[] = widgetData.dimensions || (isGA4 ? ['Date','Device Category'] : [])
@@ -1510,13 +1520,18 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                               </div>
                               <div style={{ padding:'8px 0' }}>
                                 <p style={{ fontSize:11, color:'#888', padding:'4px 14px', fontWeight:500 }}>Added data sources</p>
-                                {DATA_SOURCES.filter(ds => ds.label.toLowerCase().includes(dsSearch.toLowerCase())).map(ds => (
-                                  <div key={ds.id} onClick={() => { updateField('dataSource', ds.label); setShowDsDropdown(false) }}
+                                {DATA_SOURCES.length === 0 && (
+                                  <div style={{ padding:'12px 14px', fontSize:12, color:'#999', textAlign:'center' as const }}>
+                                    No connected sources. Connect Google above.
+                                  </div>
+                                )}
+                                {DATA_SOURCES.filter((ds:any) => (ds.prefix+ds.label).toLowerCase().includes(dsSearch.toLowerCase())).map((ds:any) => (
+                                  <div key={ds.id} onClick={() => { updateField('dataSource', ds.prefix + ds.label); setShowDsDropdown(false) }}
                                     style={{ display:'flex', alignItems:'center', gap:10, padding:'9px 14px', cursor:'pointer', background:'transparent' }}
                                     onMouseEnter={e=>(e.currentTarget as HTMLDivElement).style.background='#f0f7ff'}
                                     onMouseLeave={e=>(e.currentTarget as HTMLDivElement).style.background='transparent'}>
                                     <img src={`https://www.google.com/s2/favicons?domain=${ds.domain}&sz=32`} style={{ width:18, height:18 }} alt=""/>
-                                    <span style={{ fontSize:13, color:'#1a1a1a' }}>{ds.label}</span>
+                                    <span style={{ fontSize:13, color:'#1a1a1a' }}>{ds.prefix}{ds.label}</span>
                                   </div>
                                 ))}
                               </div>
