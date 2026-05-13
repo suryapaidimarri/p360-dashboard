@@ -1405,20 +1405,198 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                       <button onClick={saveWidget} style={{ width:'100%', background:'#48b5ea', border:'none', borderRadius:6, padding:'10px', fontSize:13, fontWeight:600, color:'#fff', cursor:'pointer' }}>Save Changes</button>
                     </>
                   )}
-                  {editTab==='Data' && (
-                    <div>
-                      <div style={{ marginBottom:16 }}>
-                        <label style={{ display:'block', fontSize:13, fontWeight:600, color:'#1a1a1a', marginBottom:8 }}>Data Source</label>
-                        <p style={{ fontSize:12, color:'#999', background:'#f5f5f5', padding:'8px 12px', borderRadius:6 }}>{editingWidget.dataSource}</p>
+                  {editTab==='Data' && (() => {
+                    const isGA4 = editingWidget.dataSource?.includes('google-analytics')
+                    const GA4_DIMENSIONS = ['Date','City','Country','Device Category','Browser','Session Source','Session Medium','Landing Page','Page Title','Age','Gender']
+                    const GA4_METRICS = ['Sessions','Total Users','New Users','Conversions','Engagement Rate','Bounce Rate','Average Session Duration','Screen Page Views','Event Count','Revenue']
+                    const widgetData = editingWidget as any
+                    const dimensions: string[] = widgetData.dimensions || (isGA4 ? ['Date'] : [])
+                    const metrics: string[] = widgetData.metrics || (isGA4 ? ['Sessions'] : [])
+
+                    const updateField = (key: string, val: any) => {
+                      const updated = { ...editingWidget, [key]: val } as any
+                      setEditingWidget(updated)
+                      setWidgets(prev => prev.map(w => w.id === updated.id ? updated : w))
+                    }
+
+                    return (
+                      <div style={{ fontSize:13 }}>
+
+                        {/* Data Source */}
+                        <div style={{ marginBottom:0, padding:'14px 0', borderBottom:'1px solid #f0f0f0' }}>
+                          <p style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', marginBottom:10 }}>Data source</p>
+                          <div style={{ display:'flex', alignItems:'center', gap:8, background:'#f5f5f5', border:'1px solid #e0e0e0', borderRadius:20, padding:'6px 12px' }}>
+                            <img src="https://www.google.com/s2/favicons?domain=analytics.google.com&sz=32" style={{ width:16, height:16 }} alt=""/>
+                            <span style={{ flex:1, fontSize:12, color:'#333', fontWeight:500 }}>{editingWidget.dataSource || 'No source'}</span>
+                            <ChevronDown size={14} style={{ color:'#666' }}/>
+                            <button style={{ background:'none', border:'none', cursor:'pointer', color:'#999', padding:'0 2px' }}><X size={12}/></button>
+                          </div>
+                          <button style={{ display:'flex', alignItems:'center', gap:6, marginTop:8, background:'none', border:'none', cursor:'pointer', color:'#1a85c8', fontSize:12, fontWeight:600, padding:0 }}>
+                            <div style={{ width:16, height:16, borderRadius:'50%', border:'2px solid #1a85c8', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                              <span style={{ fontSize:9, fontWeight:700 }}>ⓘ</span>
+                            </div>
+                            Blend data
+                          </button>
+                        </div>
+
+                        {/* Dimension */}
+                        <div style={{ padding:'14px 0', borderBottom:'1px solid #f0f0f0' }}>
+                          <p style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', marginBottom:10 }}>Dimension</p>
+                          <div style={{ display:'flex', flexDirection:'column' as const, gap:6 }}>
+                            {dimensions.map((dim: string, i: number) => (
+                              <div key={i} style={{ display:'flex', alignItems:'center', gap:8, background:'#e8f5e9', border:'1px solid #c8e6c9', borderRadius:20, padding:'5px 12px' }}>
+                                <span style={{ fontSize:10, fontWeight:700, color:'#388e3c', background:'#c8e6c9', borderRadius:3, padding:'1px 4px' }}>ABC</span>
+                                <span style={{ flex:1, fontSize:12, color:'#1a1a1a' }}>{dim}</span>
+                                <button onClick={() => updateField('dimensions', dimensions.filter((_:string,j:number)=>j!==i))} style={{ background:'none', border:'none', cursor:'pointer', color:'#999', padding:0 }}><X size={11}/></button>
+                              </div>
+                            ))}
+                            <button
+                              onClick={() => {
+                                const next = isGA4 ? GA4_DIMENSIONS.find((d:string) => !dimensions.includes(d)) : 'Dimension'
+                                if (next) updateField('dimensions', [...dimensions, next])
+                              }}
+                              style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'1px dashed #ccc', borderRadius:20, padding:'5px 12px', cursor:'pointer', color:'#666', fontSize:12 }}>
+                              <Plus size={13}/> Add dimension
+                            </button>
+                          </div>
+                          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:10 }}>
+                            <span style={{ fontSize:12, color:'#555' }}>Drill down</span>
+                            <div style={{ width:36, height:20, borderRadius:10, background:'#e0e0e0', position:'relative', cursor:'pointer' }}>
+                              <div style={{ width:16, height:16, borderRadius:'50%', background:'#fff', position:'absolute', top:2, left:2, boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}/>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Metric */}
+                        <div style={{ padding:'14px 0', borderBottom:'1px solid #f0f0f0' }}>
+                          <p style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', marginBottom:10 }}>Metric</p>
+                          <div style={{ display:'flex', flexDirection:'column' as const, gap:6 }}>
+                            {metrics.map((met: string, i: number) => (
+                              <div key={i} style={{ display:'flex', alignItems:'center', gap:8, background:'#e3f2fd', border:'1px solid #bbdefb', borderRadius:20, padding:'5px 12px' }}>
+                                <span style={{ fontSize:10, fontWeight:700, color:'#1565c0', background:'#bbdefb', borderRadius:3, padding:'1px 4px' }}>AUT</span>
+                                <span style={{ flex:1, fontSize:12, color:'#1a1a1a' }}>{met}</span>
+                                <button onClick={() => updateField('metrics', metrics.filter((_:string,j:number)=>j!==i))} style={{ background:'none', border:'none', cursor:'pointer', color:'#999', padding:0 }}><X size={11}/></button>
+                              </div>
+                            ))}
+                            <button
+                              onClick={() => {
+                                const next = isGA4 ? GA4_METRICS.find((m:string) => !metrics.includes(m)) : 'Metric'
+                                if (next) updateField('metrics', [...metrics, next])
+                              }}
+                              style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'1px dashed #ccc', borderRadius:20, padding:'5px 12px', cursor:'pointer', color:'#666', fontSize:12 }}>
+                              <Plus size={13}/> Add metric
+                            </button>
+                          </div>
+                          {[{label:'Optional metrics'},{label:'Metric sliders'}].map(row => (
+                            <div key={row.label} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:10 }}>
+                              <span style={{ fontSize:12, color:'#555' }}>{row.label}</span>
+                              <div style={{ width:36, height:20, borderRadius:10, background:'#e0e0e0', position:'relative', cursor:'pointer' }}>
+                                <div style={{ width:16, height:16, borderRadius:'50%', background:'#fff', position:'absolute', top:2, left:2, boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}/>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Filter */}
+                        <div style={{ padding:'14px 0', borderBottom:'1px solid #f0f0f0' }}>
+                          <p style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', marginBottom:4 }}>Filter</p>
+                          <p style={{ fontSize:11, color:'#999', marginBottom:8 }}>Report Filter</p>
+                          <div style={{ background:'#f5f5f5', border:'1px solid #e0e0e0', borderRadius:6, padding:'8px 12px', fontSize:12, color:'#555', marginBottom:8 }}>No filter applied</div>
+                          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
+                            <span style={{ fontSize:12, color:'#555' }}>Inherit filters</span>
+                            <div style={{ width:36, height:20, borderRadius:10, background:'#e0e0e0', position:'relative', cursor:'pointer' }}>
+                              <div style={{ width:16, height:16, borderRadius:'50%', background:'#fff', position:'absolute', top:2, left:2, boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}/>
+                            </div>
+                          </div>
+                          <p style={{ fontSize:12, color:'#555', marginBottom:6 }}>Filters on this chart</p>
+                          <button style={{ display:'flex', alignItems:'center', gap:8, background:'#f0f7ff', border:'1px dashed #90caf9', borderRadius:20, padding:'6px 14px', cursor:'pointer', color:'#1a85c8', fontSize:12, width:'100%', justifyContent:'center' }}>
+                            <Plus size={13}/> Add filter
+                          </button>
+                        </div>
+
+                        {/* Default date range filter */}
+                        <div style={{ padding:'14px 0', borderBottom:'1px solid #f0f0f0' }}>
+                          <p style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', marginBottom:10 }}>Default date range filter</p>
+                          {[{val:'auto',label:'Auto: Last 28 days (exclude today)'},{val:'custom',label:'Custom'}].map(opt => (
+                            <label key={opt.val} style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8, cursor:'pointer' }}>
+                              <div style={{ width:18, height:18, borderRadius:'50%', border:`2px solid ${(widgetData.dateRangeType||'auto')===opt.val?'#1a85c8':'#ccc'}`, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                                {(widgetData.dateRangeType||'auto')===opt.val && <div style={{ width:8, height:8, borderRadius:'50%', background:'#1a85c8' }}/>}
+                              </div>
+                              <span style={{ fontSize:12, color:'#333' }}>{opt.label}</span>
+                            </label>
+                          ))}
+                          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:4 }}>
+                            <span style={{ fontSize:12, color:'#555' }}>Comparison date range</span>
+                            <div style={{ width:36, height:20, borderRadius:10, background:'#e0e0e0', position:'relative', cursor:'pointer' }}>
+                              <div style={{ width:16, height:16, borderRadius:'50%', background:'#fff', position:'absolute', top:2, left:2, boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}/>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Number of rows */}
+                        <div style={{ padding:'14px 0', borderBottom:'1px solid #f0f0f0' }}>
+                          <p style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', marginBottom:10 }}>Number of rows</p>
+                          {[{val:'pagination',label:'Pagination'},{val:'topn',label:'Top N'}].map(opt => (
+                            <label key={opt.val} style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8, cursor:'pointer' }}>
+                              <div style={{ width:18, height:18, borderRadius:'50%', border:`2px solid ${(widgetData.rowsType||'pagination')===opt.val?'#1a85c8':'#ccc'}`, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                                {(widgetData.rowsType||'pagination')===opt.val && <div style={{ width:8, height:8, borderRadius:'50%', background:'#1a85c8' }}/>}
+                              </div>
+                              <span style={{ fontSize:12, color:'#333' }}>{opt.label}</span>
+                            </label>
+                          ))}
+                          <div style={{ display:'flex', alignItems:'center', gap:8, background:'#fff', border:'1px solid #e0e0e0', borderRadius:6, padding:'6px 12px', marginTop:4 }}>
+                            <span style={{ fontSize:11, color:'#555' }}>Rows per page</span>
+                            <select style={{ flex:1, border:'none', outline:'none', fontSize:12, color:'#333', background:'transparent' }}>
+                              <option>10</option><option>25</option><option selected>100</option><option>500</option>
+                            </select>
+                          </div>
+                          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:10 }}>
+                            <span style={{ fontSize:12, color:'#555' }}>Show summary row</span>
+                            <div style={{ width:36, height:20, borderRadius:10, background:'#e0e0e0', position:'relative', cursor:'pointer' }}>
+                              <div style={{ width:16, height:16, borderRadius:'50%', background:'#fff', position:'absolute', top:2, left:2, boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}/>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Sort */}
+                        <div style={{ padding:'14px 0', borderBottom:'1px solid #f0f0f0' }}>
+                          <p style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', marginBottom:10 }}>Sort</p>
+                          <div style={{ background:'#f5f5f5', borderRadius:8, padding:10, marginBottom:8 }}>
+                            <p style={{ fontSize:12, fontWeight:600, color:'#333', marginBottom:8 }}>Sort #1</p>
+                            <div style={{ display:'flex', alignItems:'center', gap:8, background:'#e3f2fd', border:'1px solid #bbdefb', borderRadius:20, padding:'5px 12px', marginBottom:8 }}>
+                              <span style={{ fontSize:10, fontWeight:700, color:'#1565c0', background:'#bbdefb', borderRadius:3, padding:'1px 4px' }}>AUT</span>
+                              <span style={{ fontSize:12, color:'#1a1a1a', flex:1 }}>{metrics[0] || 'Sessions'}</span>
+                            </div>
+                            {['Descending','Ascending'].map((opt,i) => (
+                              <label key={opt} style={{ display:'flex', alignItems:'center', gap:10, marginBottom:4, cursor:'pointer' }}>
+                                <div style={{ width:18, height:18, borderRadius:'50%', border:`2px solid ${i===0?'#1a85c8':'#ccc'}`, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                                  {i===0 && <div style={{ width:8, height:8, borderRadius:'50%', background:'#1a85c8' }}/>}
+                                </div>
+                                <span style={{ fontSize:12, color:'#333' }}>{opt}</span>
+                              </label>
+                            ))}
+                          </div>
+                          <button style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'1px dashed #ccc', borderRadius:20, padding:'6px 14px', cursor:'pointer', color:'#666', fontSize:12, width:'100%', justifyContent:'center' }}>
+                            <Plus size={13}/> Add sort
+                          </button>
+                        </div>
+
+                        {/* Chart interactions */}
+                        <div style={{ padding:'14px 0' }}>
+                          <p style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', marginBottom:10 }}>Chart interactions</p>
+                          {[{label:'Cross-filtering', on:false},{label:'Open links in new tab', on:true}].map(row => (
+                            <div key={row.label} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
+                              <span style={{ fontSize:12, color:'#555' }}>{row.label}</span>
+                              <div style={{ width:36, height:20, borderRadius:10, background:row.on?'#1a85c8':'#e0e0e0', position:'relative', cursor:'pointer' }}>
+                                <div style={{ width:16, height:16, borderRadius:'50%', background:'#fff', position:'absolute', top:2, left:row.on?18:2, boxShadow:'0 1px 3px rgba(0,0,0,0.2)', transition:'left 0.2s' }}/>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
                       </div>
-                      <div style={{ marginBottom:16 }}>
-                        <label style={{ display:'block', fontSize:13, fontWeight:600, color:'#1a1a1a', marginBottom:8 }}>Metric</label>
-                        <select style={{ width:'100%', border:'1px solid #e5e5e5', borderRadius:6, padding:'8px 12px', fontSize:13, outline:'none', color:'#333', background:'#fff' }}>
-                          <option>Total Sessions</option><option>Total Users</option><option>Conversions</option><option>Engagement Rate</option>
-                        </select>
-                      </div>
-                    </div>
-                  )}
+                    )
+                  })()}
                   {editTab==='Display' && (
                     <div style={{ padding:'4px 0' }}>
 
