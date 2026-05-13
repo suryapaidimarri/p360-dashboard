@@ -1340,9 +1340,6 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                 ))}
               </div>
             )}
-
-          </div>
-          )}
         </div>
 
         {/* Right panel */}
