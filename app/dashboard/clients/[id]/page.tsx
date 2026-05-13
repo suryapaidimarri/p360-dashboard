@@ -1494,21 +1494,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                         domain: 'search.google.com',
                         isMapped: true,
                       }] : []),
-                      // Divider then all others (only shown when searching)
-                      ...otherProps.map((p: any, i: number) => ({
-                        id: p.name,
-                        label: p.displayName || p.name,
-                        domain: 'analytics.google.com',
-                        isMapped: false,
-                      })),
-                      ...(connection?.gsc_sites || [])
-                        .filter((s: any) => s.siteUrl !== mappingSite)
-                        .map((s: any) => ({
-                          id: s.siteUrl,
-                          label: s.siteUrl?.replace(/^https?:\/\//, '').replace(/\/$/, ''),
-                          domain: 'search.google.com',
-                          isMapped: false,
-                        })),
+
                     ]
                     const widgetData = editingWidget as any
                     const dimensions: string[] = widgetData.dimensions || (isGA4 ? ['Date','Device Category'] : [])
@@ -1564,27 +1550,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                                     {widgetData.dataSource === ds.label && <span style={{ fontSize:10, color:'#1a85c8', fontWeight:600 }}>✓</span>}
                                   </div>
                                 ))}
-                                {/* Other sources — only shown when searching */}
-                                {dsSearch && DATA_SOURCES.filter((ds:any) => !ds.isMapped && ds.label.toLowerCase().includes(dsSearch.toLowerCase())).length > 0 && (
-                                  <>
-                                    <div style={{ height:1, background:'#f0f0f0', margin:'4px 0' }}/>
-                                    <p style={{ fontSize:11, color:'#888', padding:'4px 14px', fontWeight:500 }}>All properties</p>
-                                    {DATA_SOURCES.filter((ds:any) => !ds.isMapped && ds.label.toLowerCase().includes(dsSearch.toLowerCase())).map((ds:any) => (
-                                      <div key={ds.id} onClick={() => { updateField('dataSource', ds.label); setShowDsDropdown(false) }}
-                                        style={{ display:'flex', alignItems:'center', gap:10, padding:'9px 14px', cursor:'pointer', background:'transparent' }}
-                                        onMouseEnter={e=>(e.currentTarget as HTMLDivElement).style.background='#f0f7ff'}
-                                        onMouseLeave={e=>(e.currentTarget as HTMLDivElement).style.background='transparent'}>
-                                        <img src={`https://www.google.com/s2/favicons?domain=${ds.domain}&sz=32`} style={{ width:18, height:18 }} alt=""/>
-                                        <span style={{ fontSize:13, color:'#999' }}>{ds.label}</span>
-                                      </div>
-                                    ))}
-                                  </>
-                                )}
-                                {!dsSearch && DATA_SOURCES.filter((ds:any) => !ds.isMapped).length > 0 && (
-                                  <p style={{ fontSize:11, color:'#bbb', padding:'6px 14px', fontStyle:'italic' as const }}>
-                                    Type to search {DATA_SOURCES.filter((ds:any) => !ds.isMapped).length} other properties...
-                                  </p>
-                                )}
+
                               </div>
                             </div>
                           )}
