@@ -15,6 +15,7 @@ const DATA_SOURCES = ['SEO','Analytics','Social','Paid Ads']
 const TABS = ['Dashboards','Reports','Data Sources','Goals','Client Portal','Benchmarks','More']
 const RIGHT_PANEL_ITEMS = [
   {id:'build',icon:'✦',label:'Build with AI'},
+  {id:'charts',icon:'📈',label:'Add Chart'},
   {id:'integrations',icon:'📊',label:'Integrations\nMetrics'},
   {id:'content',icon:'Aa',label:'Content\nBlocks'},
   {id:'media',icon:'🖼',label:'Media'},
@@ -782,6 +783,37 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
   function startEdit(w: Widget) { setEditingWidget({...w}); setEditTab('General'); setOpenMenu(null); setActiveRightPanel(null) }
   function openDrill(w: Widget) { if (!editMode) { setDrillWidget(w); setDrillChannel('All') } }
+  function addWidget(chartType: string, label: string) {
+    const newId = `w${Date.now()}`
+    const isKpi = chartType === 'scorecard' || chartType === 'sparkline'
+    const newWidget: Widget = {
+      id: newId,
+      title: label,
+      dataSource: 'google-analytics-4 / sessions',
+      chartType,
+      tooltip: `${label} from Google Analytics`,
+      color: 'white',
+      value: '—',
+      change: '',
+      up: true,
+    }
+    setWidgets(prev => {
+      const updated = [...prev, newWidget]
+      try {
+        const toSave = updated.map(w => ({
+          id:w.id, title:w.title, tooltip:w.tooltip, chartType:w.chartType,
+          color:w.color, textColor:w.textColor, borderColor:w.borderColor,
+          bgHex:w.bgHex, showAnomalies:w.showAnomalies, showForecast:w.showForecast, showIntegIcon:w.showIntegIcon
+        }))
+        localStorage.setItem(LS_WIDGETS_KEY, JSON.stringify(toSave))
+      } catch {}
+      return updated
+    })
+    // Start editing the new widget immediately
+    setEditingWidget(newWidget)
+    setEditTab('General')
+  }
+
   function saveWidget() {
     if (!editingWidget) return
     setWidgets(prev => {
@@ -1285,6 +1317,31 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                 <DynamicChart chartType={widgets.find(x=>x.id==='v1')?.chartType || 'area'} data={sessionData} height={130}/>
               </ChartCard>
             </div>
+
+            {/* Dynamically added widgets */}
+            {widgets.filter(w => !['w1','w2','w3','w4','c1','c2','c3','d1','d2','d3','v1','bounce'].includes(w.id)).length > 0 && (
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10, marginTop:10 }}>
+                {widgets.filter(w => !['w1','w2','w3','w4','c1','c2','c3','d1','d2','d3','v1','bounce'].includes(w.id)).map(w => (
+                  <div key={w.id}
+                    onClick={e => { e.stopPropagation(); if (editMode) startEdit(w) }}
+                    style={{ background:'#fff', border:`2px solid ${editingWidget?.id===w.id && editMode?'#48b5ea':'#e5e5e5'}`, borderRadius:8, padding:14, position:'relative', cursor: editMode ? 'pointer' : 'default', minHeight:140 }}>
+                    {editMode && <div style={{ position:'absolute', top:6, left:6, cursor:'grab', color:'#d0d0d0' }}><Grip size={13}/></div>}
+                    {editMode && (
+                      <div onClick={e => e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', gap:4 }}>
+                        <WidgetDot wid={w.id} onEdit={() => startEdit(w)}/>
+                      </div>
+                    )}
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
+                      <span style={{ fontSize:12, fontWeight:600, color:'#333' }}>{w.title}</span>
+                      {connection?.connected && <span style={{ fontSize:9, color:'#20BB71', fontWeight:600 }}>● Live</span>}
+                    </div>
+                    <DynamicChart chartType={w.chartType} data={sessionData} height={100}/>
+                  </div>
+                ))}
+              </div>
+            )}
+
+          </div>
           )}
         </div>
 
@@ -1855,6 +1912,54 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                         <div style={{ flex:1 }}><p style={{ fontSize:15, fontWeight:700, color:'#1a1a1a', marginBottom:4 }}>{item.title}</p><p style={{ fontSize:13, color:'#666', lineHeight:1.5 }}>{item.desc}</p></div>
                       </div>
                     ))}
+                  </div>
+                )}
+                {activeRightPanel==='charts' && (
+                  <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
+                    <div style={{ padding:'12px 16px', borderBottom:'1px solid #f0f0f0', flexShrink:0 }}>
+                      <p style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', marginBottom:2 }}>Add Chart</p>
+                      <p style={{ fontSize:11, color:'#999' }}>Click any chart to add it to the dashboard with GA4 data</p>
+                    </div>
+                    <div style={{ flex:1, overflowY:'auto' as const }}>
+                      {CHART_TYPE_GROUPS.map(group => (
+                        <div key={group.group} style={{ padding:'10px 10px 4px' }}>
+                          <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase' as const, letterSpacing:'0.06em', marginBottom:8 }}>{group.group}</p>
+                          <div style={{ display:'flex', flexWrap:'wrap' as const, gap:6, marginBottom:6 }}>
+                            {group.types.map(ct => {
+                              const B='#4285f4',O='#ea8600',P='#a142f4',G='#34a853',R='#ea4335'
+                              const s = { width:48, height:36 }
+                              let thumb: React.ReactNode
+                              if (ct.id==='table'||ct.id==='pivot') thumb = <svg {...s} viewBox="0 0 48 36" fill="none"><rect x="1" y="1" width="46" height="34" rx="2" fill="white" stroke="#e0e0e0"/><rect x="1" y="1" width="46" height="8" rx="2" fill="#e8f0fe"/><line x1="1" y1="9" x2="47" y2="9" stroke="#e0e0e0"/><line x1="1" y1="17" x2="47" y2="17" stroke="#e0e0e0"/><line x1="16" y1="1" x2="16" y2="35" stroke="#e0e0e0"/><line x1="32" y1="1" x2="32" y2="35" stroke="#e0e0e0"/></svg>
+                              else if (ct.id==='column'||ct.id==='bar'||ct.id==='stackedbar') thumb = <svg {...s} viewBox="0 0 48 36" fill="none"><rect x="3" y="20" width="8" height="14" rx="1" fill={B}/><rect x="14" y="14" width="8" height="20" rx="1" fill={O}/><rect x="25" y="8" width="8" height="26" rx="1" fill={P}/><rect x="36" y="16" width="8" height="18" rx="1" fill={G}/></svg>
+                              else if (ct.id==='line'||ct.id==='multiline'||ct.id==='timeseries'||ct.id==='sparkline'||ct.id==='smoothline'||ct.id==='waveline'||ct.id==='timeseries2') thumb = <svg {...s} viewBox="0 0 48 36" fill="none"><polyline points="2,28 12,18 22,22 32,10 42,16" stroke={B} strokeWidth="2.5" strokeLinecap="round" fill="none"/><polyline points="2,32 12,24 22,28 32,18 42,22" stroke={O} strokeWidth="2" strokeLinecap="round" fill="none"/></svg>
+                              else if (ct.id==='area'||ct.id==='stackarea'||ct.id==='steparea') thumb = <svg {...s} viewBox="0 0 48 36" fill="none"><path d="M2 34 L10 22 L18 26 L26 14 L34 18 L42 10 L46 12 L46 34 Z" fill={P} fillOpacity="0.25"/><polyline points="2,34 10,22 18,26 26,14 34,18 42,10 46,12" stroke={P} strokeWidth="2" strokeLinecap="round" fill="none"/></svg>
+                              else if (ct.id==='pie') thumb = <svg {...s} viewBox="0 0 48 36" fill="none"><path d="M24 18 L24 6 A12 12 0 0 1 36 18 Z" fill={B}/><path d="M24 18 L36 18 A12 12 0 0 1 18 29 Z" fill={R}/><path d="M24 18 L18 29 A12 12 0 0 1 24 6 Z" fill={G}/></svg>
+                              else if (ct.id==='donut') thumb = <svg {...s} viewBox="0 0 48 36" fill="none"><circle cx="24" cy="18" r="12" stroke={B} strokeWidth="6" strokeDasharray="38 37" fill="none"/><circle cx="24" cy="18" r="12" stroke={R} strokeWidth="6" strokeDasharray="20 55" strokeDashoffset="-38" fill="none"/></svg>
+                              else if (ct.id==='scatter'||ct.id==='bubble') thumb = <svg {...s} viewBox="0 0 48 36" fill="none"><circle cx="12" cy="26" r="4" fill={B} fillOpacity="0.7"/><circle cx="24" cy="14" r="7" fill={B} fillOpacity="0.5"/><circle cx="38" cy="22" r="5" fill={O} fillOpacity="0.6"/></svg>
+                              else if (ct.id==='treemap') thumb = <svg {...s} viewBox="0 0 48 36" fill="none"><rect x="1" y="1" width="28" height="20" rx="1" fill={B}/><rect x="31" y="1" width="16" height="9" rx="1" fill={O}/><rect x="1" y="23" width="13" height="12" rx="1" fill={G}/></svg>
+                              else if (ct.id==='funnel') thumb = <svg {...s} viewBox="0 0 48 36" fill="none"><rect x="4" y="2" width="40" height="8" rx="2" fill={B}/><rect x="8" y="12" width="32" height="7" rx="2" fill={O}/><rect x="14" y="21" width="20" height="7" rx="2" fill={P}/></svg>
+                              else if (ct.id==='gauge') thumb = <svg {...s} viewBox="0 0 48 36" fill="none"><path d="M6 30 A18 18 0 0 1 42 30" stroke="#e0e0e0" strokeWidth="5" fill="none" strokeLinecap="round"/><path d="M6 30 A18 18 0 0 1 30 13" stroke={B} strokeWidth="5" fill="none" strokeLinecap="round"/></svg>
+                              else if (ct.id==='scorecard'||ct.id==='scorecard2') thumb = <svg {...s} viewBox="0 0 48 36" fill="none"><rect x="1" y="1" width="46" height="34" rx="2" fill="white" stroke="#e0e0e0"/><text x="8" y="26" fontSize="12" fontWeight="bold" fill="#202124" fontFamily="sans-serif">1,168</text></svg>
+                              else if (ct.id==='hbar'||ct.id==='hstacked') thumb = <svg {...s} viewBox="0 0 48 36" fill="none"><rect x="2" y="4" width="28" height="7" rx="1" fill={B}/><rect x="2" y="14" width="20" height="7" rx="1" fill={O}/><rect x="2" y="24" width="34" height="7" rx="1" fill={P}/></svg>
+                              else if (ct.id==='waterfall') thumb = <svg {...s} viewBox="0 0 48 36" fill="none"><rect x="3" y="22" width="7" height="12" rx="1" fill={B}/><rect x="13" y="16" width="7" height="6" rx="1" fill={G}/><rect x="23" y="10" width="7" height="6" rx="1" fill={G}/><rect x="33" y="16" width="7" height="18" rx="1" fill={R}/></svg>
+                              else if (ct.id==='timeline'||ct.id==='sankey') thumb = <svg {...s} viewBox="0 0 48 36" fill="none"><rect x="4" y="5" width="24" height="7" rx="2" fill={B}/><rect x="14" y="15" width="28" height="7" rx="2" fill={O}/><rect x="2" y="25" width="18" height="7" rx="2" fill={P}/></svg>
+                              else if (ct.id==='map') thumb = <svg {...s} viewBox="0 0 48 36" fill="none"><ellipse cx="24" cy="18" rx="20" ry="15" fill="#e8f4fd" stroke="#90caf9" strokeWidth="1"/><circle cx="28" cy="14" r="3" fill={R} fillOpacity="0.8"/><circle cx="18" cy="22" r="2" fill={B} fillOpacity="0.8"/></svg>
+                              else thumb = <svg {...s} viewBox="0 0 48 36" fill="none"><rect x="4" y="4" width="40" height="28" rx="2" stroke="#e0e0e0" strokeWidth="1.5" fill="none"/></svg>
+                              return (
+                                <button key={ct.id} onClick={() => addWidget(ct.id, ct.label)}
+                                  title={`Add ${ct.label} to dashboard`}
+                                  style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4, padding:'4px', borderRadius:6, border:'2px solid #e5e5e5', background:'#fff', cursor:'pointer', width:62, transition:'all 0.1s' }}
+                                  onMouseEnter={e=>{(e.currentTarget as HTMLButtonElement).style.borderColor='#48b5ea';(e.currentTarget as HTMLButtonElement).style.background='#ebf7ff'}}
+                                  onMouseLeave={e=>{(e.currentTarget as HTMLButtonElement).style.borderColor='#e5e5e5';(e.currentTarget as HTMLButtonElement).style.background='#fff'}}>
+                                  {thumb}
+                                  <span style={{ fontSize:9, color:'#666', textAlign:'center' as const, lineHeight:1.2, whiteSpace:'nowrap' as const, overflow:'hidden', textOverflow:'ellipsis', width:'100%' }}>{ct.label}</span>
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
                 {activeRightPanel==='integrations' && (
