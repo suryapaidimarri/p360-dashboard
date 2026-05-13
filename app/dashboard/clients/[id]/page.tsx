@@ -515,6 +515,12 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [clientName, setClientName] = useState<string>(KNOWN_CLIENTS[params.id]?.name || '')
   const [clientDomain, setClientDomain] = useState<string>(KNOWN_CLIENTS[params.id]?.domain || '')
   const [showMappingModal, setShowMappingModal] = useState(false)
+  const [showDsDropdown, setShowDsDropdown] = useState(false)
+  const [showDimDropdown, setShowDimDropdown] = useState(false)
+  const [showMetDropdown, setShowMetDropdown] = useState(false)
+  const [dsSearch, setDsSearch] = useState('')
+  const [dimSearch, setDimSearch] = useState('')
+  const [metSearch, setMetSearch] = useState('')
   const [mappingProp, setMappingProp] = useState('')
   const [mappingPropName, setMappingPropName] = useState('')
   const [mappingSite, setMappingSite] = useState('')
@@ -1480,13 +1486,6 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                       setEditingWidget(updated)
                       setWidgets(prev => prev.map(w => w.id === updated.id ? updated : w))
                     }
-
-                    const [showDsDropdown, setShowDsDropdown] = (React as any).useState(false)
-                    const [showDimDropdown, setShowDimDropdown] = (React as any).useState(false)
-                    const [showMetDropdown, setShowMetDropdown] = (React as any).useState(false)
-                    const [dsSearch, setDsSearch] = (React as any).useState('')
-                    const [dimSearch, setDimSearch] = (React as any).useState('')
-                    const [metSearch, setMetSearch] = (React as any).useState('')
 
                     return (
                       <div style={{ fontSize:13 }}>
