@@ -127,7 +127,7 @@ const KPI_BG: {[key:string]:{bg:string;border:string;text:string;sub:string}} = 
   red:{bg:'#ef5350',border:'#ef5350',text:'#fff',sub:'rgba(255,255,255,0.85)'},
 }
 
-interface Widget { id:string; title:string; dataSource:string; chartType:string; tooltip:string; color:string; value:string; change:string; up:boolean; textColor?:string; borderColor?:string; bgHex?:string; showAnomalies?:boolean; showForecast?:boolean; showIntegIcon?:boolean }
+interface Widget { id:string; title:string; dataSource:string; chartType:string; tooltip:string; color:string; value:string; change:string; up:boolean; textColor?:string; borderColor?:string; bgHex?:string; showAnomalies?:boolean; showForecast?:boolean; showIntegIcon?:boolean; metrics?:string[]; dimensions?:string[]; filters?:string[] }
 
 function formatNum(n: number) {
   if (n>=1000000) return (n/1000000).toFixed(1)+'M'
@@ -582,6 +582,9 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
             showAnomalies: saved_w.showAnomalies,
             showForecast: saved_w.showForecast,
             showIntegIcon: saved_w.showIntegIcon,
+            metrics: saved_w.metrics,
+            dimensions: saved_w.dimensions,
+            filters: saved_w.filters,
           }
         })
       }
@@ -779,6 +782,77 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const sourceData = ga4Data?.sources?.rows?.map((r: any, i: number) => ({ name: r.dimensionValues[0].value, value: parseInt(r.metricValues[0].value), color: ['#2196f3','#64b5f6','#90caf9','#bbdefb','#e3f2fd'][i%5] })) || STATIC_DONUT
   const cityData = ga4Data?.cities?.rows?.map((r: any) => ({ city: r.dimensionValues[0].value, val: parseInt(r.metricValues[0].value), pct: 100 })) || STATIC_CITIES
   const maxCity = Math.max(...cityData.map((c: any) => c.val), 1)
+
+  // Map friendly metric names to GA4 API names
+  const METRIC_API_MAP: {[key:string]: string} = {
+    'Sessions': 'sessions', 'Total Users': 'totalUsers', 'New Users': 'newUsers',
+    'Active users': 'activeUsers', 'Conversions': 'conversions', 'Bounce Rate': 'bounceRate',
+    'Engagement Rate': 'engagementRate', 'Average Session Duration': 'averageSessionDuration',
+    'Screen Page Views': 'screenPageViews', 'Event Count': 'eventCount', 'Revenue': 'totalRevenue',
+    'Purchase Revenue': 'purchaseRevenue', 'Purchasers': 'purchasers',
+    '7-day active users': 'active7DayUsers', '28-day active users': 'active28DayUsers',
+    'Ads clicks': 'advertiserAdClicks', 'Ads cost': 'advertiserAdCost',
+    'Ads impressions': 'advertiserAdImpressions',
+  }
+  const DIMENSION_API_MAP: {[key:string]: string} = {
+    'Date': 'date', 'City': 'city', 'Country': 'country', 'Device Category': 'deviceCategory',
+    'Browser': 'browser', 'Session Source': 'sessionSource', 'Session Medium': 'sessionMedium',
+    'Landing Page': 'landingPage', 'Page Title': 'pageTitle', 'Age': 'userAgeBracket',
+    'Gender': 'userGender', 'Default Channel Group': 'sessionDefaultChannelGroup',
+    'Operating System': 'operatingSystem', 'Region': 'region',
+  }
+
+  // Cached per-widget GA4 data (fetched when dimensions/metrics change)
+  const [widgetDataCache, setWidgetDataCache] = useState<{[id:string]: any[]}>({})
+
+  async function fetchWidgetData(w: Widget) {
+    if (!connection?.connected || !selectedProperty) return
+    const dims: string[] = (w as any).dimensions || ['Date']
+    const mets: string[] = (w as any).metrics || ['Sessions']
+    const dimApi = dims.map((d: string) => DIMENSION_API_MAP[d] || 'date').filter(Boolean)
+    const metApi = mets.map((m: string) => METRIC_API_MAP[m] || 'sessions').filter(Boolean)
+    try {
+      const res = await fetch(`/api/ga4/custom?client_id=${clientId}&property_id=${selectedProperty}&dimensions=${dimApi.join(',')}&metrics=${metApi.join(',')}&start_date=${dateRange}&end_date=today`)
+      if (res.ok) {
+        const data = await res.json()
+        if (data.rows) {
+          const mapped = data.rows.map((r: any) => ({
+            d: r.dimensionValues?.[0]?.value || '',
+            v: parseFloat(r.metricValues?.[0]?.value || '0'),
+            name: r.dimensionValues?.[0]?.value || '',
+            value: parseFloat(r.metricValues?.[0]?.value || '0'),
+          }))
+          setWidgetDataCache(prev => ({...prev, [w.id]: mapped}))
+          return
+        }
+      }
+    } catch {}
+    // Fallback to cached ga4Data
+    setWidgetDataCache(prev => ({...prev, [w.id]: getWidgetDataFallback(w)}))
+  }
+
+  // Fallback: map existing ga4Data based on dimension
+  function getWidgetDataFallback(w: any): Array<{d: string; v: number}> {
+    if (!ga4Data) return STATIC_SESSIONS
+    const primaryDim = ((w.dimensions as string[]) || ['Date'])[0]
+    if (primaryDim === 'Device Category') {
+      return ga4Data.devices?.rows?.map((r: any) => ({ d: r.dimensionValues?.[0]?.value || '', v: parseFloat(r.metricValues?.[0]?.value || '0') })) || STATIC_DEVICES.map((d: any) => ({d: d.name, v: d.v}))
+    }
+    if (primaryDim === 'City') {
+      return ga4Data.cities?.rows?.map((r: any) => ({ d: r.dimensionValues?.[0]?.value || '', v: parseFloat(r.metricValues?.[0]?.value || '0') })) || STATIC_CITIES.map((c: any) => ({d: c.city, v: c.val}))
+    }
+    if (primaryDim === 'Session Source' || primaryDim === 'Default Channel Group') {
+      return ga4Data.sources?.rows?.map((r: any) => ({ d: r.dimensionValues?.[0]?.value || '', v: parseFloat(r.metricValues?.[0]?.value || '0'), name: r.dimensionValues?.[0]?.value || '', value: parseFloat(r.metricValues?.[0]?.value || '0') })) || STATIC_DONUT.map((s: any) => ({d: s.name, v: s.value}))
+    }
+    // Default: time series
+    return ga4Data.timeSeries?.rows?.map((r: any) => ({ d: r.dimensionValues?.[0]?.value?.slice(4) || '', v: parseFloat(r.metricValues?.[0]?.value || '0') })) || STATIC_SESSIONS
+  }
+
+  // Get chart data — use cache if available, else fallback
+  function getWidgetData(w: any): Array<{d: string; v: number}> {
+    if (widgetDataCache[w.id]) return widgetDataCache[w.id]
+    return getWidgetDataFallback(w)
+  }
   const STATIC_IDS = ['w1','w2','w3','w4','c1','c2','c3','d1','d2','d3','v1','bounce']
   const dynamicWidgets = widgets.filter(w => !STATIC_IDS.includes(w.id))
 
@@ -804,7 +878,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
         const toSave = updated.map(w => ({
           id:w.id, title:w.title, tooltip:w.tooltip, chartType:w.chartType,
           color:w.color, textColor:w.textColor, borderColor:w.borderColor,
-          bgHex:w.bgHex, showAnomalies:w.showAnomalies, showForecast:w.showForecast, showIntegIcon:w.showIntegIcon
+          bgHex:w.bgHex, showAnomalies:w.showAnomalies, showForecast:w.showForecast, showIntegIcon:w.showIntegIcon,
+          metrics:w.metrics, dimensions:w.dimensions, filters:w.filters
         }))
         localStorage.setItem(LS_WIDGETS_KEY, JSON.stringify(toSave))
       } catch {}
@@ -824,7 +899,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
         const toSave = updated.map(w => ({
           id:w.id, title:w.title, tooltip:w.tooltip, chartType:w.chartType,
           color:w.color, textColor:w.textColor, borderColor:w.borderColor,
-          bgHex:w.bgHex, showAnomalies:w.showAnomalies, showForecast:w.showForecast, showIntegIcon:w.showIntegIcon
+          bgHex:w.bgHex, showAnomalies:w.showAnomalies, showForecast:w.showForecast, showIntegIcon:w.showIntegIcon,
+          metrics:w.metrics, dimensions:w.dimensions, filters:w.filters
         }))
         localStorage.setItem(LS_WIDGETS_KEY, JSON.stringify(toSave))
       } catch {}
@@ -895,12 +971,20 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
               {connection?.connected && <span style={{ fontSize:9, color:'#20BB71', fontWeight:600 }}>● Live</span>}
             </div>
           </div>
-          <DynamicChart chartType={w.chartType} data={sessionData} height={90}/>
+          <DynamicChart chartType={w.chartType} data={getWidgetData(w)} height={90}/>
         </div>
       )
     }
 
-    // ── KPI scorecard mode ──
+    // ── KPI scorecard mode — compute value from selected metric if available ──
+    const wData = getWidgetData(w as any)
+    const computedValue = wData.length > 0
+      ? wData.reduce((sum: number, d: any) => sum + (d.v || 0), 0)
+      : null
+    const displayValue = w.value && w.value !== '—' ? w.value
+      : computedValue !== null ? (computedValue >= 1000000 ? (computedValue/1000000).toFixed(1)+'M' : computedValue >= 1000 ? (computedValue/1000).toFixed(1)+'K' : computedValue.toFixed(0))
+      : '—'
+
     return (
       <div onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
         style={{ background:bgColor, border:`2px solid ${borderCol}`, borderRadius:8, padding:16, position:'relative', minHeight:110, cursor: editMode ? 'pointer' : 'default', transition:'border-color 0.15s' }}>
@@ -909,11 +993,11 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
           <span style={{ fontSize:12, color:c.sub, fontWeight:500 }}>{w.title}</span>
           {w.change && <span style={{ fontSize:10, fontWeight:700, marginLeft:8, padding:'2px 6px', borderRadius:4, color:isWhite?(w.up?'#22c55e':'#ef4444'):'rgba(255,255,255,0.95)', background:isWhite?(w.up?'#f0fdf4':'#fef2f2'):'rgba(255,255,255,0.18)' }}>{w.up?'▲':'▼'} {w.change}</span>}
         </div>
-        <p style={{ fontSize:30, fontWeight:700, color:textCol, letterSpacing:'-0.5px', lineHeight:1 }}>{w.value}</p>
+        <p style={{ fontSize:30, fontWeight:700, color:textCol, letterSpacing:'-0.5px', lineHeight:1 }}>{displayValue}</p>
         {connection?.connected && <p style={{ fontSize:9, color:isWhite?'#22c55e':'rgba(255,255,255,0.7)', marginTop:4 }}>● Live</p>}
         {w.chartType === 'sparkline' && (
           <div style={{ marginTop:6 }}>
-            <DynamicChart chartType="sparkline" data={sessionData} height={35}/>
+            <DynamicChart chartType="sparkline" data={getWidgetData(w)} height={35}/>
           </div>
         )}
       </div>
@@ -1242,7 +1326,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                     <span style={{ fontSize:11, color:'#666', fontWeight:500 }}>{widgets.find(x=>x.id==='c1')?.title || 'Sessions Over Time'}</span>
                     {connection?.connected && <span style={{ fontSize:9, color:'#20BB71', fontWeight:600 }}>● Live</span>}
                   </div>
-                  <DynamicChart chartType={widgets.find(x=>x.id==='c1')?.chartType || 'line'} data={sessionData} height={80}/>
+                  <DynamicChart chartType={widgets.find(x=>x.id==='c1')?.chartType || 'line'} data={getWidgetData(widgets.find(x=>x.id==='c1') || {})} height={80}/>
                 </ChartCard>
                 <ChartCard id="c2">
                   <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:110 }}>
@@ -1282,7 +1366,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                     <span style={{ fontSize:11, fontWeight:600 }}>{widgets.find(x=>x.id==='d1')?.title || 'Users By Device'}</span>
                     {connection?.connected && <span style={{ fontSize:9, color:'#20BB71', fontWeight:600 }}>● Live</span>}
                   </div>
-                  <DynamicChart chartType={widgets.find(x=>x.id==='d1')?.chartType || 'column'} data={deviceData.map((d:any)=>({d:d.name, v:d.v}))} height={110}/>
+                  <DynamicChart chartType={widgets.find(x=>x.id==='d1')?.chartType || 'column'} data={getWidgetData(widgets.find(x=>x.id==='d1') || {})} height={110}/>
                 </ChartCard>
                 <ChartCard id="d2">
                   <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
@@ -1315,7 +1399,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                   <span style={{ fontSize:12, fontWeight:600 }}>{widgets.find(x=>x.id==='v1')?.title || 'Website Views'}</span>
                   {connection?.connected && <span style={{ fontSize:9, color:'#20BB71', fontWeight:600 }}>● Live GA4</span>}
                 </div>
-                <DynamicChart chartType={widgets.find(x=>x.id==='v1')?.chartType || 'area'} data={sessionData} height={130}/>
+                <DynamicChart chartType={widgets.find(x=>x.id==='v1')?.chartType || 'area'} data={getWidgetData(widgets.find(x=>x.id==='v1') || {})} height={130}/>
               </ChartCard>
             </div>
           )}
@@ -1337,7 +1421,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                       <span style={{ fontSize:12, fontWeight:600, color:'#333' }}>{w.title}</span>
                       {connection?.connected && <span style={{ fontSize:9, color:'#20BB71', fontWeight:600 }}>● Live</span>}
                     </div>
-                    <DynamicChart chartType={w.chartType} data={sessionData} height={100}/>
+                    <DynamicChart chartType={w.chartType} data={getWidgetData(w)} height={100}/>
                   </div>
                 ))}
               </div>
@@ -1559,6 +1643,10 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                       const updated = { ...editingWidget, [key]: val } as any
                       setEditingWidget(updated)
                       setWidgets(prev => prev.map(w => w.id === updated.id ? updated : w))
+                      // Re-fetch data when dimensions or metrics change
+                      if (key === 'dimensions' || key === 'metrics') {
+                        setTimeout(() => fetchWidgetData(updated), 50)
+                      }
                     }
 
                     return (
