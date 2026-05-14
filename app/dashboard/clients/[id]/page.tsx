@@ -596,29 +596,27 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     try {
       const saved = localStorage.getItem(LS_WIDGETS_KEY)
       if (saved) {
-        const parsed = JSON.parse(saved)
-        // Merge saved display props with default structure (keeps live values from GA4)
-        return DEFAULT_WIDGETS.map(def => {
+        const parsed: Widget[] = JSON.parse(saved)
+
+        // Restore default widgets with saved customizations
+        const defaults = DEFAULT_WIDGETS.map(def => {
           const saved_w = parsed.find((s: Widget) => s.id === def.id)
           if (!saved_w) return def
-          // Preserve display customizations but not GA4 live values
           return {
             ...def,
-            title: saved_w.title ?? def.title,
-            tooltip: saved_w.tooltip ?? def.tooltip,
-            chartType: saved_w.chartType ?? def.chartType,
-            color: saved_w.color ?? def.color,
-            textColor: saved_w.textColor,
-            borderColor: saved_w.borderColor,
-            bgHex: saved_w.bgHex,
-            showAnomalies: saved_w.showAnomalies,
-            showForecast: saved_w.showForecast,
-            showIntegIcon: saved_w.showIntegIcon,
-            metrics: saved_w.metrics,
-            dimensions: saved_w.dimensions,
-            filters: saved_w.filters,
+            ...saved_w,
+            // Keep live GA4 values from default (value/change/up restored by fetchGA4)
+            value: def.value,
+            change: def.change,
+            up: def.up,
           }
         })
+
+        // Also restore any dynamically added widgets (IDs not in DEFAULT_WIDGETS)
+        const defaultIds = new Set(DEFAULT_WIDGETS.map(d => d.id))
+        const dynamic = parsed.filter((s: Widget) => !defaultIds.has(s.id))
+
+        return [...defaults, ...dynamic]
       }
     } catch {}
     return DEFAULT_WIDGETS
@@ -838,8 +836,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
   // Map existing ga4Data to chart points based on dimension + metric selection
   function getWidgetDataFallback(w: any): Array<{d: string; v: number}> {
-    const dims: string[] = (w.dimensions as string[]) || ['Date']
-    const mets: string[] = (w.metrics as string[]) || ['Sessions']
+    const dims: string[] = ((w.dimensions as string[])?.length > 0 ? w.dimensions : null) || ['Date']
+    const mets: string[] = ((w.metrics as string[])?.length > 0 ? w.metrics : null) || ['Sessions']
     const primaryDim = dims[0] || 'Date'
 
     // Pick metric index from time series based on selected metric
@@ -936,10 +934,10 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       const updated = [...prev, newWidget]
       try {
         const toSave = updated.map(w => ({
-          id:w.id, title:w.title, tooltip:w.tooltip, chartType:w.chartType,
-          color:w.color, textColor:w.textColor, borderColor:w.borderColor,
-          bgHex:w.bgHex, showAnomalies:w.showAnomalies, showForecast:w.showForecast, showIntegIcon:w.showIntegIcon,
-          metrics:w.metrics, dimensions:w.dimensions, filters:w.filters
+          ...w,
+          value: undefined,
+          change: undefined,
+          up: undefined,
         }))
         localStorage.setItem(LS_WIDGETS_KEY, JSON.stringify(toSave))
       } catch {}
@@ -957,10 +955,10 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       // Persist immediately
       try {
         const toSave = updated.map(w => ({
-          id:w.id, title:w.title, tooltip:w.tooltip, chartType:w.chartType,
-          color:w.color, textColor:w.textColor, borderColor:w.borderColor,
-          bgHex:w.bgHex, showAnomalies:w.showAnomalies, showForecast:w.showForecast, showIntegIcon:w.showIntegIcon,
-          metrics:w.metrics, dimensions:w.dimensions, filters:w.filters
+          ...w,
+          value: undefined,
+          change: undefined,
+          up: undefined,
         }))
         localStorage.setItem(LS_WIDGETS_KEY, JSON.stringify(toSave))
       } catch {}
@@ -1696,8 +1694,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
                     ]
                     const widgetData = editingWidget as any
-                    const dimensions: string[] = widgetData.dimensions || (isGA4 ? ['Date','Device Category'] : [])
-                    const metrics: string[] = widgetData.metrics || (isGA4 ? ['Sessions','Active users'] : [])
+                    const dimensions: string[] = widgetData.dimensions || []
+                    const metrics: string[] = widgetData.metrics || []
 
                     const updateField = (key: string, val: any) => {
                       const updated = { ...editingWidget, [key]: val } as any
