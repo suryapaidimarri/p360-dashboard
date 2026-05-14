@@ -806,6 +806,11 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [widgetDataCache, setWidgetDataCache] = useState<{[id:string]: any[]}>({})
 
   async function fetchWidgetData(w: Widget) {
+    // Immediately show derived data from existing ga4Data (instant feedback)
+    const fallback = getWidgetDataFallback(w)
+    setWidgetDataCache(prev => ({...prev, [w.id]: fallback}))
+
+    // Then try to fetch fresh data from GA4 API for the exact dimension/metric combo
     if (!connection?.connected || !selectedProperty) return
     const dims: string[] = (w as any).dimensions || ['Date']
     const mets: string[] = (w as any).metrics || ['Sessions']
@@ -815,7 +820,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       const res = await fetch(`/api/ga4/custom?client_id=${clientId}&property_id=${selectedProperty}&dimensions=${dimApi.join(',')}&metrics=${metApi.join(',')}&start_date=${dateRange}&end_date=today`)
       if (res.ok) {
         const data = await res.json()
-        if (data.rows) {
+        if (data.rows && data.rows.length > 0) {
           const mapped = data.rows.map((r: any) => ({
             d: r.dimensionValues?.[0]?.value || '',
             v: parseFloat(r.metricValues?.[0]?.value || '0'),
@@ -823,40 +828,69 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
             value: parseFloat(r.metricValues?.[0]?.value || '0'),
           }))
           setWidgetDataCache(prev => ({...prev, [w.id]: mapped}))
-          return
         }
       }
     } catch {}
-    // Fallback to cached ga4Data
-    setWidgetDataCache(prev => ({...prev, [w.id]: getWidgetDataFallback(w)}))
   }
 
-  // Fallback: map existing ga4Data based on dimension
+  // Map existing ga4Data to chart points based on dimension + metric selection
   function getWidgetDataFallback(w: any): Array<{d: string; v: number}> {
-    if (!ga4Data) return STATIC_SESSIONS
-    const primaryDim = ((w.dimensions as string[]) || ['Date'])[0]
+    const dims: string[] = (w.dimensions as string[]) || ['Date']
+    const mets: string[] = (w.metrics as string[]) || ['Sessions']
+    const primaryDim = dims[0] || 'Date'
+
+    // Pick metric index from time series based on selected metric
+    const metricIndexMap: {[key:string]: number} = {
+      'Sessions': 0, 'Total Users': 1, 'New Users': 1, 'Active users': 1,
+      'Conversions': 2, 'Bounce Rate': 3, 'Engagement Rate': 4,
+      'Average Session Duration': 5, 'Screen Page Views': 0,
+    }
+    const metIdx = metricIndexMap[mets[0]] ?? 0
+
+    // Dimension → dataset mapping
     if (primaryDim === 'Device Category') {
-      return ga4Data.devices?.rows?.map((r: any) => ({ d: r.dimensionValues?.[0]?.value || '', v: parseFloat(r.metricValues?.[0]?.value || '0') })) || STATIC_DEVICES.map((d: any) => ({d: d.name, v: d.v}))
+      const rows = ga4Data?.devices?.rows || STATIC_DEVICES.map((d: any) => ({ dimensionValues:[{value:d.name}], metricValues:[{value:String(d.v)}] }))
+      return rows.map((r: any) => ({ d: r.dimensionValues?.[0]?.value || '', v: parseFloat(r.metricValues?.[metIdx < 1 ? 0 : 0]?.value || '0') }))
     }
     if (primaryDim === 'City') {
-      return ga4Data.cities?.rows?.map((r: any) => ({ d: r.dimensionValues?.[0]?.value || '', v: parseFloat(r.metricValues?.[0]?.value || '0') })) || STATIC_CITIES.map((c: any) => ({d: c.city, v: c.val}))
+      const rows = ga4Data?.cities?.rows || STATIC_CITIES.map((c: any) => ({ dimensionValues:[{value:c.city}], metricValues:[{value:String(c.val)}] }))
+      return rows.map((r: any) => ({ d: r.dimensionValues?.[0]?.value || '', v: parseFloat(r.metricValues?.[0]?.value || '0') }))
     }
-    if (primaryDim === 'Session Source' || primaryDim === 'Default Channel Group') {
-      return ga4Data.sources?.rows?.map((r: any) => ({ d: r.dimensionValues?.[0]?.value || '', v: parseFloat(r.metricValues?.[0]?.value || '0'), name: r.dimensionValues?.[0]?.value || '', value: parseFloat(r.metricValues?.[0]?.value || '0') })) || STATIC_DONUT.map((s: any) => ({d: s.name, v: s.value}))
+    if (primaryDim === 'Session Source' || primaryDim === 'Default Channel Group' || primaryDim === 'Session Medium') {
+      const rows = ga4Data?.sources?.rows || STATIC_DONUT.map((s: any) => ({ dimensionValues:[{value:s.name}], metricValues:[{value:String(s.value)}] }))
+      return rows.map((r: any) => ({ d: r.dimensionValues?.[0]?.value || '', v: parseFloat(r.metricValues?.[0]?.value || '0'), name: r.dimensionValues?.[0]?.value || '', value: parseFloat(r.metricValues?.[0]?.value || '0') }))
     }
-    // Default: time series
-    return ga4Data.timeSeries?.rows?.map((r: any) => ({ d: r.dimensionValues?.[0]?.value?.slice(4) || '', v: parseFloat(r.metricValues?.[0]?.value || '0') })) || STATIC_SESSIONS
+    if (primaryDim === 'Country' || primaryDim === 'Region') {
+      // Use city data as proxy for country/region
+      const rows = ga4Data?.cities?.rows || STATIC_CITIES.map((c: any) => ({ dimensionValues:[{value:c.city}], metricValues:[{value:String(c.val)}] }))
+      return rows.map((r: any) => ({ d: r.dimensionValues?.[0]?.value || '', v: parseFloat(r.metricValues?.[0]?.value || '0') }))
+    }
+    // Any other dimension or Date: use time series with selected metric index
+    if (!ga4Data) return STATIC_SESSIONS
+    const rows = ga4Data.timeSeries?.rows || []
+    if (rows.length === 0) return STATIC_SESSIONS
+    return rows.map((r: any) => ({
+      d: r.dimensionValues?.[0]?.value?.length === 8 ? r.dimensionValues[0].value.slice(4) : (r.dimensionValues?.[0]?.value || ''),
+      v: parseFloat(r.metricValues?.[metIdx]?.value || r.metricValues?.[0]?.value || '0')
+    }))
   }
 
-  // Get chart data — use cache if available, else fallback
+  // Get chart data — use widget-specific cache if available, else derive from existing ga4Data
   function getWidgetData(w: any): Array<{d: string; v: number}> {
-    if (widgetDataCache[w.id]) return widgetDataCache[w.id]
+    if (widgetDataCache[w?.id]) return widgetDataCache[w.id]
     return getWidgetDataFallback(w)
   }
   const STATIC_IDS = ['w1','w2','w3','w4','c1','c2','c3','d1','d2','d3','v1','bounce']
   const dynamicWidgets = widgets.filter(w => !STATIC_IDS.includes(w.id))
 
-  function startEdit(w: Widget) { setEditingWidget({...w}); setEditTab('General'); setOpenMenu(null); setActiveRightPanel(null) }
+  function startEdit(w: Widget) {
+    setEditingWidget({...w})
+    setEditTab('General')
+    setOpenMenu(null)
+    setActiveRightPanel(null)
+    // Pre-fetch widget data so chart shows immediately when switching to Data tab
+    fetchWidgetData(w)
+  }
   function openDrill(w: Widget) { if (!editMode) { setDrillWidget(w); setDrillChannel('All') } }
   function addWidget(chartType: string, label: string) {
     const newId = `w${Date.now()}`
