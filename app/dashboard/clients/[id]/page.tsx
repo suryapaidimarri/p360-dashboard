@@ -136,40 +136,45 @@ function formatNum(n: number) {
 }
 
 // ── DynamicChart: renders the right chart based on widget.chartType ────────────
-function DynamicChart({ chartType, data, height = 80 }: { chartType: string; data: any[]; height?: number }) {
+function DynamicChart({ chartType, data, height = 80, dimensions = ['Date'], metrics = ['Sessions'] }: { chartType: string; data: any[]; height?: number; dimensions?: string[]; metrics?: string[] }) {
   const colors = ['#4285f4','#ea8600','#a142f4','#34a853','#ea4335','#24c1e0']
   const c = colors[0]
   if (!data || data.length === 0) return null
 
   if (chartType === 'line' || chartType === 'timeseries' || chartType === 'sparkline' || chartType === 'smoothline') {
+    const metLabel = metrics[0] || 'Sessions'
     return (
       <ResponsiveContainer width="100%" height={height}>
         <LineChart data={data}>
-          <Line type="monotone" dataKey="v" stroke={c} strokeWidth={2} dot={false}/>
-          <Tooltip contentStyle={{ fontSize:10, borderRadius:4 }} formatter={(v:number) => [v.toLocaleString(),'']}/>
+          <XAxis dataKey="d" hide={chartType === 'sparkline'} axisLine={false} tickLine={false} tick={{ fontSize:9, fill:'#999' }}/>
+          <Line type="monotone" dataKey="v" stroke={c} strokeWidth={2} dot={false} name={metLabel}/>
+          <Tooltip contentStyle={{ fontSize:10, borderRadius:4 }} formatter={(v:number) => [v.toLocaleString(), metLabel]}/>
         </LineChart>
       </ResponsiveContainer>
     )
   }
   if (chartType === 'area' || chartType === 'stackarea' || chartType === 'steparea') {
+    const metLabel = metrics[0] || 'Sessions'
     return (
       <ResponsiveContainer width="100%" height={height}>
         <AreaChart data={data}>
           <defs><linearGradient id="dcg" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={c} stopOpacity={0.3}/><stop offset="95%" stopColor={c} stopOpacity={0}/></linearGradient></defs>
-          <Area type={chartType === 'steparea' ? 'step' : 'monotone'} dataKey="v" stroke={c} fill="url(#dcg)" strokeWidth={2} dot={false}/>
-          <Tooltip contentStyle={{ fontSize:10, borderRadius:4 }} formatter={(v:number) => [v.toLocaleString(),'']}/>
+          <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:'#999' }}/>
+          <Area type={chartType === 'steparea' ? 'step' : 'monotone'} dataKey="v" stroke={c} fill="url(#dcg)" strokeWidth={2} dot={false} name={metLabel}/>
+          <Tooltip contentStyle={{ fontSize:10, borderRadius:4 }} formatter={(v:number) => [v.toLocaleString(), metLabel]}/>
         </AreaChart>
       </ResponsiveContainer>
     )
   }
   if (chartType === 'column' || chartType === 'bar' || chartType === 'histogram' || chartType === 'stackedbar') {
+    const metLabel = metrics[0] || 'Value'
     return (
       <ResponsiveContainer width="100%" height={height}>
         <BarChart data={data} barSize={18}>
           <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:'#999' }}/>
           <YAxis hide/>
-          <Tooltip contentStyle={{ fontSize:10, borderRadius:4 }} formatter={(v:number) => [v.toLocaleString(),'']}/>
-          <Bar dataKey="v" radius={[3,3,0,0]}>
+          <Tooltip contentStyle={{ fontSize:10, borderRadius:4 }} formatter={(v:number) => [v.toLocaleString(), metLabel]}/>
+          <Bar dataKey="v" radius={[3,3,0,0]} name={metLabel}>
             {data.map((_:any, i:number) => <Cell key={i} fill={colors[i % colors.length]}/>)}
           </Bar>
         </BarChart>
@@ -211,11 +216,25 @@ function DynamicChart({ chartType, data, height = 80 }: { chartType: string; dat
     )
   }
   if (chartType === 'table') {
+    const dimLabel = dimensions[0] || 'Dimension'
+    const metLabel = metrics[0] || 'Value'
     return (
       <div style={{ height, overflowY:'auto' }}>
         <table style={{ width:'100%', fontSize:10, borderCollapse:'collapse' }}>
-          <thead><tr style={{ background:'#f5f5f5' }}><th style={{ padding:'3px 6px', textAlign:'left', fontWeight:600, color:'#555' }}>Date</th><th style={{ padding:'3px 6px', textAlign:'right', fontWeight:600, color:'#555' }}>Value</th></tr></thead>
-          <tbody>{data.slice(0,6).map((d:any, i:number) => <tr key={i} style={{ borderBottom:'1px solid #f0f0f0' }}><td style={{ padding:'3px 6px', color:'#666' }}>{d.d}</td><td style={{ padding:'3px 6px', textAlign:'right', fontWeight:600, color:'#333' }}>{d.v?.toLocaleString()}</td></tr>)}</tbody>
+          <thead>
+            <tr style={{ background:'#f5f5f5' }}>
+              <th style={{ padding:'5px 8px', textAlign:'left', fontWeight:600, color:'#555', borderBottom:'2px solid #e0e0e0' }}>{dimLabel}</th>
+              {metrics.map((m, i) => <th key={i} style={{ padding:'5px 8px', textAlign:'right', fontWeight:600, color:'#555', borderBottom:'2px solid #e0e0e0' }}>{m}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {data.slice(0, Math.floor(height/22) || 6).map((d:any, i:number) => (
+              <tr key={i} style={{ borderBottom:'1px solid #f5f5f5', background: i%2===0 ? '#fff' : '#fafafa' }}>
+                <td style={{ padding:'4px 8px', color:'#444', fontWeight:500 }}>{d.d}</td>
+                {metrics.map((_, mi) => <td key={mi} style={{ padding:'4px 8px', textAlign:'right', fontWeight:600, color:'#333' }}>{d.v?.toLocaleString()}</td>)}
+              </tr>
+            ))}
+          </tbody>
         </table>
       </div>
     )
@@ -394,11 +413,24 @@ function DynamicChart({ chartType, data, height = 80 }: { chartType: string; dat
     )
   }
   if (chartType === 'pivot' || chartType === 'scorecard2') {
+    const dimLabel = dimensions[0] || 'Dimension'
     return (
       <div style={{ height, overflowY:'auto' }}>
         <table style={{ width:'100%', fontSize:10, borderCollapse:'collapse' }}>
-          <thead><tr style={{ background:'#e8eaf6' }}><th style={{ padding:'3px 6px', textAlign:'left', fontWeight:600, color:'#555' }}>Metric</th><th style={{ padding:'3px 6px', textAlign:'right', fontWeight:600, color:'#555' }}>Total</th><th style={{ padding:'3px 6px', textAlign:'right', fontWeight:600, color:'#555' }}>Avg</th></tr></thead>
-          <tbody>{data.slice(0,5).map((d:any,i:number) => <tr key={i} style={{ borderBottom:'1px solid #f0f0f0' }}><td style={{ padding:'3px 6px', color:'#666' }}>{d.d}</td><td style={{ padding:'3px 6px', textAlign:'right', fontWeight:600, color:'#333' }}>{d.v?.toLocaleString()}</td><td style={{ padding:'3px 6px', textAlign:'right', color:'#888' }}>{Math.round(d.v/30).toLocaleString()}</td></tr>)}</tbody>
+          <thead>
+            <tr style={{ background:'#e8eaf6' }}>
+              <th style={{ padding:'4px 8px', textAlign:'left', fontWeight:600, color:'#555', borderBottom:'2px solid #c5cae9' }}>{dimLabel}</th>
+              {metrics.map((m, i) => <th key={i} style={{ padding:'4px 8px', textAlign:'right', fontWeight:600, color:'#555', borderBottom:'2px solid #c5cae9' }}>{m}</th>)}
+              <th style={{ padding:'4px 8px', textAlign:'right', fontWeight:600, color:'#888', borderBottom:'2px solid #c5cae9' }}>Avg/Day</th>
+            </tr>
+          </thead>
+          <tbody>{data.slice(0,6).map((d:any,i:number) => (
+            <tr key={i} style={{ borderBottom:'1px solid #f0f0f0', background: i%2===0?'#fff':'#fafafa' }}>
+              <td style={{ padding:'4px 8px', color:'#444', fontWeight:500 }}>{d.d}</td>
+              {metrics.map((_,mi) => <td key={mi} style={{ padding:'4px 8px', textAlign:'right', fontWeight:600, color:'#333' }}>{d.v?.toLocaleString()}</td>)}
+              <td style={{ padding:'4px 8px', textAlign:'right', color:'#888' }}>{Math.round(d.v/30).toLocaleString()}</td>
+            </tr>
+          ))}</tbody>
         </table>
       </div>
     )
@@ -999,7 +1031,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
               {connection?.connected && <span style={{ fontSize:9, color:'#20BB71', fontWeight:600 }}>● Live</span>}
             </div>
           </div>
-          <DynamicChart chartType={w.chartType} data={getWidgetData(w)} height={90}/>
+          <DynamicChart chartType={w.chartType} data={getWidgetData(w)} height={90} dimensions={(w as any).dimensions} metrics={(w as any).metrics}/>
         </div>
       )
     }
@@ -1025,7 +1057,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
         {connection?.connected && <p style={{ fontSize:9, color:isWhite?'#22c55e':'rgba(255,255,255,0.7)', marginTop:4 }}>● Live</p>}
         {w.chartType === 'sparkline' && (
           <div style={{ marginTop:6 }}>
-            <DynamicChart chartType="sparkline" data={getWidgetData(w)} height={35}/>
+            <DynamicChart chartType="sparkline" data={getWidgetData(w)} height={35} dimensions={(w as any).dimensions} metrics={(w as any).metrics}/>
           </div>
         )}
       </div>
@@ -1354,7 +1386,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                     <span style={{ fontSize:11, color:'#666', fontWeight:500 }}>{widgets.find(x=>x.id==='c1')?.title || 'Sessions Over Time'}</span>
                     {connection?.connected && <span style={{ fontSize:9, color:'#20BB71', fontWeight:600 }}>● Live</span>}
                   </div>
-                  <DynamicChart chartType={widgets.find(x=>x.id==='c1')?.chartType || 'line'} data={getWidgetData(widgets.find(x=>x.id==='c1') || {})} height={80}/>
+                  <DynamicChart chartType={widgets.find(x=>x.id==='c1')?.chartType || 'line'} data={getWidgetData(widgets.find(x=>x.id==='c1') || {})} height={80} dimensions={(widgets.find(x=>x.id==='c1') as any)?.dimensions} metrics={(widgets.find(x=>x.id==='c1') as any)?.metrics}/>
                 </ChartCard>
                 <ChartCard id="c2">
                   <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:110 }}>
@@ -1394,7 +1426,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                     <span style={{ fontSize:11, fontWeight:600 }}>{widgets.find(x=>x.id==='d1')?.title || 'Users By Device'}</span>
                     {connection?.connected && <span style={{ fontSize:9, color:'#20BB71', fontWeight:600 }}>● Live</span>}
                   </div>
-                  <DynamicChart chartType={widgets.find(x=>x.id==='d1')?.chartType || 'column'} data={getWidgetData(widgets.find(x=>x.id==='d1') || {})} height={110}/>
+                  <DynamicChart chartType={widgets.find(x=>x.id==='d1')?.chartType || 'column'} data={getWidgetData(widgets.find(x=>x.id==='d1') || {})} height={110} dimensions={(widgets.find(x=>x.id==='d1') as any)?.dimensions} metrics={(widgets.find(x=>x.id==='d1') as any)?.metrics}/>
                 </ChartCard>
                 <ChartCard id="d2">
                   <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
@@ -1427,7 +1459,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                   <span style={{ fontSize:12, fontWeight:600 }}>{widgets.find(x=>x.id==='v1')?.title || 'Website Views'}</span>
                   {connection?.connected && <span style={{ fontSize:9, color:'#20BB71', fontWeight:600 }}>● Live GA4</span>}
                 </div>
-                <DynamicChart chartType={widgets.find(x=>x.id==='v1')?.chartType || 'area'} data={getWidgetData(widgets.find(x=>x.id==='v1') || {})} height={130}/>
+                <DynamicChart chartType={widgets.find(x=>x.id==='v1')?.chartType || 'area'} data={getWidgetData(widgets.find(x=>x.id==='v1') || {})} height={130} dimensions={(widgets.find(x=>x.id==='v1') as any)?.dimensions} metrics={(widgets.find(x=>x.id==='v1') as any)?.metrics}/>
               </ChartCard>
             </div>
           )}
@@ -1449,7 +1481,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                       <span style={{ fontSize:12, fontWeight:600, color:'#333' }}>{w.title}</span>
                       {connection?.connected && <span style={{ fontSize:9, color:'#20BB71', fontWeight:600 }}>● Live</span>}
                     </div>
-                    <DynamicChart chartType={w.chartType} data={getWidgetData(w)} height={100}/>
+                    <DynamicChart chartType={w.chartType} data={getWidgetData(w)} height={100} dimensions={(w as any).dimensions} metrics={(w as any).metrics}/>
                   </div>
                 ))}
               </div>
