@@ -674,7 +674,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     try { localStorage.setItem(LS_CLONED_KEY, JSON.stringify(clonedDashboards)) } catch {}
   }, [clonedDashboards])
 
-  // Persist widget config (display settings, not live GA4 values) to localStorage
+  // Persist ALL widget config to localStorage on every change
   useEffect(() => {
     if (typeof window === 'undefined') return
     try {
@@ -690,6 +690,10 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
         showAnomalies: w.showAnomalies,
         showForecast: w.showForecast,
         showIntegIcon: w.showIntegIcon,
+        dimensions: (w as any).dimensions,
+        metrics: (w as any).metrics,
+        filters: (w as any).filters,
+        dataSource: w.dataSource,
       }))
       localStorage.setItem(LS_WIDGETS_KEY, JSON.stringify(toSave))
     } catch {}
@@ -955,10 +959,11 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       // Persist immediately
       try {
         const toSave = updated.map(w => ({
-          ...w,
-          value: undefined,
-          change: undefined,
-          up: undefined,
+          id: w.id, title: w.title, tooltip: w.tooltip, chartType: w.chartType,
+          color: w.color, textColor: w.textColor, borderColor: w.borderColor,
+          bgHex: w.bgHex, showAnomalies: w.showAnomalies, showForecast: w.showForecast,
+          showIntegIcon: w.showIntegIcon, dataSource: w.dataSource,
+          dimensions: (w as any).dimensions, metrics: (w as any).metrics, filters: (w as any).filters,
         }))
         localStorage.setItem(LS_WIDGETS_KEY, JSON.stringify(toSave))
       } catch {}
