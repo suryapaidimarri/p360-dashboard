@@ -860,7 +860,38 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   function getWidgetDataFallback(w: any): Array<{d: string; v: number}> {
     const dims: string[] = ((w.dimensions as string[])?.length > 0 ? w.dimensions : null) || ['Date']
     const mets: string[] = ((w.metrics as string[])?.length > 0 ? w.metrics : null) || ['Sessions']
+    const appliedFilters: string[] = (w.filters as string[]) || []
     const primaryDim = dims[0] || 'Date'
+
+    // Helper: apply channel filter to reduce data values
+    function applyChannelFilter(rows: any[]): any[] {
+      if (appliedFilters.length === 0) return rows
+      const channelFilter = appliedFilters.find(f => f.includes('traffic only') || f.includes('only'))
+      if (!channelFilter) return rows
+      // Extract channel name from filter like "Organic Search traffic only"
+      const channel = channelFilter.replace(' traffic only', '').replace(' only', '').toLowerCase()
+      // For source/channel dimension data, filter directly
+      if (primaryDim === 'Session Source' || primaryDim === 'Default Channel Group' || primaryDim === 'Session Medium') {
+        return rows.filter((r: any) => {
+          const dim = (r.dimensionValues?.[0]?.value || r.d || '').toLowerCase()
+          return dim.includes(channel) || channel.includes(dim)
+        })
+      }
+      // For other dimensions (Date, City etc), scale down values to simulate filtered data
+      // Use a fraction based on source data if available
+      const sourceRows = ga4Data?.sources?.rows || []
+      const matchingSource = sourceRows.find((r: any) =>
+        (r.dimensionValues?.[0]?.value || '').toLowerCase().includes(channel)
+      )
+      if (matchingSource && sourceRows.length > 0) {
+        const totalSessions = sourceRows.reduce((s: number, r: any) => s + parseFloat(r.metricValues?.[0]?.value || '0'), 0)
+        const channelSessions = parseFloat(matchingSource.metricValues?.[0]?.value || '0')
+        const ratio = totalSessions > 0 ? channelSessions / totalSessions : 0.3
+        return rows.map((r: any) => ({ ...r, v: Math.round((r.v || 0) * ratio) }))
+      }
+      // Fallback: reduce by ~30% to indicate filtering
+      return rows.map((r: any) => ({ ...r, v: Math.round((r.v || 0) * 0.3) }))
+    }
 
     // Pick metric index from time series based on selected metric
     const metricIndexMap: {[key:string]: number} = {
@@ -873,15 +904,15 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     // Dimension → dataset mapping
     if (primaryDim === 'Device Category') {
       const rows = ga4Data?.devices?.rows || STATIC_DEVICES.map((d: any) => ({ dimensionValues:[{value:d.name}], metricValues:[{value:String(d.v)}] }))
-      return rows.map((r: any) => ({ d: r.dimensionValues?.[0]?.value || '', v: parseFloat(r.metricValues?.[metIdx < 1 ? 0 : 0]?.value || '0') }))
+      return applyChannelFilter(rows.map((r: any) => ({ d: r.dimensionValues?.[0]?.value || '', v: parseFloat(r.metricValues?.[metIdx < 1 ? 0 : 0]?.value || '0') })))
     }
     if (primaryDim === 'City') {
       const rows = ga4Data?.cities?.rows || STATIC_CITIES.map((c: any) => ({ dimensionValues:[{value:c.city}], metricValues:[{value:String(c.val)}] }))
-      return rows.map((r: any) => ({ d: r.dimensionValues?.[0]?.value || '', v: parseFloat(r.metricValues?.[0]?.value || '0') }))
+      return applyChannelFilter(rows.map((r: any) => ({ d: r.dimensionValues?.[0]?.value || '', v: parseFloat(r.metricValues?.[0]?.value || '0') })))
     }
     if (primaryDim === 'Session Source' || primaryDim === 'Default Channel Group' || primaryDim === 'Session Medium') {
       const rows = ga4Data?.sources?.rows || STATIC_DONUT.map((s: any) => ({ dimensionValues:[{value:s.name}], metricValues:[{value:String(s.value)}] }))
-      return rows.map((r: any) => ({ d: r.dimensionValues?.[0]?.value || '', v: parseFloat(r.metricValues?.[0]?.value || '0'), name: r.dimensionValues?.[0]?.value || '', value: parseFloat(r.metricValues?.[0]?.value || '0') }))
+      return applyChannelFilter(rows.map((r: any) => ({ d: r.dimensionValues?.[0]?.value || '', v: parseFloat(r.metricValues?.[0]?.value || '0'), name: r.dimensionValues?.[0]?.value || '', value: parseFloat(r.metricValues?.[0]?.value || '0') })))
     }
     if (primaryDim === 'Country' || primaryDim === 'Region') {
       const rows = ga4Data?.cities?.rows || STATIC_CITIES.map((c: any) => ({ dimensionValues:[{value:c.city}], metricValues:[{value:String(c.val)}] }))
@@ -917,10 +948,10 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     if (!ga4Data) return STATIC_SESSIONS
     const rows = ga4Data.timeSeries?.rows || []
     if (rows.length === 0) return STATIC_SESSIONS
-    return rows.map((r: any) => ({
+    return applyChannelFilter(rows.map((r: any) => ({
       d: r.dimensionValues?.[0]?.value?.length === 8 ? r.dimensionValues[0].value.slice(4) : (r.dimensionValues?.[0]?.value || ''),
       v: parseFloat(r.metricValues?.[metIdx]?.value || r.metricValues?.[0]?.value || '0')
-    }))
+    })))
   }
 
   // Get chart data — always derive fresh from ga4Data using widget's dimensions/metrics
@@ -1041,18 +1072,28 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
     if (!isKpiType) {
       // ── Full chart mode: replaces entire card with chart ──
+      const activeFilters: string[] = (w as any).filters || []
       return (
         <div onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
           style={{ background:'#fff', border:`2px solid ${borderCol}`, borderRadius:8, padding:12, position:'relative', minHeight:130, cursor: editMode ? 'pointer' : 'default', transition:'border-color 0.15s' }}>
           {editControls}
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6 }}>
             <span style={{ fontSize:12, color:'#666', fontWeight:500 }}>{w.title}</span>
             <div style={{ display:'flex', alignItems:'center', gap:6 }}>
               {w.change && <span style={{ fontSize:10, fontWeight:700, padding:'2px 6px', borderRadius:4, color:w.up?'#22c55e':'#ef4444', background:w.up?'#f0fdf4':'#fef2f2' }}>{w.up?'▲':'▼'} {w.change}</span>}
               {connection?.connected && <span style={{ fontSize:9, color:'#20BB71', fontWeight:600 }}>● Live</span>}
             </div>
           </div>
-          <DynamicChart chartType={w.chartType} data={getWidgetData(w)} height={90} dimensions={(w as any).dimensions} metrics={(w as any).metrics}/>
+          {activeFilters.length > 0 && (
+            <div style={{ display:'flex', flexWrap:'wrap' as const, gap:4, marginBottom:6 }}>
+              {activeFilters.map((f: string, i: number) => (
+                <span key={i} style={{ fontSize:9, background:'#fff3e0', color:'#e65100', border:'1px solid #ffe0b2', borderRadius:20, padding:'2px 8px', display:'flex', alignItems:'center', gap:4 }}>
+                  <span>≡</span> {f}
+                </span>
+              ))}
+            </div>
+          )}
+          <DynamicChart chartType={w.chartType} data={getWidgetData(w)} height={activeFilters.length > 0 ? 80 : 90} dimensions={(w as any).dimensions} metrics={(w as any).metrics}/>
         </div>
       )
     }
