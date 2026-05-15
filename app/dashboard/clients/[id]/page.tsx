@@ -2553,8 +2553,13 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                   onClick={() => {
                     if (!newFilterName.trim()) return
                     // Save filter to ga4Filters list and apply to widget
-                    setGa4Filters(prev => [...prev, { name: newFilterName.trim(), type: 'ga4' as const }])
-                    updateField('filters', [...((editingWidget as any)?.filters || []), newFilterName.trim()])
+                    const newFilter = newFilterName.trim()
+                    setGa4Filters(prev => [...prev, { name: newFilter, type: 'ga4' as const }])
+                    if (editingWidget) {
+                      const updated = { ...editingWidget, filters: [...((editingWidget as any).filters || []), newFilter] } as any
+                      setEditingWidget(updated)
+                      setWidgets(prev => prev.map(w => w.id === updated.id ? updated : w))
+                    }
                     setShowCreateFilter(false)
                   }}
                   style={{ background: (!newFilterName.trim() || newFilterClauses.some(c => !c.field)) ? '#ccc' : '#1a85c8', border:'none', borderRadius:6, padding:'10px 24px', color:'#fff', fontSize:14, fontWeight:600, cursor: (!newFilterName.trim() || newFilterClauses.some(c => !c.field)) ? 'not-allowed' : 'pointer' }}>
