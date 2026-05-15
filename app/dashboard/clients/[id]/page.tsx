@@ -548,6 +548,10 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [clientDomain, setClientDomain] = useState<string>(KNOWN_CLIENTS[params.id]?.domain || '')
   const [showMappingModal, setShowMappingModal] = useState(false)
   const [showDsDropdown, setShowDsDropdown] = useState(false)
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false)
+  const [filterSearch, setFilterSearch] = useState('')
+  const [ga4Filters, setGa4Filters] = useState<{name:string; type:'ga4'|'other'}[]>([])
+  const [loadingFilters, setLoadingFilters] = useState(false)
   const [showDimDropdown, setShowDimDropdown] = useState(false)
   const [showMetDropdown, setShowMetDropdown] = useState(false)
   const [dsSearch, setDsSearch] = useState('')
@@ -698,6 +702,19 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       localStorage.setItem(LS_WIDGETS_KEY, JSON.stringify(toSave))
     } catch {}
   }, [widgets])
+
+  async function loadGA4Filters() {
+    if (!connection?.connected || !selectedProperty) return
+    setLoadingFilters(true)
+    try {
+      const res = await fetch(`/api/ga4/filters?client_id=${clientId}&property_id=${selectedProperty}`)
+      if (res.ok) {
+        const data = await res.json()
+        setGa4Filters(data.filters || [])
+      }
+    } catch {}
+    setLoadingFilters(false)
+  }
 
   async function loadClientInfo() {
     // Use /api/client which uses service role key - always works regardless of RLS
@@ -1869,20 +1886,116 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                         </div>
 
                         {/* Filter */}
-                        <div style={{ padding:'14px 0', borderBottom:'1px solid #f0f0f0' }}>
+                        <div style={{ padding:'14px 0', borderBottom:'1px solid #f0f0f0', position:'relative' as const }}>
                           <p style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', marginBottom:4 }}>Filter</p>
                           <p style={{ fontSize:11, color:'#999', marginBottom:8 }}>Report Filter</p>
-                          <div style={{ background:'#f5f5f5', border:'1px solid #e0e0e0', borderRadius:6, padding:'8px 12px', fontSize:12, color:'#555', marginBottom:8 }}>No filter applied</div>
+                          <div style={{ background:'#f5f5f5', border:'1px solid #e0e0e0', borderRadius:20, padding:'7px 14px', fontSize:12, color:'#555', marginBottom:10 }}>
+                            {(widgetData.filters as string[])?.length > 0 ? (widgetData.filters as string[]).join(', ') : 'No filter applied'}
+                          </div>
+
+                          {/* Applied filters */}
+                          {((widgetData.filters as string[]) || []).length > 0 && (
+                            <div style={{ display:'flex', flexDirection:'column' as const, gap:6, marginBottom:8 }}>
+                              {((widgetData.filters as string[]) || []).map((f: string, i: number) => (
+                                <div key={i} style={{ display:'flex', alignItems:'center', gap:8, background:'#fff3e0', border:'1px solid #ffe0b2', borderRadius:20, padding:'5px 12px' }}>
+                                  <span style={{ fontSize:11 }}>≡</span>
+                                  <span style={{ flex:1, fontSize:12, color:'#e65100' }}>{f}</span>
+                                  <button onClick={() => updateField('filters', ((widgetData.filters as string[]) || []).filter((_: string, j: number) => j !== i))}
+                                    style={{ background:'none', border:'none', cursor:'pointer', color:'#999', padding:0 }}><X size={11}/></button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
                           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
                             <span style={{ fontSize:12, color:'#555' }}>Inherit filters</span>
                             <div style={{ width:36, height:20, borderRadius:10, background:'#e0e0e0', position:'relative', cursor:'pointer' }}>
                               <div style={{ width:16, height:16, borderRadius:'50%', background:'#fff', position:'absolute', top:2, left:2, boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}/>
                             </div>
                           </div>
+
                           <p style={{ fontSize:12, color:'#555', marginBottom:6 }}>Filters on this chart</p>
-                          <button style={{ display:'flex', alignItems:'center', gap:8, background:'#f0f7ff', border:'1px dashed #90caf9', borderRadius:20, padding:'6px 14px', cursor:'pointer', color:'#1a85c8', fontSize:12, width:'100%', justifyContent:'center' }}>
+                          <button
+                            onClick={() => { setShowFilterDropdown(!showFilterDropdown); setFilterSearch(''); if (ga4Filters.length === 0) loadGA4Filters() }}
+                            style={{ display:'flex', alignItems:'center', gap:8, background:'#f0f7ff', border:'1px dashed #90caf9', borderRadius:20, padding:'6px 14px', cursor:'pointer', color:'#1a85c8', fontSize:12, width:'100%', justifyContent:'center' }}>
                             <Plus size={13}/> Add filter
                           </button>
+
+                          {/* Filter dropdown */}
+                          {showFilterDropdown && (
+                            <div style={{ position:'absolute' as const, top:'100%', left:0, right:0, background:'#fff', border:'1px solid #e0e0e0', borderRadius:12, boxShadow:'0 8px 32px rgba(0,0,0,0.15)', zIndex:300, overflow:'hidden', maxHeight:400 }}>
+                              {/* Search */}
+                              <div style={{ padding:'12px 14px', borderBottom:'1px solid #f0f0f0', position:'sticky' as const, top:0, background:'#fff' }}>
+                                <div style={{ display:'flex', alignItems:'center', gap:8, background:'#f5f5f5', borderRadius:20, padding:'8px 14px' }}>
+                                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="5" stroke="#999" strokeWidth="1.5"/><path d="M10.5 10.5 L13 13" stroke="#999" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                                  <input autoFocus value={filterSearch} onChange={e => setFilterSearch(e.target.value)}
+                                    placeholder="Search" style={{ background:'transparent', border:'none', outline:'none', fontSize:13, color:'#333', width:'100%' }}/>
+                                </div>
+                              </div>
+
+                              <div style={{ overflowY:'auto' as const, maxHeight:300 }}>
+                                {loadingFilters && (
+                                  <div style={{ padding:'16px', textAlign:'center' as const, fontSize:12, color:'#999' }}>Loading filters...</div>
+                                )}
+
+                                {/* GA4 filters from connected property */}
+                                {ga4Filters.filter(f => f.type === 'ga4').filter(f => f.name.toLowerCase().includes(filterSearch.toLowerCase())).length > 0 && (
+                                  <div style={{ padding:'8px 0' }}>
+                                    <p style={{ fontSize:11, color:'#888', padding:'4px 14px 6px', fontWeight:600 }}>Data source and resource filters</p>
+                                    {ga4Filters.filter(f => f.type === 'ga4' && f.name.toLowerCase().includes(filterSearch.toLowerCase())).map(f => (
+                                      <div key={f.name}
+                                        onClick={() => { updateField('filters', [...((widgetData.filters as string[]) || []), f.name]); setShowFilterDropdown(false) }}
+                                        style={{ padding:'9px 14px', fontSize:13, color:'#1a1a1a', cursor:'pointer', background:'transparent' }}
+                                        onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = '#f5f5f5'}
+                                        onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}>
+                                        {f.name}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {/* Other data source filters */}
+                                {ga4Filters.filter(f => f.type === 'other').filter(f => f.name.toLowerCase().includes(filterSearch.toLowerCase())).length > 0 && (
+                                  <div style={{ padding:'8px 0', borderTop:'1px solid #f5f5f5' }}>
+                                    <p style={{ fontSize:11, color:'#888', padding:'4px 14px 6px', fontWeight:600 }}>Filters using other data sources</p>
+                                    {ga4Filters.filter(f => f.type === 'other' && f.name.toLowerCase().includes(filterSearch.toLowerCase())).map(f => (
+                                      <div key={f.name}
+                                        onClick={() => { updateField('filters', [...((widgetData.filters as string[]) || []), f.name]); setShowFilterDropdown(false) }}
+                                        style={{ display:'flex', alignItems:'center', gap:10, padding:'9px 14px', fontSize:13, color:'#1a1a1a', cursor:'pointer', background:'#fff8f6' }}
+                                        onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = '#ffede8'}
+                                        onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = '#fff8f6'}>
+                                        <span style={{ fontSize:12, color:'#e65100' }}>≡</span>
+                                        {f.name}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {/* Show placeholder filters if API hasn't returned yet */}
+                                {!loadingFilters && ga4Filters.length === 0 && (
+                                  <div style={{ padding:'8px 0' }}>
+                                    <p style={{ fontSize:11, color:'#888', padding:'4px 14px 6px', fontWeight:600 }}>Common filters</p>
+                                    {['Sessions only','New users only','Mobile users','Desktop users','Organic traffic','Paid traffic','Direct traffic','Returning users'].filter(f => f.toLowerCase().includes(filterSearch.toLowerCase())).map(f => (
+                                      <div key={f}
+                                        onClick={() => { updateField('filters', [...((widgetData.filters as string[]) || []), f]); setShowFilterDropdown(false) }}
+                                        style={{ padding:'9px 14px', fontSize:13, color:'#1a1a1a', cursor:'pointer' }}
+                                        onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = '#f5f5f5'}
+                                        onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}>
+                                        {f}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Create a filter */}
+                              <div style={{ padding:'10px 14px', borderTop:'1px solid #f0f0f0', background:'#fff' }}>
+                                <button style={{ display:'flex', alignItems:'center', gap:8, color:'#1a85c8', fontSize:13, fontWeight:600, background:'none', border:'none', cursor:'pointer', padding:0 }}>
+                                  <Plus size={15}/> Create a filter
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
 
                         {/* Default date range filter */}
