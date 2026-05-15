@@ -2431,14 +2431,14 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
           'Session Medium','Session Source','Stream Name','Transaction ID',
         ]
         return (
-          <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:500, display:'flex', flexDirection:'column' as const }}
+          <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:500, display:'flex', alignItems:'center', justifyContent:'center', padding:24 }}
             onClick={() => setShowCreateFilter(false)}>
-            {/* Modal panel — bottom sheet style like Looker Studio */}
-            <div style={{ marginTop:'auto', background:'#fff', borderRadius:'12px 12px 0 0', boxShadow:'0 -8px 40px rgba(0,0,0,0.15)', maxHeight:'80vh', display:'flex', flexDirection:'column' as const }}
+            {/* Modal panel — centered fullscreen modal */}
+            <div style={{ margin:'auto', background:'#fff', borderRadius:12, boxShadow:'0 20px 60px rgba(0,0,0,0.25)', width:'100%', maxWidth:860, maxHeight:'90vh', display:'flex', flexDirection:'column' as const }}
               onClick={e => e.stopPropagation()}>
 
               {/* Header */}
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 24px', borderBottom:'1px solid #e0e0e0', flexShrink:0 }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'18px 32px', borderBottom:'1px solid #e0e0e0', flexShrink:0 }}>
                 <div style={{ display:'flex', alignItems:'center', gap:12 }}>
                   <span style={{ fontSize:16, fontWeight:600, color:'#1a1a1a' }}>Create Filter</span>
                   <span style={{ fontSize:11, background:'#e8eaf6', color:'#3949ab', borderRadius:4, padding:'2px 8px', fontWeight:600 }}>BETA</span>
@@ -2448,7 +2448,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                 </button>
               </div>
 
-              <div style={{ flex:1, overflowY:'auto' as const, padding:'20px 24px' }}>
+              <div style={{ flex:1, overflowY:'auto' as const, padding:'24px 32px' }}>
                 {/* Filter name + data source row */}
                 <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:24 }}>
                   <div style={{ position:'relative' as const, flex:'0 0 200px' }}>
@@ -2479,7 +2479,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                         ))}
                       </div>
                     )}
-                    <div style={{ display:'flex', alignItems:'flex-start', gap:10 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'nowrap' as const }}>
                       {/* Include/Exclude */}
                       <select value={clause.include ? 'include' : 'exclude'}
                         onChange={e => { const c = [...newFilterClauses]; c[idx] = {...c[idx], include: e.target.value === 'include'}; setNewFilterClauses(c) }}
@@ -2489,7 +2489,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                       </select>
 
                       {/* Field selector */}
-                      <div style={{ position:'relative' as const, flex:'0 0 220px' }}>
+                      <div style={{ position:'relative' as const, flex:'0 0 200px' }}>
                         <div onClick={() => setOpenClauseFieldIdx(openClauseFieldIdx === idx ? null : idx)}
                           style={{ border:'1px solid #ccc', borderRadius:6, padding:'10px 14px', fontSize:13, color: clause.field ? '#333' : '#999', background:'#fff', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
                           {clause.field ? (
@@ -2527,7 +2527,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                       </div>
 
                       {/* Operator — custom dropdown matching Looker Studio */}
-                      <div style={{ position:'relative' as const, flex:'0 0 160px' }}>
+                      <div style={{ position:'relative' as const, flex:'0 0 155px' }}>
                         <div onClick={() => { setOpenClauseValueIdx(null) }}
                           style={{ border:`1px solid ${openClauseValueIdx===null?'#ccc':'#ccc'}`, borderRadius:6, overflow:'hidden' }}>
                           <select value={clause.operator}
@@ -2598,11 +2598,11 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                       ) : (
                         <input value={clause.value} onChange={e => { const c = [...newFilterClauses]; c[idx] = {...c[idx], value: e.target.value}; setNewFilterClauses(c) }}
                           placeholder="example: value"
-                          style={{ flex:1, border:'1px solid #ccc', borderRadius:6, padding:'10px 14px', fontSize:13, color:'#333', outline:'none' }}/>
+                          style={{ flex:1, minWidth:0, border:'1px solid #ccc', borderRadius:6, padding:'10px 14px', fontSize:13, color:'#333', outline:'none' }}/>
                       )}
 
                       {/* OR button */}
-                      <button style={{ padding:'10px 16px', borderRadius:20, border:'1px solid #ccc', background:'transparent', color:'#666', fontSize:12, fontWeight:600, cursor:'pointer', flexShrink:0 }}>OR</button>
+                      <button style={{ padding:'8px 12px', borderRadius:20, border:'1px solid #ccc', background:'transparent', color:'#666', fontSize:12, fontWeight:600, cursor:'pointer', flexShrink:0, whiteSpace:'nowrap' as const }}>OR ▼</button>
 
                       {/* Remove clause */}
                       {newFilterClauses.length > 1 && (
@@ -2624,7 +2624,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
               </div>
 
               {/* Footer */}
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'flex-end', gap:12, padding:'14px 24px', borderTop:'1px solid #e0e0e0', flexShrink:0 }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'flex-end', gap:12, padding:'16px 32px', borderTop:'1px solid #e0e0e0', flexShrink:0, background:'#fafafa', borderRadius:'0 0 12px 12px' }}>
                 <button onClick={() => setShowCreateFilter(false)}
                   style={{ background:'none', border:'none', cursor:'pointer', color:'#666', fontSize:14, fontWeight:500 }}>Cancel</button>
                 <button
