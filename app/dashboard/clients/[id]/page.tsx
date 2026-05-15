@@ -2431,10 +2431,10 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
           'Session Medium','Session Source','Stream Name','Transaction ID',
         ]
         return (
-          <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:500, display:'flex', alignItems:'center', justifyContent:'center', padding:24 }}
+          <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.4)', zIndex:500, display:'flex', flexDirection:'column' as const }}
             onClick={() => setShowCreateFilter(false)}>
-            {/* Modal panel — centered fullscreen modal */}
-            <div style={{ margin:'auto', background:'#fff', borderRadius:12, boxShadow:'0 20px 60px rgba(0,0,0,0.25)', width:'100%', maxWidth:860, maxHeight:'90vh', display:'flex', flexDirection:'column' as const }}
+            {/* Modal panel — bottom half of screen, full width */}
+            <div style={{ marginTop:'auto', background:'#fff', borderRadius:'16px 16px 0 0', boxShadow:'0 -8px 40px rgba(0,0,0,0.2)', width:'100%', height:'50vh', display:'flex', flexDirection:'column' as const }}
               onClick={e => e.stopPropagation()}>
 
               {/* Header */}
@@ -2624,7 +2624,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
               </div>
 
               {/* Footer */}
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'flex-end', gap:12, padding:'16px 32px', borderTop:'1px solid #e0e0e0', flexShrink:0, background:'#fafafa', borderRadius:'0 0 12px 12px' }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'flex-end', gap:12, padding:'16px 32px', borderTop:'1px solid #e0e0e0', flexShrink:0, background:'#fafafa' }}>
                 <button onClick={() => setShowCreateFilter(false)}
                   style={{ background:'none', border:'none', cursor:'pointer', color:'#666', fontSize:14, fontWeight:500 }}>Cancel</button>
                 <button
