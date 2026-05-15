@@ -21,9 +21,9 @@ async function refreshToken(rt: string) {
 }
 
 export async function GET(request: NextRequest) {
-  const p = request.nextUrl.searchParams
-  const clientId = p.get('client_id')
-  const propertyId = p.get('property_id') // e.g. "properties/123456"
+  const params = request.nextUrl.searchParams
+  const clientId = params.get('client_id')
+  const propertyId = params.get('property_id') // "properties/123456"
 
   if (!clientId || !propertyId) {
     return NextResponse.json({ error: 'Missing params' }, { status: 400 })
@@ -50,59 +50,99 @@ export async function GET(request: NextRequest) {
 
     const filters: { name: string; type: 'ga4' | 'other' }[] = []
 
-    // Fetch GA4 audiences (these appear as filters in Looker Studio)
+    // 1. Fetch ALL GA4 Audiences (paginated) — these are the main filters in Looker Studio
     try {
-      const audienceRes = await fetch(
-        `https://analyticsadmin.googleapis.com/v1beta/${propertyId}/audiences`,
+      let pageToken: string | undefined
+      do {
+        const url = new URL(`https://analyticsadmin.googleapis.com/v1beta/${propertyId}/audiences`)
+        url.searchParams.set('pageSize', '200')
+        if (pageToken) url.searchParams.set('pageToken', pageToken)
+
+        const res = await fetch(url.toString(), {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        })
+        const data = await res.json()
+
+        console.log('Audiences API response status:', res.status)
+        if (data.error) console.log('Audiences error:', JSON.stringify(data.error))
+
+        for (const audience of data.audiences || []) {
+          if (audience.displayName) {
+            filters.push({ name: audience.displayName, type: 'ga4' })
+          }
+        }
+        pageToken = data.nextPageToken
+      } while (pageToken)
+    } catch (e) {
+      console.error('Audiences fetch error:', e)
+    }
+
+    // 2. Fetch GA4 channel groups as filter options
+    try {
+      const cgRes = await fetch(
+        `https://analyticsadmin.googleapis.com/v1alpha/${propertyId}/channelGroups`,
         { headers: { Authorization: `Bearer ${accessToken}` } }
       )
-      const audienceData = await audienceRes.json()
-      for (const audience of audienceData.audiences || []) {
-        filters.push({ name: audience.displayName, type: 'ga4' })
+      const cgData = await cgRes.json()
+      for (const cg of cgData.channelGroups || []) {
+        if (cg.displayName) {
+          filters.push({ name: cg.displayName, type: 'ga4' })
+        }
       }
     } catch {}
 
-    // Fetch GA4 custom segments (if available)
+    // 3. Fetch all channel group values from a runReport call
     try {
-      const segRes = await fetch(
+      const channelRes = await fetch(
         `https://analyticsdata.googleapis.com/v1beta/${propertyId}:runReport`,
         {
           method: 'POST',
           headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
+            dateRanges: [{ startDate: '90daysAgo', endDate: 'today' }],
             dimensions: [{ name: 'sessionDefaultChannelGroup' }],
             metrics: [{ name: 'sessions' }],
-            limit: 1,
+            orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+            limit: 20,
           }),
         }
       )
-      // Channel groups act as common filters
-      const segData = await segRes.json()
-      if (segData.rows) {
-        for (const row of segData.rows) {
-          const channel = row.dimensionValues?.[0]?.value
-          if (channel && channel !== '(not set)') {
-            filters.push({ name: `${channel} only`, type: 'ga4' })
+      const channelData = await channelRes.json()
+      for (const row of channelData.rows || []) {
+        const channel = row.dimensionValues?.[0]?.value
+        if (channel && channel !== '(not set)') {
+          const filterName = `${channel} traffic only`
+          if (!filters.find(f => f.name === filterName)) {
+            filters.push({ name: filterName, type: 'ga4' })
           }
         }
       }
     } catch {}
 
-    // Add standard GA4 filter presets
+    // 4. Always add standard GA4 presets (deduplicated)
     const presets = [
-      'New users', 'Returning users', 'Purchasers', 'Mobile users',
-      'Desktop users', 'Tablet users', 'Sessions with conversions',
-      'Engaged sessions only',
+      { name: 'New users only', type: 'ga4' as const },
+      { name: 'Returning users only', type: 'ga4' as const },
+      { name: 'Purchasers only', type: 'ga4' as const },
+      { name: 'Mobile users only', type: 'ga4' as const },
+      { name: 'Desktop users only', type: 'ga4' as const },
+      { name: 'Tablet users only', type: 'ga4' as const },
+      { name: 'Sessions with conversions', type: 'ga4' as const },
+      { name: 'Engaged sessions only', type: 'ga4' as const },
+      { name: 'Bounced sessions', type: 'ga4' as const },
+      { name: 'Users from US', type: 'ga4' as const },
     ]
-    for (const p of presets) {
-      if (!filters.find(f => f.name === p)) {
-        filters.push({ name: p, type: 'ga4' })
+    for (const preset of presets) {
+      if (!filters.find(f => f.name === preset.name)) {
+        filters.push(preset)
       }
     }
 
-    return NextResponse.json({ filters })
+    console.log(`Total filters found: ${filters.length}`)
+    return NextResponse.json({ filters, total: filters.length })
+
   } catch (err) {
+    console.error('Filter route error:', err)
     return NextResponse.json({ error: 'Failed to fetch filters', filters: [] }, { status: 500 })
   }
 }
