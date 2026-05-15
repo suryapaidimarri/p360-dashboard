@@ -2438,7 +2438,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
               onClick={e => e.stopPropagation()}>
 
               {/* Header */}
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'18px 32px', borderBottom:'1px solid #e0e0e0', flexShrink:0 }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 32px', borderBottom:'1px solid #e0e0e0', flexShrink:0, background:'#fff', position:'sticky' as const, top:0, zIndex:800 }}>
                 <div style={{ display:'flex', alignItems:'center', gap:12 }}>
                   <span style={{ fontSize:16, fontWeight:600, color:'#1a1a1a' }}>Create Filter</span>
                   <span style={{ fontSize:11, background:'#e8eaf6', color:'#3949ab', borderRadius:4, padding:'2px 8px', fontWeight:600 }}>BETA</span>
@@ -2448,7 +2448,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                 </button>
               </div>
 
-              <div style={{ flex:1, overflowY:'auto' as const, padding:'24px 32px' }}>
+              <div style={{ flex:1, overflowY:'auto' as const, padding:'24px 32px' }} onClick={() => { setOpenClauseValueIdx(null); setOpenClauseFieldIdx(null) }}>
                 {/* Filter name + data source row */}
                 <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:24 }}>
                   <div style={{ position:'relative' as const, flex:'0 0 200px' }}>
@@ -2490,7 +2490,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
                       {/* Field selector */}
                       <div style={{ position:'relative' as const, flex:'0 0 200px' }}>
-                        <div onClick={() => setOpenClauseFieldIdx(openClauseFieldIdx === idx ? null : idx)}
+                        <div onClick={e => { e.stopPropagation(); setOpenClauseFieldIdx(openClauseFieldIdx === idx ? null : idx) }}
                           style={{ border:'1px solid #ccc', borderRadius:6, padding:'10px 14px', fontSize:13, color: clause.field ? '#333' : '#999', background:'#fff', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
                           {clause.field ? (
                             <span style={{ display:'flex', alignItems:'center', gap:8 }}>
@@ -2501,7 +2501,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                           <ChevronDown size={14} style={{ color:'#666' }}/>
                         </div>
                         {openClauseFieldIdx === idx && (
-                          <div style={{ position:'absolute' as const, top:'100%', left:0, right:0, background:'#fff', border:'1px solid #e0e0e0', borderRadius:8, boxShadow:'0 8px 24px rgba(0,0,0,0.12)', zIndex:600, maxHeight:280, overflow:'hidden', display:'flex', flexDirection:'column' as const }}>
+                          <div onClick={e => e.stopPropagation()} style={{ position:'absolute' as const, top:'100%', left:0, right:0, background:'#fff', border:'1px solid #e0e0e0', borderRadius:8, boxShadow:'0 8px 24px rgba(0,0,0,0.12)', zIndex:600, maxHeight:220, overflow:'hidden', display:'flex', flexDirection:'column' as const }}>
                             <div style={{ padding:'8px 10px', borderBottom:'1px solid #f0f0f0' }}>
                               <div style={{ display:'flex', alignItems:'center', gap:8, background:'#f5f5f5', borderRadius:6, padding:'6px 10px' }}>
                                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="5" cy="5" r="4" stroke="#999" strokeWidth="1.5"/><path d="M9 9 L11 11" stroke="#999" strokeWidth="1.5" strokeLinecap="round"/></svg>
@@ -2548,7 +2548,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                       {clause.operator === 'In' ? (
                         <div style={{ position:'relative' as const, flex:1 }}>
                           <div
-                            onClick={() => {
+                            onClick={e => {
+                              e.stopPropagation()
                               setOpenClauseValueIdx(openClauseValueIdx === idx ? null : idx)
                               if (ga4EventNames.length === 0) loadGA4Events()
                             }}
@@ -2560,7 +2561,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                               : 'Any Value'}
                           </div>
                           {openClauseValueIdx === idx && (
-                            <div style={{ position:'absolute' as const, top:'calc(100% + 4px)', left:0, right:0, background:'#fff', border:'1px solid #e0e0e0', borderRadius:8, boxShadow:'0 8px 24px rgba(0,0,0,0.12)', zIndex:700, maxHeight:260, overflow:'hidden', display:'flex', flexDirection:'column' as const }}>
+                            <div onClick={e => e.stopPropagation()} style={{ position:'absolute' as const, top:'calc(100% + 4px)', left:0, right:0, background:'#fff', border:'1px solid #e0e0e0', borderRadius:8, boxShadow:'0 8px 24px rgba(0,0,0,0.12)', zIndex:700, maxHeight:200, overflow:'hidden', display:'flex', flexDirection:'column' as const }}>
                               <div style={{ padding:'8px 10px', borderBottom:'1px solid #f0f0f0' }}>
                                 <input autoFocus value={eventSearch} onChange={e => setEventSearch(e.target.value)}
                                   placeholder="Search events..." style={{ width:'100%', border:'1px solid #e0e0e0', borderRadius:6, padding:'6px 10px', fontSize:12, outline:'none', boxSizing:'border-box' as const }}/>
@@ -2624,7 +2625,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
               </div>
 
               {/* Footer */}
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'flex-end', gap:12, padding:'16px 32px', borderTop:'1px solid #e0e0e0', flexShrink:0, background:'#fafafa' }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'flex-end', gap:12, padding:'16px 32px', borderTop:'1px solid #e0e0e0', flexShrink:0, background:'#fafafa', position:'sticky' as const, bottom:0, zIndex:800 }}>
                 <button onClick={() => setShowCreateFilter(false)}
                   style={{ background:'none', border:'none', cursor:'pointer', color:'#666', fontSize:14, fontWeight:500 }}>Cancel</button>
                 <button
