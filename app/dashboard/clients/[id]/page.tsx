@@ -708,11 +708,12 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     setLoadingFilters(true)
     try {
       const res = await fetch(`/api/ga4/filters?client_id=${clientId}&property_id=${selectedProperty}`)
-      if (res.ok) {
-        const data = await res.json()
-        setGa4Filters(data.filters || [])
-      }
-    } catch {}
+      const data = await res.json()
+      console.log('GA4 Filters loaded:', data.total, 'filters', data.error || '')
+      setGa4Filters(data.filters || [])
+    } catch (e) {
+      console.error('loadGA4Filters error:', e)
+    }
     setLoadingFilters(false)
   }
 
