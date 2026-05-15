@@ -549,6 +549,11 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [showMappingModal, setShowMappingModal] = useState(false)
   const [showDsDropdown, setShowDsDropdown] = useState(false)
   const [showFilterDropdown, setShowFilterDropdown] = useState(false)
+  const [showCreateFilter, setShowCreateFilter] = useState(false)
+  const [newFilterName, setNewFilterName] = useState('')
+  const [newFilterClauses, setNewFilterClauses] = useState([{ include: true, field: '', operator: 'contains', value: '' }])
+  const [filterFieldSearch, setFilterFieldSearch] = useState('')
+  const [openClauseFieldIdx, setOpenClauseFieldIdx] = useState<number|null>(null)
   const [filterSearch, setFilterSearch] = useState('')
   const [ga4Filters, setGa4Filters] = useState<{name:string; type:'ga4'|'other'}[]>([])
   const [loadingFilters, setLoadingFilters] = useState(false)
@@ -2032,7 +2037,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
                               {/* Create a filter */}
                               <div style={{ padding:'10px 14px', borderTop:'1px solid #f0f0f0', background:'#fff' }}>
-                                <button style={{ display:'flex', alignItems:'center', gap:8, color:'#1a85c8', fontSize:13, fontWeight:600, background:'none', border:'none', cursor:'pointer', padding:0 }}>
+                                <button onClick={() => { setShowCreateFilter(true); setShowFilterDropdown(false); setNewFilterName(''); setNewFilterClauses([{ include: true, field: '', operator: 'contains', value: '' }]) }}
+                                  style={{ display:'flex', alignItems:'center', gap:8, color:'#1a85c8', fontSize:13, fontWeight:600, background:'none', border:'none', cursor:'pointer', padding:0 }}>
                                   <Plus size={15}/> Create a filter
                                 </button>
                               </div>
@@ -2396,6 +2402,169 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
           }}
         />
       )}
+
+      {/* Create Filter Modal */}
+      {showCreateFilter && (() => {
+        const OPERATORS = ['contains','exactly matches','starts with','ends with','is greater than','is less than','matches regex','is null']
+        const GA4_DIM_FIELDS = [
+          'Achievement ID','Action','Ad format','Ad Label','Ad source','Ad unit','Age',
+          'Aggregated Link URL','App version','Browser','Campaign','Campaign ID',
+          'City','Country','Date','Default Channel Group','Device Category',
+          'Event Name','Gender','Hostname','Landing Page','Operating System',
+          'Page Location','Page Title','Region','Screen Class','Session Campaign',
+          'Session Medium','Session Source','Stream Name','Transaction ID',
+        ]
+        return (
+          <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:500, display:'flex', flexDirection:'column' as const }}
+            onClick={() => setShowCreateFilter(false)}>
+            {/* Modal panel — bottom sheet style like Looker Studio */}
+            <div style={{ marginTop:'auto', background:'#fff', borderRadius:'12px 12px 0 0', boxShadow:'0 -8px 40px rgba(0,0,0,0.15)', maxHeight:'80vh', display:'flex', flexDirection:'column' as const }}
+              onClick={e => e.stopPropagation()}>
+
+              {/* Header */}
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 24px', borderBottom:'1px solid #e0e0e0', flexShrink:0 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                  <span style={{ fontSize:16, fontWeight:600, color:'#1a1a1a' }}>Create Filter</span>
+                  <span style={{ fontSize:11, background:'#e8eaf6', color:'#3949ab', borderRadius:4, padding:'2px 8px', fontWeight:600 }}>BETA</span>
+                </div>
+                <button onClick={() => setShowCreateFilter(false)} style={{ display:'flex', alignItems:'center', gap:6, background:'none', border:'none', cursor:'pointer', color:'#666', fontSize:13, fontWeight:500 }}>
+                  <X size={16}/> CLOSE
+                </button>
+              </div>
+
+              <div style={{ flex:1, overflowY:'auto' as const, padding:'20px 24px' }}>
+                {/* Filter name + data source row */}
+                <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:24 }}>
+                  <div style={{ position:'relative' as const, flex:'0 0 200px' }}>
+                    <label style={{ position:'absolute' as const, top:-8, left:12, fontSize:11, color:'#666', background:'#fff', padding:'0 4px' }}>Name</label>
+                    <input value={newFilterName} onChange={e => setNewFilterName(e.target.value)}
+                      placeholder="Filter name"
+                      style={{ width:'100%', border:'1px solid #ccc', borderRadius:6, padding:'10px 14px', fontSize:13, outline:'none', color:'#333', boxSizing:'border-box' as const }}/>
+                  </div>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, background:'#f5f5f5', borderRadius:20, padding:'7px 14px', border:'1px solid #e0e0e0' }}>
+                    <img src="https://www.google.com/s2/favicons?domain=analytics.google.com&sz=32" style={{ width:16, height:16 }} alt=""/>
+                    <span style={{ fontSize:13, color:'#333', fontWeight:500 }}>{mappingPropName || 'GA4 Property'}</span>
+                  </div>
+                  <label style={{ display:'flex', alignItems:'center', gap:8, fontSize:13, color:'#333', cursor:'pointer' }}>
+                    <div style={{ width:36, height:20, borderRadius:10, background:'#1a85c8', position:'relative', cursor:'pointer' }}>
+                      <div style={{ width:16, height:16, borderRadius:'50%', background:'#fff', position:'absolute', top:2, left:18, boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}/>
+                    </div>
+                    Show suggested values while typing
+                  </label>
+                </div>
+
+                {/* Filter clauses */}
+                {newFilterClauses.map((clause, idx) => (
+                  <div key={idx} style={{ marginBottom:12 }}>
+                    {idx > 0 && (
+                      <div style={{ display:'flex', gap:8, marginBottom:12 }}>
+                        {['AND','OR'].map(op => (
+                          <button key={op} style={{ padding:'4px 16px', borderRadius:20, border:'1px solid #1a85c8', background: op==='AND' ? '#1a85c8' : 'transparent', color: op==='AND' ? '#fff' : '#1a85c8', fontSize:12, fontWeight:600, cursor:'pointer' }}>{op}</button>
+                        ))}
+                      </div>
+                    )}
+                    <div style={{ display:'flex', alignItems:'flex-start', gap:10 }}>
+                      {/* Include/Exclude */}
+                      <select value={clause.include ? 'include' : 'exclude'}
+                        onChange={e => { const c = [...newFilterClauses]; c[idx] = {...c[idx], include: e.target.value === 'include'}; setNewFilterClauses(c) }}
+                        style={{ border:'1px solid #ccc', borderRadius:6, padding:'10px 14px', fontSize:13, color:'#333', background:'#fff', cursor:'pointer', outline:'none', minWidth:120 }}>
+                        <option value="include">Include</option>
+                        <option value="exclude">Exclude</option>
+                      </select>
+
+                      {/* Field selector */}
+                      <div style={{ position:'relative' as const, flex:'0 0 220px' }}>
+                        <div onClick={() => setOpenClauseFieldIdx(openClauseFieldIdx === idx ? null : idx)}
+                          style={{ border:'1px solid #ccc', borderRadius:6, padding:'10px 14px', fontSize:13, color: clause.field ? '#333' : '#999', background:'#fff', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                          {clause.field ? (
+                            <span style={{ display:'flex', alignItems:'center', gap:8 }}>
+                              <span style={{ fontSize:10, fontWeight:700, color:'#388e3c', background:'#c8e6c9', borderRadius:3, padding:'1px 5px' }}>ABC</span>
+                              {clause.field}
+                            </span>
+                          ) : 'Select a field'}
+                          <ChevronDown size={14} style={{ color:'#666' }}/>
+                        </div>
+                        {openClauseFieldIdx === idx && (
+                          <div style={{ position:'absolute' as const, top:'100%', left:0, right:0, background:'#fff', border:'1px solid #e0e0e0', borderRadius:8, boxShadow:'0 8px 24px rgba(0,0,0,0.12)', zIndex:600, maxHeight:280, overflow:'hidden', display:'flex', flexDirection:'column' as const }}>
+                            <div style={{ padding:'8px 10px', borderBottom:'1px solid #f0f0f0' }}>
+                              <div style={{ display:'flex', alignItems:'center', gap:8, background:'#f5f5f5', borderRadius:6, padding:'6px 10px' }}>
+                                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="5" cy="5" r="4" stroke="#999" strokeWidth="1.5"/><path d="M9 9 L11 11" stroke="#999" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                                <input autoFocus value={filterFieldSearch} onChange={e => setFilterFieldSearch(e.target.value)}
+                                  placeholder="Search" style={{ background:'transparent', border:'none', outline:'none', fontSize:12, color:'#333', width:'100%' }}/>
+                              </div>
+                            </div>
+                            <div style={{ overflowY:'auto' as const, flex:1 }}>
+                              <p style={{ fontSize:11, color:'#555', padding:'6px 12px 2px', fontWeight:600 }}>Default group</p>
+                              {GA4_DIM_FIELDS.filter(f => f.toLowerCase().includes(filterFieldSearch.toLowerCase())).map(field => (
+                                <div key={field}
+                                  onClick={() => { const c = [...newFilterClauses]; c[idx] = {...c[idx], field}; setNewFilterClauses(c); setOpenClauseFieldIdx(null); setFilterFieldSearch('') }}
+                                  style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 12px', cursor:'pointer', fontSize:13, color:'#1a1a1a' }}
+                                  onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = '#e8f5e9'}
+                                  onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}>
+                                  <span style={{ fontSize:10, fontWeight:700, color:'#388e3c', background:'#c8e6c9', borderRadius:3, padding:'1px 5px', flexShrink:0 }}>ABC</span>
+                                  {field}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Operator */}
+                      <select value={clause.operator}
+                        onChange={e => { const c = [...newFilterClauses]; c[idx] = {...c[idx], operator: e.target.value}; setNewFilterClauses(c) }}
+                        style={{ border:'1px solid #ccc', borderRadius:6, padding:'10px 14px', fontSize:13, color:'#333', background:'#fff', cursor:'pointer', outline:'none', flex:1 }}>
+                        {OPERATORS.map(op => <option key={op} value={op}>{op}</option>)}
+                      </select>
+
+                      {/* Value input */}
+                      <input value={clause.value} onChange={e => { const c = [...newFilterClauses]; c[idx] = {...c[idx], value: e.target.value}; setNewFilterClauses(c) }}
+                        placeholder="Value"
+                        style={{ flex:1, border:'1px solid #ccc', borderRadius:6, padding:'10px 14px', fontSize:13, color:'#333', outline:'none' }}/>
+
+                      {/* OR button */}
+                      <button style={{ padding:'10px 16px', borderRadius:20, border:'1px solid #ccc', background:'transparent', color:'#666', fontSize:12, fontWeight:600, cursor:'pointer', flexShrink:0 }}>OR</button>
+
+                      {/* Remove clause */}
+                      {newFilterClauses.length > 1 && (
+                        <button onClick={() => setNewFilterClauses(prev => prev.filter((_, i) => i !== idx))}
+                          style={{ background:'none', border:'none', cursor:'pointer', color:'#999', padding:'10px 4px' }}><X size={16}/></button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Add AND clause */}
+                <button onClick={() => setNewFilterClauses(prev => [...prev, { include: true, field: '', operator: 'contains', value: '' }])}
+                  style={{ display:'flex', alignItems:'center', gap:8, marginTop:12, background:'transparent', border:'1px solid #1a85c8', borderRadius:20, padding:'7px 16px', color:'#1a85c8', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+                  AND
+                  <ChevronDown size={14}/>
+                </button>
+
+                <p style={{ marginTop:16, fontSize:12, color:'#999' }}>This filter has {newFilterClauses.length} clause{newFilterClauses.length > 1 ? 's' : ''}</p>
+              </div>
+
+              {/* Footer */}
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'flex-end', gap:12, padding:'14px 24px', borderTop:'1px solid #e0e0e0', flexShrink:0 }}>
+                <button onClick={() => setShowCreateFilter(false)}
+                  style={{ background:'none', border:'none', cursor:'pointer', color:'#666', fontSize:14, fontWeight:500 }}>Cancel</button>
+                <button
+                  disabled={!newFilterName.trim() || newFilterClauses.some(c => !c.field)}
+                  onClick={() => {
+                    if (!newFilterName.trim()) return
+                    // Save filter to ga4Filters list and apply to widget
+                    setGa4Filters(prev => [...prev, { name: newFilterName.trim(), type: 'ga4' as const }])
+                    updateField('filters', [...((editingWidget as any)?.filters || []), newFilterName.trim()])
+                    setShowCreateFilter(false)
+                  }}
+                  style={{ background: (!newFilterName.trim() || newFilterClauses.some(c => !c.field)) ? '#ccc' : '#1a85c8', border:'none', borderRadius:6, padding:'10px 24px', color:'#fff', fontSize:14, fontWeight:600, cursor: (!newFilterName.trim() || newFilterClauses.some(c => !c.field)) ? 'not-allowed' : 'pointer' }}>
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Map Data Sources Modal */}
       {showMappingModal && (
