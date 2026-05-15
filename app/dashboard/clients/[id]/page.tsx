@@ -554,6 +554,10 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [newFilterClauses, setNewFilterClauses] = useState([{ include: true, field: '', operator: 'contains', value: '' }])
   const [filterFieldSearch, setFilterFieldSearch] = useState('')
   const [openClauseFieldIdx, setOpenClauseFieldIdx] = useState<number|null>(null)
+  const [openClauseValueIdx, setOpenClauseValueIdx] = useState<number|null>(null)
+  const [ga4EventNames, setGa4EventNames] = useState<string[]>([])
+  const [eventSearch, setEventSearch] = useState('')
+  const [selectedEventValues, setSelectedEventValues] = useState<{[idx: number]: string[]}>({})
   const [filterSearch, setFilterSearch] = useState('')
   const [ga4Filters, setGa4Filters] = useState<{name:string; type:'ga4'|'other'}[]>([])
   const [loadingFilters, setLoadingFilters] = useState(false)
@@ -707,6 +711,18 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       localStorage.setItem(LS_WIDGETS_KEY, JSON.stringify(toSave))
     } catch {}
   }, [widgets])
+
+  async function loadGA4Events() {
+    if (!connection?.connected || !selectedProperty) return
+    try {
+      const res = await fetch(`/api/ga4/custom?client_id=${clientId}&property_id=${selectedProperty}&dimensions=eventName&metrics=eventCount&start_date=30daysAgo&end_date=today`)
+      if (res.ok) {
+        const data = await res.json()
+        const events = (data.rows || []).map((r: any) => r.dimensionValues?.[0]?.value).filter(Boolean)
+        setGa4EventNames(events)
+      }
+    } catch {}
+  }
 
   async function loadGA4Filters() {
     if (!connection?.connected || !selectedProperty) return
@@ -2405,7 +2421,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
       {/* Create Filter Modal */}
       {showCreateFilter && (() => {
-        const OPERATORS = ['contains','exactly matches','starts with','ends with','is greater than','is less than','matches regex','is null']
+        const OPERATORS = ['Equal to (=)','Contains','Starts with','RegExp Match','RegExp Contains','In','Is Null']
         const GA4_DIM_FIELDS = [
           'Achievement ID','Action','Ad format','Ad Label','Ad source','Ad unit','Age',
           'Aggregated Link URL','App version','Browser','Campaign','Campaign ID',
@@ -2510,17 +2526,80 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                         )}
                       </div>
 
-                      {/* Operator */}
-                      <select value={clause.operator}
-                        onChange={e => { const c = [...newFilterClauses]; c[idx] = {...c[idx], operator: e.target.value}; setNewFilterClauses(c) }}
-                        style={{ border:'1px solid #ccc', borderRadius:6, padding:'10px 14px', fontSize:13, color:'#333', background:'#fff', cursor:'pointer', outline:'none', flex:1 }}>
-                        {OPERATORS.map(op => <option key={op} value={op}>{op}</option>)}
-                      </select>
+                      {/* Operator — custom dropdown matching Looker Studio */}
+                      <div style={{ position:'relative' as const, flex:'0 0 160px' }}>
+                        <div onClick={() => { setOpenClauseValueIdx(null) }}
+                          style={{ border:`1px solid ${openClauseValueIdx===null?'#ccc':'#ccc'}`, borderRadius:6, overflow:'hidden' }}>
+                          <select value={clause.operator}
+                            onChange={e => {
+                              const c = [...newFilterClauses]
+                              c[idx] = {...c[idx], operator: e.target.value, value: ''}
+                              setNewFilterClauses(c)
+                              setSelectedEventValues(prev => ({...prev, [idx]: []}))
+                              if (e.target.value === 'In') loadGA4Events()
+                            }}
+                            style={{ width:'100%', border:'none', padding:'10px 14px', fontSize:13, color:'#333', background:'#fff', cursor:'pointer', outline:'none', appearance:'auto' }}>
+                            {OPERATORS.map(op => <option key={op} value={op}>{op}</option>)}
+                          </select>
+                        </div>
+                      </div>
 
-                      {/* Value input */}
-                      <input value={clause.value} onChange={e => { const c = [...newFilterClauses]; c[idx] = {...c[idx], value: e.target.value}; setNewFilterClauses(c) }}
-                        placeholder="Value"
-                        style={{ flex:1, border:'1px solid #ccc', borderRadius:6, padding:'10px 14px', fontSize:13, color:'#333', outline:'none' }}/>
+                      {/* Value field — checkbox multi-select for "In", text input otherwise */}
+                      {clause.operator === 'In' ? (
+                        <div style={{ position:'relative' as const, flex:1 }}>
+                          <div
+                            onClick={() => {
+                              setOpenClauseValueIdx(openClauseValueIdx === idx ? null : idx)
+                              if (ga4EventNames.length === 0) loadGA4Events()
+                            }}
+                            style={{ border:'1px solid #1a85c8', borderRadius:6, padding:'10px 14px', fontSize:13, color: (selectedEventValues[idx]||[]).length > 0 ? '#333' : '#999', background:'#fff', cursor:'pointer', minHeight:42, display:'flex', alignItems:'center', flexWrap:'wrap' as const, gap:4 }}>
+                            {(selectedEventValues[idx]||[]).length > 0
+                              ? (selectedEventValues[idx]||[]).map((v: string) => (
+                                  <span key={v} style={{ background:'#e8f0fe', color:'#1a85c8', borderRadius:4, padding:'2px 8px', fontSize:11, fontWeight:500 }}>{v}</span>
+                                ))
+                              : 'Any Value'}
+                          </div>
+                          {openClauseValueIdx === idx && (
+                            <div style={{ position:'absolute' as const, top:'calc(100% + 4px)', left:0, right:0, background:'#fff', border:'1px solid #e0e0e0', borderRadius:8, boxShadow:'0 8px 24px rgba(0,0,0,0.12)', zIndex:700, maxHeight:260, overflow:'hidden', display:'flex', flexDirection:'column' as const }}>
+                              <div style={{ padding:'8px 10px', borderBottom:'1px solid #f0f0f0' }}>
+                                <input autoFocus value={eventSearch} onChange={e => setEventSearch(e.target.value)}
+                                  placeholder="Search events..." style={{ width:'100%', border:'1px solid #e0e0e0', borderRadius:6, padding:'6px 10px', fontSize:12, outline:'none', boxSizing:'border-box' as const }}/>
+                              </div>
+                              <div style={{ overflowY:'auto' as const, flex:1 }}>
+                                {ga4EventNames.length === 0 && (
+                                  <div style={{ padding:'12px', fontSize:12, color:'#999', textAlign:'center' as const }}>Loading events...</div>
+                                )}
+                                {(ga4EventNames.length > 0 ? ga4EventNames : []).filter((e: string) => e.toLowerCase().includes(eventSearch.toLowerCase())).map((eventName: string) => {
+                                  const isChecked = (selectedEventValues[idx]||[]).includes(eventName)
+                                  return (
+                                    <div key={eventName}
+                                      onClick={() => {
+                                        const current = selectedEventValues[idx] || []
+                                        const updated = isChecked ? current.filter((v: string) => v !== eventName) : [...current, eventName]
+                                        setSelectedEventValues(prev => ({...prev, [idx]: updated}))
+                                        const c = [...newFilterClauses]
+                                        c[idx] = {...c[idx], value: updated.join(',')}
+                                        setNewFilterClauses(c)
+                                      }}
+                                      style={{ display:'flex', alignItems:'center', gap:10, padding:'9px 14px', cursor:'pointer', fontSize:13, color:'#1a1a1a' }}
+                                      onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = '#f5f5f5'}
+                                      onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}>
+                                      <div style={{ width:16, height:16, border:`2px solid ${isChecked?'#1a85c8':'#ccc'}`, borderRadius:3, background:isChecked?'#1a85c8':'#fff', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                                        {isChecked && <span style={{ color:'#fff', fontSize:10, fontWeight:700 }}>✓</span>}
+                                      </div>
+                                      {eventName}
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <input value={clause.value} onChange={e => { const c = [...newFilterClauses]; c[idx] = {...c[idx], value: e.target.value}; setNewFilterClauses(c) }}
+                          placeholder="example: value"
+                          style={{ flex:1, border:'1px solid #ccc', borderRadius:6, padding:'10px 14px', fontSize:13, color:'#333', outline:'none' }}/>
+                      )}
 
                       {/* OR button */}
                       <button style={{ padding:'10px 16px', borderRadius:20, border:'1px solid #ccc', background:'transparent', color:'#666', fontSize:12, fontWeight:600, cursor:'pointer', flexShrink:0 }}>OR</button>
