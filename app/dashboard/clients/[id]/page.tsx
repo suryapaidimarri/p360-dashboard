@@ -596,6 +596,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [showFilterDropdown, setShowFilterDropdown] = useState(false)
   const [showCreateFilter, setShowCreateFilter] = useState(false)
   const [filterJustSaved, setFilterJustSaved] = useState(false)
+  const [editingFilterName, setEditingFilterName] = useState<string|null>(null)
   const [newFilterName, setNewFilterName] = useState('')
   const [newFilterClauses, setNewFilterClauses] = useState([{ include: true, field: '', operator: 'contains', value: '' }])
   const [filterFieldSearch, setFilterFieldSearch] = useState('')
@@ -1997,11 +1998,27 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                           {((widgetData.filters as string[]) || []).length > 0 && (
                             <div style={{ display:'flex', flexDirection:'column' as const, gap:6, marginBottom:8 }}>
                               {((widgetData.filters as string[]) || []).map((f: string, i: number) => (
-                                <div key={i} style={{ display:'flex', alignItems:'center', gap:8, background:'#fff3e0', border:'1px solid #ffe0b2', borderRadius:20, padding:'5px 12px' }}>
+                                <div key={i} style={{ display:'flex', alignItems:'center', gap:8, background:'#fff3e0', border:'1px solid #ffe0b2', borderRadius:20, padding:'5px 12px', cursor:'pointer' }}
+                                  onClick={() => {
+                                    // Find saved filter definition and open for editing
+                                    const saved = ga4Filters.find((gf: any) => gf.name === f)
+                                    setEditingFilterName(f)
+                                    setNewFilterName(f)
+                                    if (saved && (saved as any).clauses?.length > 0) {
+                                      setNewFilterClauses((saved as any).clauses.map((c: any) => ({ include: c.include, field: c.field, operator: c.operator, value: c.value || '' })))
+                                      const vals: {[idx: number]: string[]} = {}
+                                      ;(saved as any).clauses.forEach((c: any, idx: number) => { if (c.values?.length > 0) vals[idx] = c.values })
+                                      setSelectedEventValues(vals)
+                                    } else {
+                                      setNewFilterClauses([{ include: true, field: '', operator: 'contains', value: '' }])
+                                      setSelectedEventValues({})
+                                    }
+                                    setShowCreateFilter(true)
+                                  }}>
                                   <span style={{ fontSize:11 }}>≡</span>
-                                  <span style={{ flex:1, fontSize:12, color:'#e65100' }}>{f}</span>
-                                  <button onClick={() => updateField('filters', ((widgetData.filters as string[]) || []).filter((_: string, j: number) => j !== i))}
-                                    style={{ background:'none', border:'none', cursor:'pointer', color:'#999', padding:0 }}><X size={11}/></button>
+                                  <span style={{ flex:1, fontSize:12, color:'#e65100', fontWeight:500 }}>{f}</span>
+                                  <button onClick={e => { e.stopPropagation(); updateField('filters', ((widgetData.filters as string[]) || []).filter((_: string, j: number) => j !== i)) }}
+                                    style={{ background:'none', border:'none', cursor:'pointer', color:'#bbb', padding:0 }}><X size={11}/></button>
                                 </div>
                               ))}
                             </div>
@@ -2725,7 +2742,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                     }, 900)
                   }}
                   style={{ background: filterJustSaved ? '#20BB71' : !newFilterName.trim() ? '#ccc' : '#1a85c8', border:'none', borderRadius:6, padding:'10px 24px', color:'#fff', fontSize:14, fontWeight:600, cursor: !newFilterName.trim() ? 'not-allowed' : 'pointer', transition:'background 0.2s', minWidth:80 }}>
-                  {filterJustSaved ? '✓ Saved!' : 'Save'}
+                  {filterJustSaved ? '✓ Saved!' : editingFilterName ? 'Update Filter' : 'Save'}
                 </button>
               </div>
             </div>
