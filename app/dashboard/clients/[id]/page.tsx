@@ -2079,10 +2079,20 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                     const metrics: string[] = widgetData.metrics || []
 
                     const updateField = (key: string, val: any) => {
-                      const updated = { ...editingWidget, [key]: val } as any
-                      setEditingWidget(updated)
-                      setWidgets(prev => prev.map(w => w.id === updated.id ? updated : w))
-
+                      setEditingWidget(prev => {
+                        if (!prev) return prev
+                        const updated = { ...prev, [key]: val } as any
+                        setWidgets(ws => ws.map(w => w.id === updated.id ? updated : w))
+                        return updated
+                      })
+                    }
+                    const updateMulti = (patch: Record<string, any>) => {
+                      setEditingWidget(prev => {
+                        if (!prev) return prev
+                        const updated = { ...prev, ...patch } as any
+                        setWidgets(ws => ws.map(w => w.id === updated.id ? updated : w))
+                        return updated
+                      })
                     }
 
                     return (
@@ -2462,7 +2472,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                                 side === 'start' ? setCalStartView(nv) : setCalEndView(nv)
                               }
                               const cells: React.ReactNode[] = []
-                              for (let i = 0; i < fd; i++) cells.push(<div key={'e'+i} style={{ height:32 }}/>)
+                              for (let i = 0; i < fd; i++) cells.push(<div key={'e'+i} style={{ height:38 }}/>)
                               for (let d = 1; d <= dim; d++) {
                                 const t   = new Date(y, m, d)
                                 const iso = fmtIso(t)
@@ -2477,9 +2487,9 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                                       else setCalTempEnd(iso)
                                     }}
                                     style={{
-                                      height:32, borderRadius:'50%',
+                                      height:38, borderRadius:'50%',
                                       display:'flex', alignItems:'center', justifyContent:'center',
-                                      fontSize:13, cursor:'pointer',
+                                      fontSize:14, cursor:'pointer',
                                       fontWeight: isSt || isEn ? 700 : 400,
                                       background: isSt || isEn ? ALLOY.blue1 : inRange ? ALLOY.blue4 : 'none',
                                       color: isSt || isEn ? ALLOY.white : inRange ? ALLOY.blue1 : ALLOY.ink,
@@ -2493,8 +2503,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                                 )
                               }
                               return (
-                                <div style={{ flex:'1 1 0', minWidth:0 }}>
-                                  <p style={{ fontSize:13, fontWeight:700, color:ALLOY.ink, marginBottom:10, textAlign:'center' as const }}>{label}</p>
+                                <div style={{ padding:'0 12px' }}>
+                                  <p style={{ fontSize:14, fontWeight:700, color:ALLOY.ink, marginBottom:12, textAlign:'center' as const }}>{label}</p>
                                   <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
                                     <div style={{ display:'flex', alignItems:'center', gap:3, cursor:'pointer' }}>
                                       <span style={{ fontSize:12, fontWeight:700, color:ALLOY.ink }}>{MOS[m]} {y}</span>
@@ -2506,13 +2516,13 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                                     </div>
                                   </div>
                                   {/* Day headers */}
-                                  <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', marginBottom:2 }}>
+                                  <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', marginBottom:4 }}>
                                     {['S','M','T','W','T','F','S'].map((d,i) => (
-                                      <div key={i} style={{ textAlign:'center' as const, fontSize:11, color:ALLOY.mute, fontWeight:500, paddingBottom:4 }}>{d}</div>
+                                      <div key={i} style={{ textAlign:'center' as const, fontSize:12, color:ALLOY.mute, fontWeight:500, paddingBottom:6 }}>{d}</div>
                                     ))}
                                   </div>
                                   {/* Day cells */}
-                                  <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', rowGap:2 }}>
+                                  <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', rowGap:4 }}>
                                     {cells}
                                   </div>
                                 </div>
@@ -2544,58 +2554,50 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                                   <ChevronDown size={12} style={{ color:ALLOY.mute, flexShrink:0 }}/>
                                 </button>
 
-                                {/* Calendar popup */}
+                                {/* Calendar popup — full-screen overlay so it's not constrained by 300px panel */}
                                 {showCalendarPicker && (
                                   <div
-                                    style={{
-                                      background:ALLOY.white, border:`1px solid ${ALLOY.line}`,
-                                      borderRadius:4, boxShadow:'0 8px 32px rgba(0,0,0,0.15)',
-                                      padding:16, marginBottom:8, overflow:'hidden',
-                                    }}
-                                    onClick={e => e.stopPropagation()}
+                                    style={{ position:'fixed' as const, inset:0, zIndex:9999, background:'rgba(0,0,0,0.3)', display:'flex', alignItems:'center', justifyContent:'center' }}
+                                    onClick={() => { setCalTempStart(committedStart); setCalTempEnd(committedEnd); setShowCalendarPicker(false) }}
                                   >
-                                    {/* Fixed dropdown */}
-                                    <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:12 }}>
-                                      <div style={{ display:'flex', alignItems:'center', gap:6, background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'5px 10px', fontSize:12, color:ALLOY.ink, cursor:'pointer' }}>
-                                        Fixed <ChevronDown size={12} style={{ color:ALLOY.mute }}/>
+                                    <div
+                                      style={{ background:ALLOY.white, borderRadius:8, boxShadow:'0 20px 60px rgba(0,0,0,0.25)', padding:24, width:680, maxWidth:'95vw' }}
+                                      onClick={e => e.stopPropagation()}
+                                    >
+                                      {/* Fixed dropdown top-right */}
+                                      <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:16 }}>
+                                        <div style={{ display:'flex', alignItems:'center', gap:6, background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:4, padding:'7px 14px', fontSize:13, color:ALLOY.ink, cursor:'pointer', fontWeight:500 }}>
+                                          Fixed <ChevronDown size={13} style={{ color:ALLOY.mute }}/>
+                                        </div>
                                       </div>
-                                    </div>
-
-                                    {/* Two calendars — stacked vertically to fit in 300px panel */}
-                                    <div style={{ display:'flex', flexDirection:'column' as const, gap:20 }}>
-                                      {renderMonth(calStartView, 'start', 'Start Date')}
-                                      <div style={{ height:1, background:ALLOY.line }}/>
-                                      {renderMonth(calEndView,   'end',   'End Date')}
-                                    </div>
-
-                                    {/* Footer */}
-                                    <div style={{ display:'flex', justifyContent:'flex-end', alignItems:'center', gap:12, borderTop:`1px solid ${ALLOY.line}`, paddingTop:12, marginTop:14 }}>
-                                      <button
-                                        onClick={() => {
-                                          // Revert temp state and close
-                                          setCalTempStart(committedStart)
-                                          setCalTempEnd(committedEnd)
-                                          setShowCalendarPicker(false)
-                                        }}
-                                        style={{ background:'none', border:'none', color:ALLOY.blue1, cursor:'pointer', fontSize:14, fontWeight:600, padding:'6px 12px' }}
-                                      >
-                                        Cancel
-                                      </button>
-                                      <button
-                                        onClick={() => {
-                                          // Commit temp dates → widget field → fetch GA4
-                                          const finalStart = calTempStart || committedStart
-                                          const finalEnd   = calTempEnd   || committedEnd
-                                          updateField('dateStart', finalStart)
-                                          updateField('dateEnd',   finalEnd)
-                                          setShowCalendarPicker(false)
-                                          // Refresh GA4 data with the selected ISO date range
-                                          fetchGA4(undefined, finalStart, finalEnd)
-                                        }}
-                                        style={{ background:ALLOY.blue1, border:'none', borderRadius:999, color:ALLOY.white, cursor:'pointer', fontSize:14, fontWeight:600, padding:'8px 24px' }}
-                                      >
-                                        Apply
-                                      </button>
+                                      {/* Two months side by side */}
+                                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1px 1fr', gap:0, alignItems:'start' }}>
+                                        {renderMonth(calStartView, 'start', 'Start Date')}
+                                        <div style={{ background:ALLOY.line, alignSelf:'stretch' }}/>
+                                        {renderMonth(calEndView,   'end',   'End Date')}
+                                      </div>
+                                      {/* Footer */}
+                                      <div style={{ display:'flex', justifyContent:'flex-end', alignItems:'center', gap:16, borderTop:`1px solid ${ALLOY.line}`, paddingTop:16, marginTop:20 }}>
+                                        <button
+                                          onClick={() => { setCalTempStart(committedStart); setCalTempEnd(committedEnd); setShowCalendarPicker(false) }}
+                                          style={{ background:'none', border:'none', color:ALLOY.blue1, cursor:'pointer', fontSize:15, fontWeight:600, padding:'8px 16px' }}
+                                        >
+                                          Cancel
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            const finalStart = calTempStart || committedStart
+                                            const finalEnd   = calTempEnd   || committedEnd
+                                            // Atomic update — both dates in one state update
+                                            updateMulti({ dateStart: finalStart, dateEnd: finalEnd })
+                                            setShowCalendarPicker(false)
+                                            fetchGA4(undefined, finalStart, finalEnd)
+                                          }}
+                                          style={{ background:ALLOY.blue1, border:'none', borderRadius:999, color:ALLOY.white, cursor:'pointer', fontSize:15, fontWeight:600, padding:'10px 28px' }}
+                                        >
+                                          Apply
+                                        </button>
+                                      </div>
                                     </div>
                                   </div>
                                 )}
