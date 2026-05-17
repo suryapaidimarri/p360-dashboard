@@ -608,6 +608,9 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [selectedEventValues, setSelectedEventValues] = useState<{[idx: number]: string[]}>({})
   const [filterSearch, setFilterSearch] = useState('')
   const [ga4Filters, setGa4Filters] = useState<{name:string; type:'ga4'|'other'}[]>([])
+  const [userFilters, setUserFilters] = useState<any[]>(() => {
+    try { const v = localStorage.getItem('alloy_user_filters'); return v ? JSON.parse(v) : [] } catch { return [] }
+  })
   const [loadingFilters, setLoadingFilters] = useState(false)
   const [showDimDropdown, setShowDimDropdown] = useState(false)
   const [showMetDropdown, setShowMetDropdown] = useState(false)
@@ -2000,8 +2003,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                               {((widgetData.filters as string[]) || []).map((f: string, i: number) => (
                                 <div key={i} style={{ display:'flex', alignItems:'center', gap:8, background:'#fff3e0', border:'1px solid #ffe0b2', borderRadius:20, padding:'5px 12px', cursor:'pointer' }}
                                   onClick={() => {
-                                    // Find saved filter definition and open for editing
-                                    const saved = ga4Filters.find((gf: any) => gf.name === f)
+                                    // Find saved filter definition — check userFilters first, then ga4Filters
+                                    const saved = userFilters.find((gf: any) => gf.name === f) || ga4Filters.find((gf: any) => gf.name === f)
                                     setEditingFilterName(f)
                                     setNewFilterName(f)
                                     if (saved && (saved as any).clauses?.length > 0) {
@@ -2053,6 +2056,24 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                               <div style={{ overflowY:'auto' as const, maxHeight:300 }}>
                                 {loadingFilters && (
                                   <div style={{ padding:'16px', textAlign:'center' as const, fontSize:12, color:'#999' }}>Loading filters...</div>
+                                )}
+
+                                {/* User-created filters */}
+                                {userFilters.filter((f: any) => f.name.toLowerCase().includes(filterSearch.toLowerCase())).length > 0 && (
+                                  <div style={{ padding:'8px 0', borderBottom:'1px solid #f5f5f5' }}>
+                                    <p style={{ fontSize:11, color:'#888', padding:'4px 14px 6px', fontWeight:600 }}>Your filters</p>
+                                    {userFilters.filter((f: any) => f.name.toLowerCase().includes(filterSearch.toLowerCase())).map((f: any) => (
+                                      <div key={f.name}
+                                        onClick={() => { updateField('filters', [...((widgetData.filters as string[]) || []), f.name]); setShowFilterDropdown(false) }}
+                                        style={{ display:'flex', alignItems:'center', gap:8, padding:'9px 14px', fontSize:13, color:'#e65100', cursor:'pointer', background:'#fff8f0' }}
+                                        onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = '#fff0e0'}
+                                        onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = '#fff8f0'}>
+                                        <span style={{ fontSize:11 }}>≡</span>
+                                        {f.name}
+                                        {f.clauses?.length > 0 && <span style={{ fontSize:10, color:'#bbb', marginLeft:'auto' }}>{f.clauses.length} clause{f.clauses.length > 1 ? 's' : ''}</span>}
+                                      </div>
+                                    ))}
+                                  </div>
                                 )}
 
                                 {/* GA4 filters from connected property */}
@@ -2505,7 +2526,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
               {/* Header */}
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 32px', borderBottom:'1px solid #e0e0e0', flexShrink:0, background:'#fff', position:'sticky' as const, top:0, zIndex:800 }}>
                 <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-                  <span style={{ fontSize:16, fontWeight:600, color:'#1a1a1a' }}>Create Filter</span>
+                  <span style={{ fontSize:16, fontWeight:600, color:'#1a1a1a' }}>{editingFilterName ? 'Edit Filter' : 'Create Filter'}</span>
                   <span style={{ fontSize:11, background:'#e8eaf6', color:'#3949ab', borderRadius:4, padding:'2px 8px', fontWeight:600 }}>BETA</span>
                 </div>
                 <button onClick={() => setShowCreateFilter(false)} style={{ display:'flex', alignItems:'center', gap:6, background:'none', border:'none', cursor:'pointer', color:'#666', fontSize:13, fontWeight:500 }}>
