@@ -956,14 +956,22 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       if (appliedFilters.length === 0) return rows
       let result = rows
       for (const filterName of appliedFilters) {
-        const filterDef = userFilters.find((gf: any) => gf.name === filterName)
+        // Check userFilters first (user-created), then ga4Filters (API filters with clauses)
+        const filterDef = userFilters.find((gf: any) => gf.name === filterName) ||
+                          (ga4Filters as any[]).find((gf: any) => gf.name === filterName && gf.clauses?.length > 0)
         if (!filterDef?.clauses?.length) continue
         for (const clause of filterDef.clauses) {
           if (!clause.field) continue
           const fieldLower = clause.field.toLowerCase()
-          // Only apply filters relevant to the current dimension
-          const isDimMatch = primaryDim.toLowerCase().includes(fieldLower) || fieldLower.includes(primaryDim.toLowerCase()) ||
-            (fieldLower.includes('event') && (primaryDim === 'Event Name' || primaryDim === 'eventName'))
+          const dimLower = primaryDim.toLowerCase()
+          // Match if field relates to current dimension
+          const isDimMatch =
+            dimLower.includes(fieldLower) ||
+            fieldLower.includes(dimLower) ||
+            fieldLower.replace(' ', '') === dimLower.replace(' ', '') ||
+            (fieldLower.includes('event') && dimLower.includes('event')) ||
+            // Always apply if no specific dimension restriction needed
+            fieldLower === ''
           if (!isDimMatch) continue
           const selectedVals: string[] = clause.values || []
           const textVal = (clause.value || '').toLowerCase()
@@ -972,10 +980,10 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
           result = result.filter(row => {
             const dVal = (row.d || '').toLowerCase()
             let matches = false
-            if (op === 'in' || op === 'in list') {
+            if (op === 'in' || op === 'in list' || op === 'in') {
               matches = selectedVals.length > 0
-                ? selectedVals.some(v => dVal === v.toLowerCase() || dVal.includes(v.toLowerCase()))
-                : true
+                ? selectedVals.some(v => dVal === v.toLowerCase().trim())
+                : (textVal ? dVal === textVal : true)
             } else if (op === 'equal to (=)' || op === '=' || op === 'equals') {
               matches = dVal === textVal
             } else if (op === 'contains') {
@@ -2104,7 +2112,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                                 {/* User-created filters */}
                                 {userFilters.filter((f: any) => f.name.toLowerCase().includes(filterSearch.toLowerCase())).length > 0 && (
                                   <div style={{ padding:'8px 0', borderBottom:'1px solid #f5f5f5' }}>
-                                    <p style={{ fontSize:11, color:'#888', padding:'4px 14px 6px', fontWeight:600 }}>Your filters</p>
+                                    <p style={{ fontSize:11, color:'#e65100', padding:'4px 14px 6px', fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'0.05em' }}>Custom filters</p>
                                     {userFilters.filter((f: any) => f.name.toLowerCase().includes(filterSearch.toLowerCase())).map((f: any) => (
                                       <div key={f.name}
                                         onClick={() => { updateField('filters', [...((widgetData.filters as string[]) || []), f.name]); setShowFilterDropdown(false) }}
@@ -2779,26 +2787,48 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                   onClick={() => {
                     if (!newFilterName.trim()) return
                     const filterName = newFilterName.trim()
-                    // Build filter with full clause data
-                    const newFilterObj = {
+                    const filterObj = {
                       name: filterName,
-                      type: 'ga4' as const,
+                      type: 'custom' as const,
                       clauses: newFilterClauses.map((c, i) => ({
-                        ...c,
+                        include: c.include,
+                        field: c.field,
+                        operator: c.operator,
+                        value: c.value || '',
                         values: selectedEventValues[i] || []
                       })),
                     }
-                    setGa4Filters(prev => [...prev, newFilterObj as any])
-                    // Apply to current widget
-                    if (editingWidget) {
-                      const updated = { ...editingWidget, filters: [...((editingWidget as any).filters || []), filterName] } as any
-                      setEditingWidget(updated)
-                      setWidgets(prev => prev.map(w => w.id === updated.id ? updated : w))
+                    if (editingFilterName) {
+                      // UPDATE: replace existing filter, rename references
+                      const updatedList = userFilters.map((gf: any) => gf.name === editingFilterName ? filterObj : gf)
+                      setUserFilters(updatedList)
+                      try { localStorage.setItem('alloy_user_filters', JSON.stringify(updatedList)) } catch {}
+                      // Rename filter in widgets if name changed
+                      if (filterName !== editingFilterName) {
+                        setWidgets(prev => prev.map(w => {
+                          const wf: string[] = (w as any).filters || []
+                          return wf.includes(editingFilterName) ? { ...w, filters: wf.map((f: string) => f === editingFilterName ? filterName : f) } as any : w
+                        }))
+                        if (editingWidget) {
+                          const wf: string[] = (editingWidget as any).filters || []
+                          if (wf.includes(editingFilterName)) setEditingWidget({ ...editingWidget, filters: wf.map((f: string) => f === editingFilterName ? filterName : f) } as any)
+                        }
+                      }
+                    } else {
+                      // CREATE: add new filter and apply to current widget
+                      const newList = [...userFilters, filterObj]
+                      setUserFilters(newList)
+                      try { localStorage.setItem('alloy_user_filters', JSON.stringify(newList)) } catch {}
+                      if (editingWidget) {
+                        const updated = { ...editingWidget, filters: [...((editingWidget as any).filters || []), filterName] } as any
+                        setEditingWidget(updated)
+                        setWidgets(prev => prev.map(w => w.id === updated.id ? updated : w))
+                      }
                     }
-                    // Flash "Saved!" then close
                     setFilterJustSaved(true)
                     setTimeout(() => {
                       setFilterJustSaved(false)
+                      setEditingFilterName(null)
                       setNewFilterName('')
                       setNewFilterClauses([{ include: true, field: '', operator: 'contains', value: '' }])
                       setSelectedEventValues({})
