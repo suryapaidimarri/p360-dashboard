@@ -658,9 +658,14 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [dsSearch, setDsSearch] = useState('')
   const [dimSearch, setDimSearch] = useState('')
   const [metSearch, setMetSearch] = useState('')
-  // Active fetch date range — persists so no re-render accidentally reverts it
-  const [activeFetchStart, setActiveFetchStart] = useState<string|null>(null) // null = use dateRange
-  const [activeFetchEnd,   setActiveFetchEnd]   = useState<string|null>(null) // null = 'today'
+  // Persisted active fetch date range — survives refresh
+  const LS_DATE_KEY = `alloy_custom_date_${clientId}`
+  const [activeFetchStart, setActiveFetchStart] = useState<string|null>(() => {
+    try { const v = localStorage.getItem(`alloy_custom_date_${clientId}`); return v ? JSON.parse(v).start || null : null } catch { return null }
+  })
+  const [activeFetchEnd, setActiveFetchEnd] = useState<string|null>(() => {
+    try { const v = localStorage.getItem(`alloy_custom_date_${clientId}`); return v ? JSON.parse(v).end || null : null } catch { return null }
+  })
   // Calendar picker UI state
   const [showCalendarPicker, setShowCalendarPicker] = useState(false)
   const [calAnchorRef, setCalAnchorRef] = useState<{top:number;left:number}|null>(null)
@@ -811,10 +816,25 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
         metrics: (w as any).metrics,
         filters: (w as any).filters,
         dataSource: w.dataSource,
+        dateRangeType: (w as any).dateRangeType,
+        dateStart: (w as any).dateStart,
+        dateEnd: (w as any).dateEnd,
       }))
       localStorage.setItem(LS_WIDGETS_KEY, JSON.stringify(toSave))
     } catch {}
   }, [widgets])
+
+  // Persist custom date range to localStorage so it survives refresh
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      if (activeFetchStart && activeFetchEnd) {
+        localStorage.setItem(LS_DATE_KEY, JSON.stringify({ start: activeFetchStart, end: activeFetchEnd }))
+      } else {
+        localStorage.removeItem(LS_DATE_KEY)
+      }
+    } catch {}
+  }, [activeFetchStart, activeFetchEnd])
 
   // Auto-load event data when any widget uses Event Name dimension
   useEffect(() => {
@@ -945,14 +965,21 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     try {
       const res = await fetch(`/api/mapping?client_id=${clientId}`)
       const data = await res.json()
+      // Restore persisted custom date range if present
+      let savedStart: string|null = null, savedEnd: string|null = null
+      try {
+        const saved = localStorage.getItem(LS_DATE_KEY)
+        if (saved) { const p = JSON.parse(saved); savedStart = p.start || null; savedEnd = p.end || null }
+      } catch {}
+      if (savedStart && savedEnd) { setActiveFetchStart(savedStart); setActiveFetchEnd(savedEnd) }
       if (data.ga4_property_id) {
         setSelectedProperty(data.ga4_property_id)
         setMappingProp(data.ga4_property_id)
         setMappingPropName(data.ga4_property_name || '')
         setMappingSite(data.gsc_site_url || '')
-        fetchGA4(data.ga4_property_id)
+        fetchGA4(data.ga4_property_id, savedStart || undefined, savedEnd || undefined)
       } else {
-        fetchGA4()
+        fetchGA4(undefined, savedStart || undefined, savedEnd || undefined)
       }
     } catch { fetchGA4() }
   }
@@ -961,7 +988,6 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     const pid = propertyId || selectedProperty
     if (!pid) return
     setLoadingData(true)
-    // Use explicit args → then activeFetch state → then global dateRange
     const sd = startDate ?? activeFetchStart ?? dateRange
     const ed = endDate   ?? activeFetchEnd   ?? 'today'
     try {
@@ -1785,7 +1811,12 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
           <div style={{ padding:'14px 20px', borderBottom:`1px solid ${ALLOY.line}`, background:ALLOY.white, display:'flex', alignItems:'center', gap:8 }}>
             <div style={{ width:16, height:16, border:`2px solid ${ALLOY.ink}`, borderRadius:2 }}/>
             <span style={{ fontSize:14, fontWeight:700, color:ALLOY.ink }}>{activeDash}</span>
-            {loadingData && <span style={{ fontSize:11, color:ALLOY.blue1, marginLeft:8 }}>↻ Loading...</span>}
+            {loadingData && (
+            <span style={{ display:'flex', alignItems:'center', gap:6, fontSize:11, color:ALLOY.blue1, marginLeft:8, background:ALLOY.blue4, border:`1px solid ${ALLOY.blue3}`, borderRadius:2, padding:'3px 8px' }}>
+              <span style={{ display:'inline-block', animation:'spin 1s linear infinite' }}>↻</span>
+              Fetching data{activeFetchStart ? ` for ${activeFetchStart} – ${activeFetchEnd}` : ''}...
+            </span>
+          )}
             {connection?.connected && !loadingData && !isEmptyDash && <span style={{ fontSize:11, color:ALLOY.green1, marginLeft:8 }}>● Live GA4 data</span>}
           </div>
 
@@ -2418,8 +2449,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                                 updateField('dateRangeType', opt.val)
                                 if (opt.val === 'auto') {
                                   setShowCalendarPicker(false)
-                                  // Clear custom range — go back to global dateRange
                                   setActiveFetchStart(null); setActiveFetchEnd(null)
+                                  try { localStorage.removeItem(LS_DATE_KEY) } catch {}
                                   fetchGA4(undefined, undefined, undefined)
                                 } else {
                                   const s = (widgetData as any).dateStart || '2026-04-01'
@@ -2427,8 +2458,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                                   setCalTempStart(s); setCalTempEnd(e); setCalClickCount(0)
                                   const [sy,sm] = s.split('-').map(Number)
                                   const [ey,em] = e.split('-').map(Number)
-                                  setCalStartView(new Date(sy,sm-1,1))
-                                  setCalEndView(new Date(ey,em-1,1))
+                                  setCalStartView(new Date(sy,sm-1,1)); setCalEndView(new Date(ey,em-1,1))
                                 }
                               }}
                               style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8, cursor:'pointer' }}>
@@ -2439,7 +2469,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                             </label>
                           ))}
 
-                          {/* Custom date UI */}
+                          {/* Custom date range UI */}
                           {(widgetData as any).dateRangeType === 'custom' && (() => {
                             const committedStart = (widgetData as any).dateStart || '2026-04-01'
                             const committedEnd   = (widgetData as any).dateEnd   || '2026-05-08'
@@ -2457,7 +2487,6 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                             }
                             const MOS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
 
-                            // Unified click: first click = start, second = end (works across both month panels)
                             const handleDayClick = (iso: string) => {
                               if (calClickCount === 0) {
                                 setCalTempStart(iso); setCalTempEnd(''); setCalClickCount(1)
@@ -2525,7 +2554,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
                             return (
                               <div>
-                                {/* Summary button */}
+                                {/* Date summary button */}
                                 <button
                                   onClick={e => {
                                     e.stopPropagation()
@@ -2546,7 +2575,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                                   <ChevronDown size={12} style={{ color:ALLOY.mute }}/>
                                 </button>
 
-                                {/* Calendar popup — positioned near button via anchor */}
+                                {/* Calendar popup — fixed, anchored near button */}
                                 {showCalendarPicker && (
                                   <>
                                     <div style={{ position:'fixed' as const, inset:0, zIndex:1000 }}
@@ -2559,19 +2588,23 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                                         borderRadius:8, boxShadow:'0 12px 40px rgba(0,0,0,0.18)', padding:20, width:620,
                                       }}
                                       onClick={e => e.stopPropagation()}>
+                                      {/* Fixed / Rolling */}
                                       <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:14 }}>
                                         <div style={{ display:'flex', alignItems:'center', gap:6, background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:4, padding:'6px 14px', fontSize:12, color:ALLOY.ink, cursor:'pointer', fontWeight:500 }}>
                                           Fixed <ChevronDown size={12} style={{ color:ALLOY.mute }}/>
                                         </div>
                                       </div>
+                                      {/* Instruction */}
                                       <p style={{ fontSize:11, color:ALLOY.mute, textAlign:'center' as const, marginBottom:12 }}>
                                         {calClickCount===0 ? 'Click a start date' : calClickCount===1 ? 'Now click an end date' : `${fmtLabel(calTempStart)} — ${fmtLabel(calTempEnd)}`}
                                       </p>
+                                      {/* Two months */}
                                       <div style={{ display:'flex', gap:8 }}>
                                         {renderMonth(calStartView, 'Start Date')}
                                         <div style={{ width:1, background:ALLOY.line, flexShrink:0 }}/>
                                         {renderMonth(calEndView, 'End Date')}
                                       </div>
+                                      {/* Footer */}
                                       <div style={{ display:'flex', justifyContent:'flex-end', alignItems:'center', gap:14, borderTop:`1px solid ${ALLOY.line}`, paddingTop:14, marginTop:16 }}>
                                         <button onClick={() => { setShowCalendarPicker(false); setCalTempStart(committedStart); setCalTempEnd(committedEnd) }}
                                           style={{ background:'none', border:'none', color:ALLOY.blue1, cursor:'pointer', fontSize:14, fontWeight:600, padding:'6px 12px' }}>Cancel</button>
@@ -2580,12 +2613,11 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                                           onClick={() => {
                                             const fs = calTempStart || committedStart
                                             const fe = calTempEnd   || committedEnd
-                                            // 1. Persist dates in widget
+                                            // Atomic update: widget fields + active fetch range + localStorage
                                             updateMulti({ dateStart: fs, dateEnd: fe })
-                                            // 2. Store as active fetch range — prevents any other fetch from reverting
                                             setActiveFetchStart(fs); setActiveFetchEnd(fe)
+                                            try { localStorage.setItem(LS_DATE_KEY, JSON.stringify({ start: fs, end: fe })) } catch {}
                                             setShowCalendarPicker(false)
-                                            // 3. Fetch with new range
                                             fetchGA4(undefined, fs, fe)
                                           }}
                                           style={{ background:calClickCount<2?ALLOY.line:ALLOY.blue1, border:'none', borderRadius:999, color:calClickCount<2?ALLOY.mute:ALLOY.white, cursor:calClickCount<2?'not-allowed':'pointer', fontSize:14, fontWeight:600, padding:'10px 28px', transition:'background 0.15s' }}>
