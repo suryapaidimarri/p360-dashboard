@@ -947,12 +947,14 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     } catch { fetchGA4() }
   }
 
-  async function fetchGA4(propertyId?: string) {
+  async function fetchGA4(propertyId?: string, startDate?: string, endDate?: string) {
     const pid = propertyId || selectedProperty
     if (!pid) return
     setLoadingData(true)
+    const sd = startDate || dateRange
+    const ed = endDate   || 'today'
     try {
-      const res = await fetch(`/api/ga4?client_id=${clientId}&property_id=${pid}&start_date=${dateRange}&end_date=today`)
+      const res = await fetch(`/api/ga4?client_id=${clientId}&property_id=${pid}&start_date=${sd}&end_date=${ed}`)
       const data = await res.json()
       if (data.connected) {
         setGa4Data(data)
@@ -2221,7 +2223,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                             </div>
                           )}
                           <Toggle label="Optional metrics" on={!!(widgetData as any).optionalMetrics} onChange={v => updateField('optionalMetrics', v)}/>
-                          {/* When Optional metrics is ON, show an Add metric pill for optional slots */}
+                          {/* When Optional metrics is ON, show chips + Add metric pill for optional slots */}
                           {!!(widgetData as any).optionalMetrics && (
                             <div style={{ marginTop:8, marginBottom:4 }}>
                               {((widgetData as any).optionalMetricsList || []).map((met: string, i: number) => (
@@ -2233,12 +2235,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                                 </div>
                               ))}
                               <button
-                                onClick={() => {
-                                  // reuse the existing metric dropdown but target optional list
-                                  setShowMetDropdown(!showMetDropdown)
-                                  setMetSearch('')
-                                }}
-                                style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:`1px dashed ${ALLOY.line}`, borderRadius:2, padding:'6px 12px', cursor:'pointer', color:ALLOY.blue1, fontSize:9, fontWeight:700, fontFamily:ALLOY.fontLabel, letterSpacing:'0.06em', textTransform:'uppercase' as const, width:'100%' }}>
+                                onClick={() => { setShowMetDropdown(true); setMetSearch('') }}
+                                style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:`1px dashed ${ALLOY.line}`, borderRadius:2, padding:'6px 12px', cursor:'pointer', color:ALLOY.green1, fontSize:9, fontWeight:700, fontFamily:ALLOY.fontLabel, letterSpacing:'0.06em', textTransform:'uppercase' as const, width:'100%' }}>
                                 <Plus size={13}/> Add metric
                               </button>
                             </div>
@@ -2395,7 +2393,16 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                         <div style={{ padding:'14px 0', borderBottom:`1px solid ${ALLOY.line}` }}>
                           <p style={{ fontSize:13, fontWeight:700, color:ALLOY.ink, marginBottom:10 }}>Default date range filter</p>
                           {[{val:'auto',label:'Auto: Last 28 days (exclude today)'},{val:'custom',label:'Custom'}].map(opt => (
-                            <label key={opt.val} onClick={() => { updateField('dateRangeType', opt.val); if (opt.val === 'custom') setShowCalendarPicker(true) }}
+                            <label key={opt.val}
+                              onClick={() => {
+                                updateField('dateRangeType', opt.val)
+                                // When switching to custom, open calendar. When switching to auto, refetch with relative range
+                                if (opt.val === 'custom') {
+                                  setShowCalendarPicker(true)
+                                } else {
+                                  fetchGA4(undefined, dateRange, 'today')
+                                }
+                              }}
                               style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8, cursor:'pointer' }}>
                               <div style={{ width:18, height:18, borderRadius:'50%', border:`2px solid ${(widgetData.dateRangeType||'auto')===opt.val?ALLOY.blue1:ALLOY.line}`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
                                 {(widgetData.dateRangeType||'auto')===opt.val && <div style={{ width:8, height:8, borderRadius:'50%', background:ALLOY.blue1 }}/>}
@@ -2404,19 +2411,18 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                             </label>
                           ))}
 
-                          {/* Custom date range — date button + calendar popup */}
-                          {(widgetData.dateRangeType) === 'custom' && (() => {
+                          {/* Custom date range — date summary button + calendar popup */}
+                          {(widgetData as any).dateRangeType === 'custom' && (() => {
                             const startStr: string = (widgetData as any).dateStart || '2026-04-01'
                             const endStr:   string = (widgetData as any).dateEnd   || '2026-05-08'
-                            const pd = (s: string) => new Date(s + 'T00:00:00')
+                            const todayIso = new Date().toISOString().split('T')[0]
                             const fmtIso = (d: Date) => d.toISOString().split('T')[0]
-                            const todayIso = fmtIso(new Date())
+                            const pd = (s: string) => new Date(s + 'T00:00:00')
                             const fmtLabel = (s: string) => {
                               if (!s) return ''
                               const [y, m, dd] = s.split('-')
                               return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(m)-1] + ' ' + parseInt(dd) + ', ' + y
                             }
-                            const MOS_LONG = ['January','February','March','April','May','June','July','August','September','October','November','December']
                             const MOS_SHORT = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
 
                             const renderMonth = (view: Date, side: 'start' | 'end') => {
@@ -2432,9 +2438,9 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                               for (let d = 1; d <= dim; d++) {
                                 const t = new Date(y, m, d)
                                 const iso = fmtIso(t)
-                                const isSt = iso === startStr
-                                const isEn = iso === endStr
-                                const inR  = t > pd(startStr) && t < pd(endStr)
+                                const isSt  = iso === startStr
+                                const isEn  = iso === endStr
+                                const inR   = t > pd(startStr) && t < pd(endStr)
                                 const isToday = iso === todayIso
                                 cells.push(
                                   <div key={d}
@@ -2460,22 +2466,22 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                               }
                               return (
                                 <div style={{ flex:1 }}>
-                                  <p style={{ fontSize:13, fontWeight:700, color:ALLOY.ink, marginBottom:12, textAlign:'center' as const }}>
+                                  <p style={{ fontSize:13, fontWeight:700, color:ALLOY.ink, marginBottom:10, textAlign:'center' as const }}>
                                     {side === 'start' ? 'Start Date' : 'End Date'}
                                   </p>
                                   <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
                                     <div style={{ display:'flex', alignItems:'center', gap:4 }}>
                                       <span style={{ fontSize:13, fontWeight:700, color:ALLOY.ink }}>{MOS_SHORT[m]} {y}</span>
-                                      <ChevronDown size={13} style={{ color:ALLOY.mute }}/>
+                                      <ChevronDown size={12} style={{ color:ALLOY.mute }}/>
                                     </div>
-                                    <div style={{ display:'flex', gap:4 }}>
-                                      <button onClick={() => nav(-1)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:16, color:ALLOY.ink, padding:'2px 6px', display:'flex', alignItems:'center' }}>‹</button>
-                                      <button onClick={() => nav(1)}  style={{ background:'none', border:'none', cursor:'pointer', fontSize:16, color:ALLOY.ink, padding:'2px 6px', display:'flex', alignItems:'center' }}>›</button>
+                                    <div style={{ display:'flex', gap:2 }}>
+                                      <button onClick={() => nav(-1)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:16, color:ALLOY.ink, padding:'2px 6px', lineHeight:1 }}>‹</button>
+                                      <button onClick={() => nav(1)}  style={{ background:'none', border:'none', cursor:'pointer', fontSize:16, color:ALLOY.ink, padding:'2px 6px', lineHeight:1 }}>›</button>
                                     </div>
                                   </div>
-                                  <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:0, textAlign:'center' as const }}>
+                                  <div style={{ display:'grid', gridTemplateColumns:'repeat(7,32px)', textAlign:'center' as const }}>
                                     {['S','M','T','W','T','F','S'].map((d,i) => (
-                                      <div key={i} style={{ fontSize:11, color:ALLOY.mute, paddingBottom:6, fontWeight:500 }}>{d}</div>
+                                      <div key={i} style={{ fontSize:11, color:ALLOY.mute, paddingBottom:6, fontWeight:500, textAlign:'center' as const }}>{d}</div>
                                     ))}
                                     {cells}
                                   </div>
@@ -2484,8 +2490,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                             }
 
                             return (
-                              <div style={{ marginTop:8 }}>
-                                {/* Date range summary button */}
+                              <div style={{ marginTop:6 }}>
+                                {/* Date summary button */}
                                 <button
                                   onClick={() => setShowCalendarPicker(!showCalendarPicker)}
                                   style={{ width:'100%', display:'flex', alignItems:'center', gap:8, background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'8px 12px', cursor:'pointer', fontSize:12, color:ALLOY.ink, fontFamily:ALLOY.fontBody, marginBottom:4 }}
@@ -2504,22 +2510,34 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                                     {/* Fixed / Rolling selector */}
                                     <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:12 }}>
                                       <div style={{ display:'flex', alignItems:'center', gap:6, background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'6px 12px', fontSize:12, color:ALLOY.ink, cursor:'pointer' }}>
-                                        Fixed <ChevronDown size={13} style={{ color:ALLOY.mute }}/>
+                                        Fixed <ChevronDown size={12} style={{ color:ALLOY.mute }}/>
                                       </div>
                                     </div>
-                                    {/* Two month calendars side by side */}
-                                    <div style={{ display:'flex', gap:24 }}>
+
+                                    {/* Two month calendars */}
+                                    <div style={{ display:'flex', gap:20 }}>
                                       {renderMonth(calStartView, 'start')}
                                       {renderMonth(calEndView, 'end')}
                                     </div>
+
                                     {/* Footer */}
                                     <div style={{ display:'flex', justifyContent:'flex-end', gap:12, borderTop:`1px solid ${ALLOY.line}`, paddingTop:12, marginTop:12 }}>
-                                      <button onClick={() => setShowCalendarPicker(false)}
-                                        style={{ background:'none', border:'none', color:ALLOY.blue1, cursor:'pointer', fontSize:14, fontWeight:600, padding:'6px 12px' }}>
+                                      <button
+                                        onClick={() => setShowCalendarPicker(false)}
+                                        style={{ background:'none', border:'none', color:ALLOY.blue1, cursor:'pointer', fontSize:14, fontWeight:600, padding:'6px 12px' }}
+                                      >
                                         Cancel
                                       </button>
-                                      <button onClick={() => setShowCalendarPicker(false)}
-                                        style={{ background:ALLOY.blue1, border:'none', borderRadius:999, color:ALLOY.white, cursor:'pointer', fontSize:14, fontWeight:600, padding:'8px 24px' }}>
+                                      <button
+                                        onClick={() => {
+                                          setShowCalendarPicker(false)
+                                          // ── KEY FIX: fetch GA4 with the widget's selected custom dates ──
+                                          const s = (widgetData as any).dateStart || startStr
+                                          const e = (widgetData as any).dateEnd   || endStr
+                                          fetchGA4(undefined, s, e)
+                                        }}
+                                        style={{ background:ALLOY.blue1, border:'none', borderRadius:999, color:ALLOY.white, cursor:'pointer', fontSize:14, fontWeight:600, padding:'8px 24px' }}
+                                      >
                                         Apply
                                       </button>
                                     </div>
