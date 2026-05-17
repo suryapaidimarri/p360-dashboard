@@ -822,10 +822,12 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     }
   }, [widgets, connection, selectedProperty])
 
-  async function loadGA4Events() {
+  async function loadGA4Events(startDate?: string, endDate?: string) {
     if (!connection?.connected || !selectedProperty) return
+    const sd = startDate || dateRange
+    const ed = endDate   || 'today'
     try {
-      const res = await fetch(`/api/ga4/custom?client_id=${clientId}&property_id=${selectedProperty}&dimensions=eventName&metrics=eventCount&start_date=30daysAgo&end_date=today`)
+      const res = await fetch(`/api/ga4/custom?client_id=${clientId}&property_id=${selectedProperty}&dimensions=eventName&metrics=eventCount&start_date=${sd}&end_date=${ed}`)
       if (res.ok) {
         const data = await res.json()
         const rows = data.rows || []
@@ -961,6 +963,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       const data = await res.json()
       if (data.connected) {
         setGa4Data(data)
+        // Also reload event-dimension data with the same date range
+        loadGA4Events(sd, ed)
         const totalsRow = data.timeSeries?.totals?.[0]
         const sessions = parseInt(totalsRow?.metricValues?.[0]?.value || '0')
         const users = parseInt(totalsRow?.metricValues?.[1]?.value || '0')
@@ -2458,7 +2462,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                                 side === 'start' ? setCalStartView(nv) : setCalEndView(nv)
                               }
                               const cells: React.ReactNode[] = []
-                              for (let i = 0; i < fd; i++) cells.push(<div key={'e'+i} style={{ width:32, height:32 }}/>)
+                              for (let i = 0; i < fd; i++) cells.push(<div key={'e'+i} style={{ height:32 }}/>)
                               for (let d = 1; d <= dim; d++) {
                                 const t   = new Date(y, m, d)
                                 const iso = fmtIso(t)
@@ -2473,7 +2477,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                                       else setCalTempEnd(iso)
                                     }}
                                     style={{
-                                      width:32, height:32, borderRadius:'50%',
+                                      height:32, borderRadius:'50%',
                                       display:'flex', alignItems:'center', justifyContent:'center',
                                       fontSize:13, cursor:'pointer',
                                       fontWeight: isSt || isEn ? 700 : 400,
@@ -2502,13 +2506,13 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                                     </div>
                                   </div>
                                   {/* Day headers */}
-                                  <div style={{ display:'grid', gridTemplateColumns:'repeat(7,32px)', marginBottom:2 }}>
+                                  <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', marginBottom:2 }}>
                                     {['S','M','T','W','T','F','S'].map((d,i) => (
-                                      <div key={i} style={{ width:32, textAlign:'center' as const, fontSize:11, color:ALLOY.mute, fontWeight:500, paddingBottom:4 }}>{d}</div>
+                                      <div key={i} style={{ textAlign:'center' as const, fontSize:11, color:ALLOY.mute, fontWeight:500, paddingBottom:4 }}>{d}</div>
                                     ))}
                                   </div>
                                   {/* Day cells */}
-                                  <div style={{ display:'grid', gridTemplateColumns:'repeat(7,32px)', rowGap:2 }}>
+                                  <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', rowGap:2 }}>
                                     {cells}
                                   </div>
                                 </div>
@@ -2557,9 +2561,10 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                                       </div>
                                     </div>
 
-                                    {/* Two calendars — stacked on narrow panel, side-by-side when space allows */}
-                                    <div style={{ display:'flex', gap:16, overflowX:'auto' as const }}>
+                                    {/* Two calendars — stacked vertically to fit in 300px panel */}
+                                    <div style={{ display:'flex', flexDirection:'column' as const, gap:20 }}>
                                       {renderMonth(calStartView, 'start', 'Start Date')}
+                                      <div style={{ height:1, background:ALLOY.line }}/>
                                       {renderMonth(calEndView,   'end',   'End Date')}
                                     </div>
 
