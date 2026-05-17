@@ -2175,21 +2175,6 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                             </div>
                           )}
                           <Toggle label="Drill down" on={!!(widgetData as any).drillDown} onChange={v => updateField('drillDown', v)}/>
-                          {/* Drill down level selector */}
-                          {!!(widgetData as any).drillDown && dimensions.length > 0 && (
-                            <div style={{ marginTop:10 }}>
-                              <p style={{ ...ALLOY.label, display:'block' as const, marginBottom:6 }}>Default drill down level</p>
-                              <select
-                                value={(widgetData as any).drillDownLevel || dimensions[0] || ''}
-                                onChange={e => updateField('drillDownLevel', e.target.value)}
-                                style={{ width:'100%', background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'7px 10px', fontSize:12, color:ALLOY.ink, outline:'none', cursor:'pointer', fontFamily:ALLOY.fontBody }}
-                              >
-                                {dimensions.map((d: string) => (
-                                  <option key={d} value={d}>{d}</option>
-                                ))}
-                              </select>
-                            </div>
-                          )}
                         </div>
 
                         {/* Metric */}
@@ -2236,48 +2221,29 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                             </div>
                           )}
                           <Toggle label="Optional metrics" on={!!(widgetData as any).optionalMetrics} onChange={v => updateField('optionalMetrics', v)}/>
-                          <Toggle label="Metric sliders" on={!!(widgetData as any).metricSliders} onChange={v => updateField('metricSliders', v)}/>
-                        </div>
-
-                        {/* ── Display ── */}
-                        <div style={{ padding:'14px 0', borderBottom:`1px solid ${ALLOY.line}` }}>
-                          <p style={{ fontSize:13, fontWeight:700, color:ALLOY.ink, marginBottom:10 }}>Display</p>
-                          <div style={{ background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'12px 14px' }}>
-                            <p style={{ ...ALLOY.label, display:'block' as const, marginBottom:10 }}>Dimension</p>
-                            {(['topN','bottomN'] as const).map(mode => (
-                              <label key={mode} style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10, cursor:'pointer' }}>
-                                <div
-                                  onClick={() => updateField('displayMode', mode)}
-                                  style={{ width:16, height:16, borderRadius:'50%', border:`2px solid ${((widgetData as any).displayMode||'topN')===mode ? ALLOY.blue1 : ALLOY.line}`, background:ALLOY.white, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}
-                                >
-                                  {((widgetData as any).displayMode||'topN')===mode && (
-                                    <div style={{ width:8, height:8, borderRadius:'50%', background:ALLOY.blue1 }}/>
-                                  )}
+                          {/* When Optional metrics is ON, show an Add metric pill for optional slots */}
+                          {!!(widgetData as any).optionalMetrics && (
+                            <div style={{ marginTop:8, marginBottom:4 }}>
+                              {((widgetData as any).optionalMetricsList || []).map((met: string, i: number) => (
+                                <div key={i} style={{ display:'flex', alignItems:'center', gap:8, background:ALLOY.blue4, border:`1px solid ${ALLOY.blue1}`, borderRadius:2, padding:'6px 12px', marginBottom:6 }}>
+                                  <span style={{ fontSize:10, fontWeight:700, color:ALLOY.blue1, background:ALLOY.blue4, borderRadius:2, padding:'1px 5px', fontFamily:ALLOY.fontLabel }}>AUT</span>
+                                  <span style={{ flex:1, fontSize:12, color:ALLOY.ink }}>{met}</span>
+                                  <button onClick={() => updateField('optionalMetricsList', ((widgetData as any).optionalMetricsList || []).filter((_: string, j: number) => j !== i))}
+                                    style={{ background:'none', border:'none', cursor:'pointer', color:ALLOY.mute, padding:0 }}><X size={11}/></button>
                                 </div>
-                                <span style={{ fontSize:13, color:ALLOY.ink, fontFamily:ALLOY.fontBody }}>
-                                  {mode === 'topN' ? 'Top N' : 'Bottom N'}
-                                </span>
-                              </label>
-                            ))}
-                            <div style={{ border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'5px 10px', display:'flex', alignItems:'center', background:ALLOY.white, marginBottom:10 }}>
-                              <div style={{ flex:1 }}>
-                                <p style={{ ...ALLOY.label, display:'block' as const, marginBottom:3 }}>Number of bars</p>
-                                <input
-                                  type="number"
-                                  value={(widgetData as any).numberOfBars ?? 10}
-                                  onChange={e => updateField('numberOfBars', Math.max(1, Math.min(100, parseInt(e.target.value) || 1)))}
-                                  style={{ width:'100%', border:'none', outline:'none', fontSize:13, color:ALLOY.ink, background:'transparent', fontFamily:ALLOY.fontBody }}
-                                />
-                              </div>
-                              <div style={{ display:'flex', flexDirection:'column' as const, gap:1 }}>
-                                <button onClick={() => updateField('numberOfBars', ((widgetData as any).numberOfBars ?? 10) + 1)}
-                                  style={{ background:'none', border:'none', cursor:'pointer', color:ALLOY.mute, fontSize:11, padding:'1px 4px' }}>▲</button>
-                                <button onClick={() => updateField('numberOfBars', Math.max(1, ((widgetData as any).numberOfBars ?? 10) - 1))}
-                                  style={{ background:'none', border:'none', cursor:'pointer', color:ALLOY.mute, fontSize:11, padding:'1px 4px' }}>▼</button>
-                              </div>
+                              ))}
+                              <button
+                                onClick={() => {
+                                  // reuse the existing metric dropdown but target optional list
+                                  setShowMetDropdown(!showMetDropdown)
+                                  setMetSearch('')
+                                }}
+                                style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:`1px dashed ${ALLOY.line}`, borderRadius:2, padding:'6px 12px', cursor:'pointer', color:ALLOY.blue1, fontSize:9, fontWeight:700, fontFamily:ALLOY.fontLabel, letterSpacing:'0.06em', textTransform:'uppercase' as const, width:'100%' }}>
+                                <Plus size={13}/> Add metric
+                              </button>
                             </div>
-                            <Toggle label={'Group the rest as "Others"'} on={!!(widgetData as any).groupOthers} onChange={v => updateField('groupOthers', v)}/>
-                          </div>
+                          )}
+                          <Toggle label="Metric sliders" on={!!(widgetData as any).metricSliders} onChange={v => updateField('metricSliders', v)}/>
                         </div>
 
                         {/* Filter */}
@@ -2429,30 +2395,30 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                         <div style={{ padding:'14px 0', borderBottom:`1px solid ${ALLOY.line}` }}>
                           <p style={{ fontSize:13, fontWeight:700, color:ALLOY.ink, marginBottom:10 }}>Default date range filter</p>
                           {[{val:'auto',label:'Auto: Last 28 days (exclude today)'},{val:'custom',label:'Custom'}].map(opt => (
-                            <label key={opt.val} style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8, cursor:'pointer' }}>
-                              <div style={{ width:18, height:18, borderRadius:'50%', border:`2px solid ${(widgetData.dateRangeType||'auto')===opt.val?ALLOY.blue1:ALLOY.line}`, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                            <label key={opt.val} onClick={() => { updateField('dateRangeType', opt.val); if (opt.val === 'custom') setShowCalendarPicker(true) }}
+                              style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8, cursor:'pointer' }}>
+                              <div style={{ width:18, height:18, borderRadius:'50%', border:`2px solid ${(widgetData.dateRangeType||'auto')===opt.val?ALLOY.blue1:ALLOY.line}`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
                                 {(widgetData.dateRangeType||'auto')===opt.val && <div style={{ width:8, height:8, borderRadius:'50%', background:ALLOY.blue1 }}/>}
                               </div>
                               <span style={{ fontSize:12, color:ALLOY.ink }}>{opt.label}</span>
                             </label>
                           ))}
-                          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:4 }}>
-                            <span style={{ fontSize:12, color:ALLOY.ink }}>Comparison date range</span>
-                            <div style={{ width:36, height:20, borderRadius:2, background:ALLOY.line, position:'relative', cursor:'pointer' }}>
-                              <div style={{ width:16, height:16, borderRadius:'50%', background:ALLOY.white, position:'absolute', top:2, left:2, boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}/>
-                            </div>
-                          </div>
-                          {/* Calendar picker for custom date range */}
-                          {(widgetData.dateRangeType || 'auto') === 'custom' && (() => {
+
+                          {/* Custom date range — date button + calendar popup */}
+                          {(widgetData.dateRangeType) === 'custom' && (() => {
                             const startStr: string = (widgetData as any).dateStart || '2026-04-01'
-                            const endStr: string   = (widgetData as any).dateEnd   || '2026-05-08'
+                            const endStr:   string = (widgetData as any).dateEnd   || '2026-05-08'
                             const pd = (s: string) => new Date(s + 'T00:00:00')
-                            const fmtStr = (d: Date) => d.toISOString().split('T')[0]
+                            const fmtIso = (d: Date) => d.toISOString().split('T')[0]
+                            const todayIso = fmtIso(new Date())
                             const fmtLabel = (s: string) => {
+                              if (!s) return ''
                               const [y, m, dd] = s.split('-')
                               return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(m)-1] + ' ' + parseInt(dd) + ', ' + y
                             }
-                            const MOS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
+                            const MOS_LONG = ['January','February','March','April','May','June','July','August','September','October','November','December']
+                            const MOS_SHORT = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
+
                             const renderMonth = (view: Date, side: 'start' | 'end') => {
                               const y = view.getFullYear(), m = view.getMonth()
                               const fd = new Date(y, m, 1).getDay()
@@ -2465,61 +2431,95 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                               for (let i = 0; i < fd; i++) cells.push(<div key={'e'+i}/>)
                               for (let d = 1; d <= dim; d++) {
                                 const t = new Date(y, m, d)
-                                const isSt = fmtStr(t) === startStr
-                                const isEn = fmtStr(t) === endStr
+                                const iso = fmtIso(t)
+                                const isSt = iso === startStr
+                                const isEn = iso === endStr
                                 const inR  = t > pd(startStr) && t < pd(endStr)
+                                const isToday = iso === todayIso
                                 cells.push(
                                   <div key={d}
                                     onClick={() => {
-                                      if (side === 'start') updateField('dateStart', fmtStr(t))
-                                      else updateField('dateEnd', fmtStr(t))
+                                      if (side === 'start') updateField('dateStart', iso)
+                                      else updateField('dateEnd', iso)
                                     }}
-                                    style={{ width:24, height:24, borderRadius:2, display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, cursor:'pointer', margin:'0 auto', fontWeight: isSt||isEn ? 700 : 400, background: isSt||isEn ? ALLOY.green1 : inR ? ALLOY.green4 : 'none', color: isSt||isEn ? ALLOY.ink : inR ? '#0d6641' : ALLOY.ink }}
+                                    style={{
+                                      width:32, height:32, borderRadius:'50%',
+                                      display:'flex', alignItems:'center', justifyContent:'center',
+                                      fontSize:13, cursor:'pointer', margin:'0 auto',
+                                      fontWeight: isSt || isEn ? 700 : 400,
+                                      background: isSt || isEn ? ALLOY.blue1 : 'none',
+                                      color: isSt || isEn ? ALLOY.white : inR ? ALLOY.blue1 : ALLOY.ink,
+                                      border: isToday && !isSt && !isEn ? `1px solid ${ALLOY.mute}` : 'none',
+                                    }}
+                                    onMouseEnter={e => { if (!isSt && !isEn) (e.currentTarget as HTMLDivElement).style.background = ALLOY.blue4 }}
+                                    onMouseLeave={e => { if (!isSt && !isEn) (e.currentTarget as HTMLDivElement).style.background = 'none' }}
                                   >
                                     {d}
                                   </div>
                                 )
                               }
                               return (
-                                <div style={{ minWidth:155 }}>
+                                <div style={{ flex:1 }}>
+                                  <p style={{ fontSize:13, fontWeight:700, color:ALLOY.ink, marginBottom:12, textAlign:'center' as const }}>
+                                    {side === 'start' ? 'Start Date' : 'End Date'}
+                                  </p>
                                   <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
-                                    <button onClick={() => nav(-1)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:14, color:ALLOY.mute, padding:'2px 4px' }}>‹</button>
-                                    <span style={{ ...ALLOY.label, fontSize:9 }}>{MOS[m]} {y}</span>
-                                    <button onClick={() => nav(1)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:14, color:ALLOY.mute, padding:'2px 4px' }}>›</button>
+                                    <div style={{ display:'flex', alignItems:'center', gap:4 }}>
+                                      <span style={{ fontSize:13, fontWeight:700, color:ALLOY.ink }}>{MOS_SHORT[m]} {y}</span>
+                                      <ChevronDown size={13} style={{ color:ALLOY.mute }}/>
+                                    </div>
+                                    <div style={{ display:'flex', gap:4 }}>
+                                      <button onClick={() => nav(-1)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:16, color:ALLOY.ink, padding:'2px 6px', display:'flex', alignItems:'center' }}>‹</button>
+                                      <button onClick={() => nav(1)}  style={{ background:'none', border:'none', cursor:'pointer', fontSize:16, color:ALLOY.ink, padding:'2px 6px', display:'flex', alignItems:'center' }}>›</button>
+                                    </div>
                                   </div>
-                                  <div style={{ display:'grid', gridTemplateColumns:'repeat(7,24px)', gap:1, textAlign:'center' as const }}>
+                                  <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:0, textAlign:'center' as const }}>
                                     {['S','M','T','W','T','F','S'].map((d,i) => (
-                                      <div key={i} style={{ fontSize:9, color:ALLOY.mute, paddingBottom:4 }}>{d}</div>
+                                      <div key={i} style={{ fontSize:11, color:ALLOY.mute, paddingBottom:6, fontWeight:500 }}>{d}</div>
                                     ))}
                                     {cells}
                                   </div>
                                 </div>
                               )
                             }
+
                             return (
-                              <div style={{ marginTop:10, position:'relative' as const }}>
+                              <div style={{ marginTop:8 }}>
+                                {/* Date range summary button */}
                                 <button
                                   onClick={() => setShowCalendarPicker(!showCalendarPicker)}
-                                  style={{ width:'100%', display:'flex', alignItems:'center', gap:8, background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'8px 12px', cursor:'pointer', fontSize:12, color:ALLOY.ink, fontFamily:ALLOY.fontBody }}
+                                  style={{ width:'100%', display:'flex', alignItems:'center', gap:8, background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'8px 12px', cursor:'pointer', fontSize:12, color:ALLOY.ink, fontFamily:ALLOY.fontBody, marginBottom:4 }}
                                 >
                                   <span style={{ fontSize:14 }}>📅</span>
-                                  <span>{fmtLabel(startStr)} — {fmtLabel(endStr)}</span>
-                                  <ChevronDown size={12} style={{ marginLeft:'auto', color:ALLOY.mute }}/>
+                                  <span style={{ flex:1, textAlign:'left' as const }}>{fmtLabel(startStr)} — {fmtLabel(endStr)}</span>
+                                  <ChevronDown size={12} style={{ color:ALLOY.mute, flexShrink:0 }}/>
                                 </button>
+
+                                {/* Calendar popup */}
                                 {showCalendarPicker && (
-                                  <div style={{ position:'absolute' as const, top:'calc(100% + 4px)', left:0, right:0, background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, boxShadow:'0 8px 24px rgba(0,0,0,0.12)', padding:14, zIndex:400 }}
-                                    onClick={e => e.stopPropagation()}>
-                                    <div style={{ display:'flex', gap:14, marginBottom:12, justifyContent:'space-between' }}>
+                                  <div
+                                    style={{ background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:4, boxShadow:'0 8px 32px rgba(0,0,0,0.15)', padding:16, marginBottom:8 }}
+                                    onClick={e => e.stopPropagation()}
+                                  >
+                                    {/* Fixed / Rolling selector */}
+                                    <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:12 }}>
+                                      <div style={{ display:'flex', alignItems:'center', gap:6, background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'6px 12px', fontSize:12, color:ALLOY.ink, cursor:'pointer' }}>
+                                        Fixed <ChevronDown size={13} style={{ color:ALLOY.mute }}/>
+                                      </div>
+                                    </div>
+                                    {/* Two month calendars side by side */}
+                                    <div style={{ display:'flex', gap:24 }}>
                                       {renderMonth(calStartView, 'start')}
                                       {renderMonth(calEndView, 'end')}
                                     </div>
-                                    <div style={{ display:'flex', justifyContent:'flex-end', gap:8, borderTop:`1px solid ${ALLOY.line}`, paddingTop:10 }}>
+                                    {/* Footer */}
+                                    <div style={{ display:'flex', justifyContent:'flex-end', gap:12, borderTop:`1px solid ${ALLOY.line}`, paddingTop:12, marginTop:12 }}>
                                       <button onClick={() => setShowCalendarPicker(false)}
-                                        style={{ background:'none', border:'none', color:ALLOY.blue1, cursor:'pointer', fontFamily:ALLOY.fontLabel, fontSize:9, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase' as const }}>
+                                        style={{ background:'none', border:'none', color:ALLOY.blue1, cursor:'pointer', fontSize:14, fontWeight:600, padding:'6px 12px' }}>
                                         Cancel
                                       </button>
                                       <button onClick={() => setShowCalendarPicker(false)}
-                                        style={{ background:ALLOY.green1, border:'none', borderRadius:2, color:ALLOY.ink, cursor:'pointer', padding:'6px 16px', fontFamily:ALLOY.fontLabel, fontSize:9, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase' as const }}>
+                                        style={{ background:ALLOY.blue1, border:'none', borderRadius:999, color:ALLOY.white, cursor:'pointer', fontSize:14, fontWeight:600, padding:'8px 24px' }}>
                                         Apply
                                       </button>
                                     </div>
@@ -2528,6 +2528,13 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                               </div>
                             )
                           })()}
+
+                          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:8 }}>
+                            <span style={{ fontSize:12, color:ALLOY.ink }}>Comparison date range</span>
+                            <div style={{ width:36, height:20, borderRadius:2, background:ALLOY.line, position:'relative', cursor:'pointer' }}>
+                              <div style={{ width:16, height:16, borderRadius:'50%', background:ALLOY.white, position:'absolute', top:2, left:2, boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}/>
+                            </div>
+                          </div>
                         </div>
 
                         {/* Number of rows */}
