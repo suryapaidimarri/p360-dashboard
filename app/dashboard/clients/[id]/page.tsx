@@ -2078,7 +2078,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                               <div style={{ padding:'10px 12px', borderBottom:`1px solid ${ALLOY.line}` }}>
                                 <div style={{ display:'flex', alignItems:'center', gap:8, background:ALLOY.paper, borderRadius:2, padding:'6px 10px', border:'1px solid #e0e0e0' }}>
                                   <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4.5" stroke="#999" strokeWidth="1.5"/><path d="M9.5 9.5 L12 12" stroke="#999" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                                  <input autoFocus value={dsSearch} onChange={e=>setDsSearch(e.target.value)} placeholder="Search" style={{ background:'transparent', border:'none', outline:'none', fontSize:12, color:ALLOY.ink, width:'100%' }}/>
+                                  <input autoFocus value={dsSearch} onChange={e=>setDsSearch(e.target.value)} placeholder="Search" style={{ background:'transparent', border:'none', outline:'none', fontSize:12, color:ALLOY.ink, fontFamily:ALLOY.fontBody, width:'100%' }}/>
                                 </div>
                               </div>
                               <div style={{ padding:'8px 0' }}>
@@ -2108,7 +2108,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                               </div>
                             </div>
                           )}
-                          <button style={{ display:'flex', alignItems:'center', gap:6, marginTop:8, background:'none', border:'none', cursor:'pointer', color:ALLOY.blue1, fontSize:12, fontWeight:600, padding:0 }}>
+                          <button style={{ display:'flex', alignItems:'center', gap:6, marginTop:8, background:'none', border:'none', cursor:'pointer', color:ALLOY.green1, fontSize:9, fontWeight:700, fontFamily:ALLOY.fontLabel, letterSpacing:'0.05em', padding:0, textTransform:'uppercase' as const }}>
                             <span style={{ fontSize:14 }}>⊕</span> Blend data
                           </button>
                         </div>
@@ -2118,23 +2118,23 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                           <p style={{ fontSize:13, fontWeight:700, color:ALLOY.ink, marginBottom:10 }}>Dimension</p>
                           <div style={{ display:'flex', flexDirection:'column' as const, gap:6 }}>
                             {dimensions.map((dim: string, i: number) => (
-                              <div key={i} style={{ display:'flex', alignItems:'center', gap:8, background:ALLOY.green4, border:`1px solid ${ALLOY.green2}`, borderRadius:999, padding:'5px 12px' }}>
-                                <span style={{ fontSize:10, fontWeight:700, color:ALLOY.green1, background:ALLOY.green4, borderRadius:3, padding:'1px 4px' }}>ABC</span>
+                              <div key={i} style={{ display:'flex', alignItems:'center', gap:8, background:ALLOY.green4, border:`1px solid ${ALLOY.green1}`, borderRadius:2, padding:'6px 12px' }}>
+                                <span style={{ fontSize:10, fontWeight:700, color:ALLOY.green1, background:ALLOY.green4, borderRadius:2, padding:'1px 5px', fontFamily:ALLOY.fontLabel }}>ABC</span>
                                 <span style={{ flex:1, fontSize:12, color:ALLOY.ink }}>{dim}</span>
                                 <button onClick={() => updateField('dimensions', dimensions.filter((_:string,j:number)=>j!==i))} style={{ background:'none', border:'none', cursor:'pointer', color:ALLOY.mute, padding:0 }}><X size={11}/></button>
                               </div>
                             ))}
                             <button onClick={() => { setShowDimDropdown(!showDimDropdown); setDimSearch('') }}
-                              style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'1px dashed #ccc', borderRadius:999, padding:'5px 12px', cursor:'pointer', color:ALLOY.blue1, fontSize:12, fontWeight:600 }}>
+                              style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:`1px dashed ${ALLOY.line}`, borderRadius:2, padding:'6px 12px', cursor:'pointer', color:ALLOY.green1, fontSize:9, fontWeight:700, fontFamily:ALLOY.fontLabel, letterSpacing:'0.06em', textTransform:'uppercase' as const }}>
                               <Plus size={13}/> Add dimension
                             </button>
                           </div>
                           {showDimDropdown && (
                             <div style={{ position:'absolute' as const, top:'100%', left:0, right:0, background:ALLOY.white, border:'1px solid #e0e0e0', borderRadius:2, boxShadow:'0 8px 24px rgba(0,0,0,0.14)', zIndex:200, overflow:'hidden', maxHeight:340 }}>
                               <div style={{ padding:'10px 12px', borderBottom:`1px solid ${ALLOY.line}`, position:'sticky' as const, top:0, background:ALLOY.white }}>
-                                <div style={{ display:'flex', alignItems:'center', gap:8, background:ALLOY.paper, borderRadius:999, padding:'7px 12px', border:'1px solid #e0e0e0' }}>
+                                <div style={{ display:'flex', alignItems:'center', gap:8, background:ALLOY.paper, borderRadius:2, padding:'7px 12px', border:`1px solid ${ALLOY.line}` }}>
                                   <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4.5" stroke="#999" strokeWidth="1.5"/><path d="M9.5 9.5 L12 12" stroke="#999" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                                  <input autoFocus value={dimSearch} onChange={e=>setDimSearch(e.target.value)} placeholder="Search" style={{ background:'transparent', border:'none', outline:'none', fontSize:12, color:ALLOY.ink, width:'100%' }}/>
+                                  <input autoFocus value={dimSearch} onChange={e=>setDimSearch(e.target.value)} placeholder="Search" style={{ background:'transparent', border:'none', outline:'none', fontSize:12, color:ALLOY.ink, fontFamily:ALLOY.fontBody, width:'100%' }}/>
                                 </div>
                               </div>
                               <div style={{ overflowY:'auto' as const, maxHeight:240 }}>
@@ -2171,23 +2171,23 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                           <p style={{ fontSize:13, fontWeight:700, color:ALLOY.ink, marginBottom:10 }}>Metric</p>
                           <div style={{ display:'flex', flexDirection:'column' as const, gap:6 }}>
                             {metrics.map((met: string, i: number) => (
-                              <div key={i} style={{ display:'flex', alignItems:'center', gap:8, background:ALLOY.blue4, border:`1px solid ${ALLOY.blue2}`, borderRadius:999, padding:'5px 12px' }}>
-                                <span style={{ fontSize:10, fontWeight:700, color:ALLOY.blue1, background:ALLOY.blue4, borderRadius:3, padding:'1px 4px' }}>123</span>
+                              <div key={i} style={{ display:'flex', alignItems:'center', gap:8, background:ALLOY.blue4, border:`1px solid ${ALLOY.blue1}`, borderRadius:2, padding:'6px 12px' }}>
+                                <span style={{ fontSize:10, fontWeight:700, color:ALLOY.blue1, background:ALLOY.blue4, borderRadius:2, padding:'1px 5px', fontFamily:ALLOY.fontLabel }}>123</span>
                                 <span style={{ flex:1, fontSize:12, color:ALLOY.ink }}>{met}</span>
                                 <button onClick={() => updateField('metrics', metrics.filter((_:string,j:number)=>j!==i))} style={{ background:'none', border:'none', cursor:'pointer', color:ALLOY.mute, padding:0 }}><X size={11}/></button>
                               </div>
                             ))}
                             <button onClick={() => { setShowMetDropdown(!showMetDropdown); setMetSearch('') }}
-                              style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'1px dashed #ccc', borderRadius:999, padding:'5px 12px', cursor:'pointer', color:ALLOY.blue1, fontSize:12, fontWeight:600 }}>
+                              style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:`1px dashed ${ALLOY.line}`, borderRadius:2, padding:'6px 12px', cursor:'pointer', color:ALLOY.green1, fontSize:9, fontWeight:700, fontFamily:ALLOY.fontLabel, letterSpacing:'0.06em', textTransform:'uppercase' as const }}>
                               <Plus size={13}/> Add metric
                             </button>
                           </div>
                           {showMetDropdown && (
                             <div style={{ position:'absolute' as const, top:'100%', left:0, right:0, background:ALLOY.white, border:'1px solid #e0e0e0', borderRadius:2, boxShadow:'0 8px 24px rgba(0,0,0,0.14)', zIndex:200, overflow:'hidden', maxHeight:340 }}>
                               <div style={{ padding:'10px 12px', borderBottom:`1px solid ${ALLOY.line}`, position:'sticky' as const, top:0, background:ALLOY.white }}>
-                                <div style={{ display:'flex', alignItems:'center', gap:8, background:ALLOY.paper, borderRadius:999, padding:'7px 12px', border:'1px solid #e0e0e0' }}>
+                                <div style={{ display:'flex', alignItems:'center', gap:8, background:ALLOY.paper, borderRadius:2, padding:'7px 12px', border:`1px solid ${ALLOY.line}` }}>
                                   <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4.5" stroke="#999" strokeWidth="1.5"/><path d="M9.5 9.5 L12 12" stroke="#999" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                                  <input autoFocus value={metSearch} onChange={e=>setMetSearch(e.target.value)} placeholder="Search" style={{ background:'transparent', border:'none', outline:'none', fontSize:12, color:ALLOY.ink, width:'100%' }}/>
+                                  <input autoFocus value={metSearch} onChange={e=>setMetSearch(e.target.value)} placeholder="Search" style={{ background:'transparent', border:'none', outline:'none', fontSize:12, color:ALLOY.ink, fontFamily:ALLOY.fontBody, width:'100%' }}/>
                                 </div>
                               </div>
                               <div style={{ overflowY:'auto' as const, maxHeight:240 }}>
@@ -2197,7 +2197,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                                     style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 14px', cursor:'pointer' }}
                                     onMouseEnter={e=>(e.currentTarget as HTMLDivElement).style.background=ALLOY.blue4}
                                     onMouseLeave={e=>(e.currentTarget as HTMLDivElement).style.background='transparent'}>
-                                    <span style={{ fontSize:10, fontWeight:700, color:ALLOY.blue1, background:ALLOY.blue4, borderRadius:3, padding:'1px 5px', flexShrink:0 }}>123</span>
+                                    <span style={{ fontSize:10, fontWeight:700, color:ALLOY.blue1, background:ALLOY.blue4, borderRadius:2, padding:'1px 5px', flexShrink:0, fontFamily:ALLOY.fontLabel }}>123</span>
                                     <span style={{ fontSize:13, color:ALLOY.ink }}>{met}</span>
                                   </div>
                                 ))}
@@ -2231,7 +2231,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                           {((widgetData.filters as string[]) || []).length > 0 && (
                             <div style={{ display:'flex', flexDirection:'column' as const, gap:6, marginBottom:8 }}>
                               {((widgetData.filters as string[]) || []).map((f: string, i: number) => (
-                                <div key={i} style={{ display:'flex', alignItems:'center', gap:8, background:ALLOY.yellow4, border:'1px solid #ffe0b2', borderRadius:999, padding:'5px 12px', cursor:'pointer' }}
+                                <div key={i} style={{ display:'flex', alignItems:'center', gap:8, background:ALLOY.yellow4, border:`1px solid ${ALLOY.yellow2}`, borderRadius:2, padding:'6px 12px', cursor:'pointer' }}
                                   onClick={() => {
                                     // Find saved filter definition — check userFilters first, then ga4Filters
                                     const saved = userFilters.find((gf: any) => gf.name === f) || ga4Filters.find((gf: any) => gf.name === f)
@@ -2295,7 +2295,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                                     {userFilters.filter((f: any) => f.name.toLowerCase().includes(filterSearch.toLowerCase())).map((f: any) => (
                                       <div key={f.name}
                                         onClick={() => { updateField('filters', [...((widgetData.filters as string[]) || []), f.name]); setShowFilterDropdown(false) }}
-                                        style={{ display:'flex', alignItems:'center', gap:8, padding:'9px 14px', fontSize:12, color:ALLOY.yellow1, cursor:'pointer', background:ALLOY.yellow4 }}
+                                        style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 14px', fontSize:12, color:ALLOY.ink, cursor:'pointer', background:ALLOY.yellow4, borderLeft:`3px solid ${ALLOY.yellow1}` }}
                                         onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = ALLOY.yellow3}
                                         onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = ALLOY.yellow4}>
                                         <span style={{ fontSize:11 }}>≡</span>
@@ -2416,8 +2416,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                           <p style={{ fontSize:13, fontWeight:700, color:ALLOY.ink, marginBottom:10 }}>Sort</p>
                           <div style={{ background:ALLOY.paper, borderRadius:2, padding:10, marginBottom:8 }}>
                             <p style={{ fontSize:12, fontWeight:600, color:ALLOY.ink, marginBottom:8 }}>Sort #1</p>
-                            <div style={{ display:'flex', alignItems:'center', gap:8, background:ALLOY.blue4, border:`1px solid ${ALLOY.blue2}`, borderRadius:999, padding:'5px 12px', marginBottom:8 }}>
-                              <span style={{ fontSize:10, fontWeight:700, color:ALLOY.blue1, background:ALLOY.blue4, borderRadius:3, padding:'1px 4px' }}>AUT</span>
+                            <div style={{ display:'flex', alignItems:'center', gap:8, background:ALLOY.blue4, border:`1px solid ${ALLOY.blue1}`, borderRadius:2, padding:'6px 12px', marginBottom:8 }}>
+                              <span style={{ fontSize:10, fontWeight:700, color:ALLOY.blue1, background:ALLOY.blue4, borderRadius:2, padding:'1px 5px', fontFamily:ALLOY.fontLabel }}>AUT</span>
                               <span style={{ fontSize:12, color:ALLOY.ink, flex:1 }}>{metrics[0] || 'Sessions'}</span>
                             </div>
                             {['Descending','Ascending'].map((opt,i) => (
@@ -2750,16 +2750,16 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
           <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.4)', zIndex:500, display:'flex', flexDirection:'column' as const }}
             onClick={() => setShowCreateFilter(false)}>
             {/* Modal panel — bottom half of screen, full width */}
-            <div style={{ marginTop:'auto', background:ALLOY.white, borderRadius:'16px 16px 0 0', boxShadow:'0 -8px 40px rgba(0,0,0,0.2)', width:'100%', height:'50vh', display:'flex', flexDirection:'column' as const }}
+            <div style={{ marginTop:'auto', background:ALLOY.white, borderRadius:'2px 2px 0 0', boxShadow:'0 -8px 40px rgba(0,0,0,0.2)', width:'100%', height:'50vh', display:'flex', flexDirection:'column' as const }}
               onClick={e => e.stopPropagation()}>
 
               {/* Header */}
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 32px', borderBottom:'1px solid #e0e0e0', flexShrink:0, background:ALLOY.white, position:'sticky' as const, top:0, zIndex:800 }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 32px', borderBottom:`1px solid ${ALLOY.line}`, flexShrink:0, background:ALLOY.white, position:'sticky' as const, top:0, zIndex:800 }}>
                 <div style={{ display:'flex', alignItems:'center', gap:12 }}>
                   <span style={{ fontSize:16, fontWeight:600, color:ALLOY.ink }}>{editingFilterName ? 'Edit Filter' : 'Create Filter'}</span>
-                  <span style={{ fontSize:11, background:ALLOY.blue4, color:'#3949ab', borderRadius:2, padding:'2px 8px', fontWeight:600 }}>BETA</span>
+                  <span style={{ fontSize:11, background:ALLOY.yellow4, color:ALLOY.yellow1, borderRadius:2, padding:'2px 8px', fontWeight:700, fontFamily:ALLOY.fontLabel, letterSpacing:'0.06em' }}>BETA</span>
                 </div>
-                <button onClick={() => setShowCreateFilter(false)} style={{ display:'flex', alignItems:'center', gap:6, background:'none', border:'none', cursor:'pointer', color:ALLOY.mute, fontSize:13, fontWeight:500 }}>
+                <button onClick={() => setShowCreateFilter(false)} style={{ display:'flex', alignItems:'center', gap:6, background:'none', border:'none', cursor:'pointer', color:ALLOY.mute, fontSize:9, fontWeight:700, fontFamily:ALLOY.fontLabel, letterSpacing:'0.08em' }}>
                   <X size={16}/> CLOSE
                 </button>
               </div>
@@ -2771,14 +2771,14 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                     <label style={{ position:'absolute' as const, top:-8, left:12, fontSize:11, color:ALLOY.mute, background:ALLOY.white, padding:'0 4px' }}>Name</label>
                     <input value={newFilterName} onChange={e => setNewFilterName(e.target.value)}
                       placeholder="Filter name"
-                      style={{ width:'100%', border:'1px solid #ccc', borderRadius:2, padding:'10px 14px', fontSize:13, outline:'none', color:ALLOY.ink, boxSizing:'border-box' as const }}/>
+                      style={{ width:'100%', border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'10px 14px', fontSize:13, outline:'none', color:ALLOY.ink, background:ALLOY.paper, fontFamily:ALLOY.fontBody, boxSizing:'border-box' as const }}/>
                   </div>
-                  <div style={{ display:'flex', alignItems:'center', gap:8, background:ALLOY.paper, borderRadius:999, padding:'7px 14px', border:'1px solid #e0e0e0' }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, background:ALLOY.paper, borderRadius:2, padding:'7px 14px', border:`1px solid ${ALLOY.line}` }}>
                     <img src="https://www.google.com/s2/favicons?domain=analytics.google.com&sz=32" style={{ width:16, height:16 }} alt=""/>
                     <span style={{ fontSize:13, color:ALLOY.ink, fontWeight:500 }}>{mappingPropName || 'GA4 Property'}</span>
                   </div>
                   <label style={{ display:'flex', alignItems:'center', gap:8, fontSize:13, color:ALLOY.ink, cursor:'pointer' }}>
-                    <div style={{ width:36, height:20, borderRadius:2, background:ALLOY.blue1, position:'relative', cursor:'pointer' }}>
+                    <div style={{ width:36, height:20, borderRadius:999, background:ALLOY.green1, position:'relative', cursor:'pointer' }}>
                       <div style={{ width:16, height:16, borderRadius:'50%', background:ALLOY.white, position:'absolute', top:2, left:18, boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}/>
                     </div>
                     Show suggested values while typing
@@ -2791,7 +2791,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                     {idx > 0 && (
                       <div style={{ display:'flex', gap:8, marginBottom:12 }}>
                         {['AND','OR'].map(op => (
-                          <button key={op} style={{ padding:'4px 16px', borderRadius:999, border:'1px solid #1a85c8', background: op==='AND' ? ALLOY.blue1 : 'transparent', color: op==='AND' ? ALLOY.white : ALLOY.blue1, fontSize:12, fontWeight:600, cursor:'pointer' }}>{op}</button>
+                          <button key={op} style={{ padding:'4px 16px', borderRadius:999, border:`1px solid ${ALLOY.green1}`, background: op==='AND' ? ALLOY.green1 : 'transparent', color: op==='AND' ? ALLOY.ink : ALLOY.green1, fontSize:9, fontWeight:700, fontFamily:ALLOY.fontLabel, letterSpacing:'0.06em', cursor:'pointer' }}>{op}</button>
                         ))}
                       </div>
                     )}
@@ -2822,7 +2822,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                               <div style={{ display:'flex', alignItems:'center', gap:8, background:ALLOY.paper, borderRadius:2, padding:'6px 10px' }}>
                                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="5" cy="5" r="4" stroke="#999" strokeWidth="1.5"/><path d="M9 9 L11 11" stroke="#999" strokeWidth="1.5" strokeLinecap="round"/></svg>
                                 <input autoFocus value={filterFieldSearch} onChange={e => setFilterFieldSearch(e.target.value)}
-                                  placeholder="Search" style={{ background:'transparent', border:'none', outline:'none', fontSize:12, color:ALLOY.ink, width:'100%' }}/>
+                                  placeholder="Search" style={{ background:'transparent', border:'none', outline:'none', fontSize:12, color:ALLOY.ink, fontFamily:ALLOY.fontBody, width:'100%' }}/>
                               </div>
                             </div>
                             <div style={{ overflowY:'auto' as const, flex:1 }}>
@@ -3014,7 +3014,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                       setShowCreateFilter(false)
                     }, 900)
                   }}
-                  style={{ background: filterJustSaved ? ALLOY.green1 : !newFilterName.trim() ? ALLOY.line : ALLOY.green1, border:'none', borderRadius:2, padding:'10px 24px', color:ALLOY.white, fontSize:14, fontWeight:600, cursor: !newFilterName.trim() ? 'not-allowed' : 'pointer', transition:'background 0.2s', minWidth:80 }}>
+                  style={{ background: filterJustSaved ? ALLOY.green1 : !newFilterName.trim() ? ALLOY.line : ALLOY.green1, border:'none', borderRadius:2, padding:'10px 24px', color:ALLOY.ink, fontSize:9, fontWeight:700, fontFamily:ALLOY.fontLabel, letterSpacing:'0.08em', cursor: !newFilterName.trim() ? 'not-allowed' : 'pointer', transition:'background 0.2s', minWidth:80 }}>
                   {filterJustSaved ? '✓ Saved!' : editingFilterName ? 'Update Filter' : 'Save'}
                 </button>
               </div>
