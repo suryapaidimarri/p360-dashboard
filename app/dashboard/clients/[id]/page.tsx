@@ -602,6 +602,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [openClauseFieldIdx, setOpenClauseFieldIdx] = useState<number|null>(null)
   const [openClauseValueIdx, setOpenClauseValueIdx] = useState<number|null>(null)
   const [ga4EventNames, setGa4EventNames] = useState<string[]>([])
+  const [ga4EventRows, setGa4EventRows] = useState<{d:string;v:number}[]>([])
   const [eventSearch, setEventSearch] = useState('')
   const [selectedEventValues, setSelectedEventValues] = useState<{[idx: number]: string[]}>({})
   const [filterSearch, setFilterSearch] = useState('')
@@ -758,14 +759,30 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     } catch {}
   }, [widgets])
 
+  // Auto-load event data when any widget uses Event Name dimension
+  useEffect(() => {
+    if (connection?.connected && selectedProperty && ga4EventRows.length === 0) {
+      const needsEvents = widgets.some(w => {
+        const dims: string[] = (w as any).dimensions || []
+        return dims.includes('Event Name') || dims.includes('eventName')
+      })
+      if (needsEvents) loadGA4Events()
+    }
+  }, [widgets, connection, selectedProperty])
+
   async function loadGA4Events() {
     if (!connection?.connected || !selectedProperty) return
     try {
       const res = await fetch(`/api/ga4/custom?client_id=${clientId}&property_id=${selectedProperty}&dimensions=eventName&metrics=eventCount&start_date=30daysAgo&end_date=today`)
       if (res.ok) {
         const data = await res.json()
-        const events = (data.rows || []).map((r: any) => r.dimensionValues?.[0]?.value).filter(Boolean)
+        const rows = data.rows || []
+        const events = rows.map((r: any) => r.dimensionValues?.[0]?.value).filter(Boolean)
         setGa4EventNames(events)
+        setGa4EventRows(rows.map((r: any) => ({
+          d: r.dimensionValues?.[0]?.value || '',
+          v: parseInt(r.metricValues?.[0]?.value || '0')
+        })).filter((r: any) => r.d))
       }
     } catch {}
   }
@@ -1010,6 +1027,20 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       return ga4Data?.sources?.rows?.slice(0,6).map((r: any) => ({
         d: r.dimensionValues?.[0]?.value || '', v: parseFloat(r.metricValues?.[0]?.value || '0')
       })) || [{d:'organic',v:2100},{d:'direct',v:1800},{d:'cpc',v:900},{d:'email',v:400}]
+    }
+    if (primaryDim === 'Event Name' || primaryDim === 'eventName') {
+      // Use cached event rows if available, otherwise use fallback events
+      if (ga4EventRows.length > 0) return ga4EventRows
+      // Trigger load if connected
+      if (connection?.connected && selectedProperty && ga4EventNames.length === 0) {
+        loadGA4Events()
+      }
+      // Fallback common events
+      return [
+        {d:'page_view',v:45230},{d:'session_start',v:28100},{d:'first_visit',v:12400},
+        {d:'scroll',v:9800},{d:'click',v:7200},{d:'user_engagement',v:5600},
+        {d:'view_search_results',v:2100},{d:'file_download',v:890},
+      ]
     }
     // Any other dimension or Date: use time series with selected metric index
     if (!ga4Data) return STATIC_SESSIONS
