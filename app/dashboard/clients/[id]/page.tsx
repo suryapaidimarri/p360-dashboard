@@ -596,6 +596,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [showDsDropdown, setShowDsDropdown] = useState(false)
   const [showFilterDropdown, setShowFilterDropdown] = useState(false)
   const [showCreateFilter, setShowCreateFilter] = useState(false)
+  const [filterJustSaved, setFilterJustSaved] = useState(false)
   const [newFilterName, setNewFilterName] = useState('')
   const [newFilterClauses, setNewFilterClauses] = useState([{ include: true, field: '', operator: 'contains', value: '' }])
   const [filterFieldSearch, setFilterFieldSearch] = useState('')
@@ -2640,18 +2641,35 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                   disabled={!newFilterName.trim()}
                   onClick={() => {
                     if (!newFilterName.trim()) return
-                    // Save filter to ga4Filters list and apply to widget
-                    const newFilter = newFilterName.trim()
-                    setGa4Filters(prev => [...prev, { name: newFilter, type: 'ga4' as const }])
+                    const filterName = newFilterName.trim()
+                    // Build filter with full clause data
+                    const newFilterObj = {
+                      name: filterName,
+                      type: 'ga4' as const,
+                      clauses: newFilterClauses.map((c, i) => ({
+                        ...c,
+                        values: selectedEventValues[i] || []
+                      })),
+                    }
+                    setGa4Filters(prev => [...prev, newFilterObj as any])
+                    // Apply to current widget
                     if (editingWidget) {
-                      const updated = { ...editingWidget, filters: [...((editingWidget as any).filters || []), newFilter] } as any
+                      const updated = { ...editingWidget, filters: [...((editingWidget as any).filters || []), filterName] } as any
                       setEditingWidget(updated)
                       setWidgets(prev => prev.map(w => w.id === updated.id ? updated : w))
                     }
-                    setShowCreateFilter(false)
+                    // Flash "Saved!" then close
+                    setFilterJustSaved(true)
+                    setTimeout(() => {
+                      setFilterJustSaved(false)
+                      setNewFilterName('')
+                      setNewFilterClauses([{ include: true, field: '', operator: 'contains', value: '' }])
+                      setSelectedEventValues({})
+                      setShowCreateFilter(false)
+                    }, 900)
                   }}
-                  style={{ background: !newFilterName.trim() ? '#ccc' : '#1a85c8', border:'none', borderRadius:6, padding:'10px 24px', color:'#fff', fontSize:14, fontWeight:600, cursor: !newFilterName.trim() ? 'not-allowed' : 'pointer' }}>
-                  Save
+                  style={{ background: filterJustSaved ? '#20BB71' : !newFilterName.trim() ? '#ccc' : '#1a85c8', border:'none', borderRadius:6, padding:'10px 24px', color:'#fff', fontSize:14, fontWeight:600, cursor: !newFilterName.trim() ? 'not-allowed' : 'pointer', transition:'background 0.2s', minWidth:80 }}>
+                  {filterJustSaved ? '✓ Saved!' : 'Save'}
                 </button>
               </div>
             </div>
