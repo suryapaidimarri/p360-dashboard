@@ -1634,47 +1634,64 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
               )}
               {/* Share button — Alloy design system */}
               <div style={{ position:'relative' as const }}>
+                {/* Trigger button — matches all other topbar buttons exactly */}
                 <button
                   onClick={e => { e.stopPropagation(); setShowShareMenu(v => !v); setShareSubmenu(null) }}
-                  style={{ display:'flex', alignItems:'center', gap:6, background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'6px 12px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, cursor:'pointer', fontWeight:500 }}>
+                  style={{ display:'flex', alignItems:'center', gap:5, background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'6px 12px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, cursor:'pointer', fontWeight:400, lineHeight:1 }}>
                   Share
-                  <ChevronDown size={11} style={{ color:ALLOY.mute }}/>
+                  <ChevronDown size={11} style={{ color:ALLOY.mute, flexShrink:0 }}/>
                 </button>
 
                 {showShareMenu && (
                   <>
-                    {/* Backdrop */}
+                    {/* Transparent backdrop */}
                     <div style={{ position:'fixed' as const, inset:0, zIndex:1000 }} onClick={() => { setShowShareMenu(false); setShareSubmenu(null) }}/>
 
-                    {/* Menu card — Alloy: borderRadius:2, white bg, line border, tight spacing */}
+                    {/* Dropdown card — Alloy: borderRadius:2, ALLOY.white, 1px line border */}
                     <div
-                      style={{ position:'absolute' as const, right:0, top:'calc(100% + 4px)', zIndex:1001, background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, boxShadow:'0 4px 16px rgba(0,0,0,0.10)', minWidth:264, overflow:'hidden' }}
+                      style={{ position:'absolute' as const, right:0, top:'calc(100% + 3px)', zIndex:1001, background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, boxShadow:'0 2px 12px rgba(0,0,0,0.08)', minWidth:244, overflow:'hidden' }}
                       onClick={e => e.stopPropagation()}>
 
                       {/* ── Main menu ── */}
                       {!shareSubmenu && (() => {
-                        const ITEMS = [
-                          { id:'pdf',    Icon: Download,   label:'Download PDF',             arrow:true  },
-                          { id:'email',  Icon: Mail,       label:'Email',                    arrow:true  },
-                          { id:'link',   Icon: Link2,      label:'Share Link',               arrow:true  },
-                          { id:'tpl',    Icon: LayoutGrid, label:'Save Section as Template', arrow:false },
-                          { id:'report', Icon: Plus,       label:'Add To Report',            arrow:false },
-                        ] as const
+                        // Inline SVG icon components matching Alloy's 14px lucide outline style
+                        const ITEMS: { id: string; Icon: React.ElementType; label: string; arrow: boolean; accent?: boolean }[] = [
+                          { id:'pdf',    Icon:Download,    label:'Download PDF',             arrow:true  },
+                          { id:'email',  Icon:Mail,        label:'Email',                    arrow:true  },
+                          { id:'link',   Icon:Link2,       label:'Share Link',               arrow:true  },
+                          { id:'tpl',    Icon:LayoutGrid,  label:'Save Section as Template', arrow:false },
+                          { id:'report', Icon:Plus,        label:'Add To Report',            arrow:false, accent:true },
+                        ]
                         return (
-                          <div style={{ padding:'4px 0' }}>
-                            {ITEMS.map(({ id, Icon, label, arrow }, idx) => (
+                          <div>
+                            {ITEMS.map(({ id, Icon, label, arrow, accent }, idx) => (
                               <React.Fragment key={id}>
-                                {/* Divider before template/report group */}
-                                {idx === 3 && <div style={{ height:1, background:ALLOY.line, margin:'4px 0' }}/>}
+                                {idx === 3 && <div style={{ height:1, background:ALLOY.line }}/>}
                                 <button
-                                  onClick={() => { if (id === 'pdf' || id === 'email' || id === 'link') setShareSubmenu(id); else setShowShareMenu(false) }}
-                                  style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'9px 14px', fontFamily:ALLOY.fontBody, fontSize:13, color:ALLOY.ink, background:'none', border:'none', cursor:'pointer', textAlign:'left' as const }}
-                                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = ALLOY.paper; (e.currentTarget as HTMLButtonElement).style.color = ALLOY.green1 }}
-                                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; (e.currentTarget as HTMLButtonElement).style.color = ALLOY.ink }}
+                                  onClick={() => {
+                                    if (id === 'pdf' || id === 'email' || id === 'link') setShareSubmenu(id as any)
+                                    else setShowShareMenu(false)
+                                  }}
+                                  style={{ display:'flex', alignItems:'center', gap:9, width:'100%', padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color: accent ? ALLOY.green1 : ALLOY.ink, fontWeight:400, background:'none', border:'none', cursor:'pointer', textAlign:'left' as const, lineHeight:'1.4' }}
+                                  onMouseEnter={e => {
+                                    const el = e.currentTarget as HTMLButtonElement
+                                    el.style.background = ALLOY.green4
+                                    el.style.color = ALLOY.green1
+                                    // also tint icon
+                                    const svg = el.querySelector('svg') as SVGElement | null
+                                    if (svg) svg.style.color = ALLOY.green1
+                                  }}
+                                  onMouseLeave={e => {
+                                    const el = e.currentTarget as HTMLButtonElement
+                                    el.style.background = 'none'
+                                    el.style.color = accent ? ALLOY.green1 : ALLOY.ink
+                                    const svg = el.querySelector('svg') as SVGElement | null
+                                    if (svg) svg.style.color = ALLOY.mute
+                                  }}
                                 >
-                                  <Icon size={14} style={{ color:ALLOY.mute, flexShrink:0 }} strokeWidth={1.5}/>
-                                  <span style={{ flex:1, fontWeight:400 }}>{label}</span>
-                                  {arrow && <ChevronRight size={13} style={{ color:ALLOY.mute }}/>}
+                                  <Icon size={13} style={{ color: accent ? ALLOY.green1 : ALLOY.mute, flexShrink:0 }} strokeWidth={1.5}/>
+                                  <span style={{ flex:1 }}>{label}</span>
+                                  {arrow && <ChevronRight size={11} style={{ color:ALLOY.mute, flexShrink:0 }}/>}
                                 </button>
                               </React.Fragment>
                             ))}
@@ -1682,45 +1699,55 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                         )
                       })()}
 
-                      {/* ── Submenu template — reused for pdf / email / link ── */}
+                      {/* ── Submenu — single template reused for pdf / email / link ── */}
                       {shareSubmenu && (() => {
-                        const SUB: Record<string, { title: string; items: string[] }> = {
-                          pdf:   { title:'Download PDF',  items:['Download Current Section', 'Download My Dashboards'] },
-                          email: { title:'Email',         items:['Send Current Section',     'Send My Dashboards']     },
-                          link:  { title:'Share Link',    items:['Share Current Section',    'Share My Dashboards']    },
+                        const SUB: Record<string, { title:string; items:string[] }> = {
+                          pdf:   { title:'Download PDF', items:['Download Current Section','Download My Dashboards'] },
+                          email: { title:'Email',        items:['Send Current Section','Send My Dashboards']        },
+                          link:  { title:'Share Link',   items:['Share Current Section','Share My Dashboards']      },
                         }
                         const sub = SUB[shareSubmenu]
                         return (
                           <div>
-                            {/* Submenu header — Alloy label style */}
-                            <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 14px', borderBottom:`1px solid ${ALLOY.line}`, background:ALLOY.paper }}>
+                            {/* Header: back arrow + ALLOY.label title */}
+                            <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 12px', borderBottom:`1px solid ${ALLOY.line}`, background:ALLOY.paper }}>
                               <button
                                 onClick={() => setShareSubmenu(null)}
-                                style={{ display:'flex', alignItems:'center', justifyContent:'center', width:24, height:24, background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, cursor:'pointer', flexShrink:0 }}>
-                                <ChevronLeft size={13} style={{ color:ALLOY.ink }}/>
+                                style={{ display:'flex', alignItems:'center', justifyContent:'center', width:22, height:22, background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, cursor:'pointer', flexShrink:0 }}
+                                onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = ALLOY.green4}
+                                onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = ALLOY.white}
+                              >
+                                <ChevronLeft size={12} style={{ color:ALLOY.ink }}/>
                               </button>
-                              <span style={{ fontFamily:ALLOY.fontLabel, fontSize:9, fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'0.1em', color:ALLOY.ink }}>
+                              {/* Barlow label — matches every section heading in the app */}
+                              <span style={{ fontFamily:ALLOY.fontLabel, fontSize:9, fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'0.12em', color:ALLOY.mute }}>
                                 {sub.title}
                               </span>
                             </div>
-                            {/* Submenu items */}
-                            <div style={{ padding:'4px 0' }}>
+                            {/* Sub-items */}
+                            <div>
                               {sub.items.map(label => (
                                 <button key={label}
                                   onClick={() => { setShowShareMenu(false); setShareSubmenu(null) }}
-                                  style={{ display:'flex', alignItems:'center', width:'100%', padding:'9px 14px', fontFamily:ALLOY.fontBody, fontSize:13, color:ALLOY.ink, background:'none', border:'none', cursor:'pointer', textAlign:'left' as const }}
-                                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = ALLOY.green4; (e.currentTarget as HTMLButtonElement).style.color = ALLOY.green1 }}
-                                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; (e.currentTarget as HTMLButtonElement).style.color = ALLOY.ink }}
-                                >
-                                  <span style={{ flex:1 }}>{label}</span>
-                                  {/* Green accent bar on left of item (Alloy nav pattern) */}
-                                </button>
+                                  style={{ display:'flex', alignItems:'center', width:'100%', padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, fontWeight:400, background:'none', border:'none', cursor:'pointer', textAlign:'left' as const, lineHeight:'1.4', borderLeft:'2px solid transparent' }}
+                                  onMouseEnter={e => {
+                                    const el = e.currentTarget as HTMLButtonElement
+                                    el.style.background = ALLOY.green4
+                                    el.style.color = ALLOY.green1
+                                    el.style.borderLeft = `2px solid ${ALLOY.green1}`
+                                  }}
+                                  onMouseLeave={e => {
+                                    const el = e.currentTarget as HTMLButtonElement
+                                    el.style.background = 'none'
+                                    el.style.color = ALLOY.ink
+                                    el.style.borderLeft = '2px solid transparent'
+                                  }}
+                                >{label}</button>
                               ))}
                             </div>
                           </div>
                         )
                       })()}
-
                     </div>
                   </>
                 )}
