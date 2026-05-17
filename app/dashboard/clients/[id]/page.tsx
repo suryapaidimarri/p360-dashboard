@@ -1667,32 +1667,31 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                             {ITEMS.map(({ id, Icon, label, arrow, accent }, idx) => (
                               <React.Fragment key={id}>
                                 {idx === 3 && <div style={{ height:1, background:ALLOY.line }}/>}
-                                <button
+                                <div
                                   onClick={() => {
                                     if (id === 'pdf' || id === 'email' || id === 'link') setShareSubmenu(id as any)
                                     else setShowShareMenu(false)
                                   }}
-                                  style={{ display:'flex', alignItems:'center', gap:9, width:'100%', padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color: accent ? ALLOY.green1 : ALLOY.ink, fontWeight:400, background:'none', border:'none', cursor:'pointer', textAlign:'left' as const, lineHeight:'1.4' }}
+                                  style={{ display:'flex', alignItems:'center', gap:9, width:'100%', padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color: accent ? ALLOY.green1 : ALLOY.ink, fontWeight:400, cursor:'pointer', lineHeight:'1.4', userSelect:'none' as const }}
                                   onMouseEnter={e => {
-                                    const el = e.currentTarget as HTMLButtonElement
+                                    const el = e.currentTarget as HTMLDivElement
                                     el.style.background = ALLOY.green4
                                     el.style.color = ALLOY.green1
-                                    // also tint icon
                                     const svg = el.querySelector('svg') as SVGElement | null
                                     if (svg) svg.style.color = ALLOY.green1
                                   }}
                                   onMouseLeave={e => {
-                                    const el = e.currentTarget as HTMLButtonElement
+                                    const el = e.currentTarget as HTMLDivElement
                                     el.style.background = 'none'
                                     el.style.color = accent ? ALLOY.green1 : ALLOY.ink
                                     const svg = el.querySelector('svg') as SVGElement | null
-                                    if (svg) svg.style.color = ALLOY.mute
+                                    if (svg) svg.style.color = accent ? ALLOY.green1 : ALLOY.mute
                                   }}
                                 >
                                   <Icon size={13} style={{ color: accent ? ALLOY.green1 : ALLOY.mute, flexShrink:0 }} strokeWidth={1.5}/>
-                                  <span style={{ flex:1 }}>{label}</span>
+                                  <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:'inherit', fontWeight:400, flex:1 }}>{label}</span>
                                   {arrow && <ChevronRight size={11} style={{ color:ALLOY.mute, flexShrink:0 }}/>}
-                                </button>
+                                </div>
                               </React.Fragment>
                             ))}
                           </div>
@@ -1725,24 +1724,26 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                               </span>
                             </div>
                             {/* Sub-items */}
-                            <div>
+                            <div style={{ padding:'4px 0' }}>
                               {sub.items.map(label => (
-                                <button key={label}
+                                <div key={label}
                                   onClick={() => { setShowShareMenu(false); setShareSubmenu(null) }}
-                                  style={{ display:'flex', alignItems:'center', width:'100%', padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, fontWeight:400, background:'none', border:'none', cursor:'pointer', textAlign:'left' as const, lineHeight:'1.4', borderLeft:'2px solid transparent' }}
+                                  style={{ display:'flex', alignItems:'center', padding:'8px 14px 8px 16px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, fontWeight:400, background:'none', cursor:'pointer', lineHeight:'1.4', borderLeft:'2px solid transparent', userSelect:'none' as const }}
                                   onMouseEnter={e => {
-                                    const el = e.currentTarget as HTMLButtonElement
+                                    const el = e.currentTarget as HTMLDivElement
                                     el.style.background = ALLOY.green4
                                     el.style.color = ALLOY.green1
                                     el.style.borderLeft = `2px solid ${ALLOY.green1}`
                                   }}
                                   onMouseLeave={e => {
-                                    const el = e.currentTarget as HTMLButtonElement
+                                    const el = e.currentTarget as HTMLDivElement
                                     el.style.background = 'none'
                                     el.style.color = ALLOY.ink
                                     el.style.borderLeft = '2px solid transparent'
                                   }}
-                                >{label}</button>
+                                >
+                                  <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:'inherit', fontWeight:400 }}>{label}</span>
+                                </div>
                               ))}
                             </div>
                           </div>
