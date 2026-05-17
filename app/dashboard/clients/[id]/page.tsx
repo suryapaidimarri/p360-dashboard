@@ -658,14 +658,17 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [dsSearch, setDsSearch] = useState('')
   const [dimSearch, setDimSearch] = useState('')
   const [metSearch, setMetSearch] = useState('')
-  // Calendar picker state
+  // Active fetch date range — persists so no re-render accidentally reverts it
+  const [activeFetchStart, setActiveFetchStart] = useState<string|null>(null) // null = use dateRange
+  const [activeFetchEnd,   setActiveFetchEnd]   = useState<string|null>(null) // null = 'today'
+  // Calendar picker UI state
   const [showCalendarPicker, setShowCalendarPicker] = useState(false)
   const [calAnchorRef, setCalAnchorRef] = useState<{top:number;left:number}|null>(null)
   const [calStartView, setCalStartView] = useState(new Date(2026, 3, 1))
   const [calEndView,   setCalEndView]   = useState(new Date(2026, 4, 1))
   const [calTempStart, setCalTempStart] = useState('')
   const [calTempEnd,   setCalTempEnd]   = useState('')
-  const [calClickCount, setCalClickCount] = useState(0) // 0=none,1=start picked,2=both
+  const [calClickCount, setCalClickCount] = useState(0)
   const [mappingProp, setMappingProp] = useState('')
   const [mappingPropName, setMappingPropName] = useState('')
   const [mappingSite, setMappingSite] = useState('')
@@ -820,14 +823,14 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
         const dims: string[] = (w as any).dimensions || []
         return dims.includes('Event Name') || dims.includes('eventName')
       })
-      if (needsEvents) loadGA4Events()
+      if (needsEvents) loadGA4Events(activeFetchStart ?? undefined, activeFetchEnd ?? undefined)
     }
   }, [widgets, connection, selectedProperty])
 
   async function loadGA4Events(startDate?: string, endDate?: string) {
     if (!connection?.connected || !selectedProperty) return
-    const sd = startDate || dateRange
-    const ed = endDate   || 'today'
+    const sd = startDate ?? activeFetchStart ?? dateRange
+    const ed = endDate   ?? activeFetchEnd   ?? 'today'
     try {
       const res = await fetch(`/api/ga4/custom?client_id=${clientId}&property_id=${selectedProperty}&dimensions=eventName&metrics=eventCount&start_date=${sd}&end_date=${ed}`)
       if (res.ok) {
@@ -958,8 +961,9 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     const pid = propertyId || selectedProperty
     if (!pid) return
     setLoadingData(true)
-    const sd = startDate || dateRange
-    const ed = endDate   || 'today'
+    // Use explicit args → then activeFetch state → then global dateRange
+    const sd = startDate ?? activeFetchStart ?? dateRange
+    const ed = endDate   ?? activeFetchEnd   ?? 'today'
     try {
       const res = await fetch(`/api/ga4?client_id=${clientId}&property_id=${pid}&start_date=${sd}&end_date=${ed}`)
       const data = await res.json()
@@ -2245,9 +2249,9 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                             <div style={{ marginTop:8, marginBottom:4 }}>
                               {((widgetData as any).optionalMetricsList || []).map((met: string, i: number) => (
                                 <div key={i} style={{ display:'flex', alignItems:'center', gap:8, background:ALLOY.blue4, border:`1px solid ${ALLOY.blue1}`, borderRadius:2, padding:'6px 12px', marginBottom:6 }}>
-                                  <span style={{ fontSize:10, fontWeight:700, color:ALLOY.blue1, background:ALLOY.blue4, borderRadius:2, padding:'1px 5px', fontFamily:ALLOY.fontLabel }}>AUT</span>
+                                  <span style={{ fontSize:10, fontWeight:700, color:ALLOY.blue1, borderRadius:2, padding:'1px 5px', fontFamily:ALLOY.fontLabel }}>AUT</span>
                                   <span style={{ flex:1, fontSize:12, color:ALLOY.ink }}>{met}</span>
-                                  <button onClick={() => updateField('optionalMetricsList', ((widgetData as any).optionalMetricsList || []).filter((_: string, j: number) => j !== i))} style={{ background:'none', border:'none', cursor:'pointer', color:ALLOY.mute, padding:0 }}><X size={11}/></button>
+                                  <button onClick={() => updateField('optionalMetricsList', ((widgetData as any).optionalMetricsList||[]).filter((_:string,j:number)=>j!==i))} style={{ background:'none', border:'none', cursor:'pointer', color:ALLOY.mute, padding:0 }}><X size={11}/></button>
                                 </div>
                               ))}
                               <button onClick={() => { setShowMetDropdown(true); setMetSearch('') }}
@@ -2414,16 +2418,17 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                                 updateField('dateRangeType', opt.val)
                                 if (opt.val === 'auto') {
                                   setShowCalendarPicker(false)
-                                  fetchGA4(undefined, dateRange, 'today')
+                                  // Clear custom range — go back to global dateRange
+                                  setActiveFetchStart(null); setActiveFetchEnd(null)
+                                  fetchGA4(undefined, undefined, undefined)
                                 } else {
-                                  // seed temp with committed or defaults
                                   const s = (widgetData as any).dateStart || '2026-04-01'
                                   const e = (widgetData as any).dateEnd   || '2026-05-08'
                                   setCalTempStart(s); setCalTempEnd(e); setCalClickCount(0)
                                   const [sy,sm] = s.split('-').map(Number)
                                   const [ey,em] = e.split('-').map(Number)
-                                  setCalStartView(new Date(sy, sm-1, 1))
-                                  setCalEndView(new Date(ey, em-1, 1))
+                                  setCalStartView(new Date(sy,sm-1,1))
+                                  setCalEndView(new Date(ey,em-1,1))
                                 }
                               }}
                               style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8, cursor:'pointer' }}>
@@ -2434,7 +2439,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                             </label>
                           ))}
 
-                          {/* Custom date range button + inline calendar */}
+                          {/* Custom date UI */}
                           {(widgetData as any).dateRangeType === 'custom' && (() => {
                             const committedStart = (widgetData as any).dateStart || '2026-04-01'
                             const committedEnd   = (widgetData as any).dateEnd   || '2026-05-08'
@@ -2443,32 +2448,23 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                             const todayIso = new Date().toISOString().split('T')[0]
 
                             const fmtIso = (d: Date) => {
-                              const y = d.getFullYear()
-                              const m = String(d.getMonth()+1).padStart(2,'0')
-                              const dd = String(d.getDate()).padStart(2,'0')
-                              return `${y}-${m}-${dd}`
+                              return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0')
                             }
                             const fmtLabel = (s: string) => {
                               if (!s) return ''
-                              const [,m,dd] = s.split('-')
-                              const mos = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-                              return mos[parseInt(m)-1] + ' ' + parseInt(dd) + ', ' + s.split('-')[0]
+                              const [y,m,dd] = s.split('-')
+                              return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(m)-1] + ' ' + parseInt(dd) + ', ' + y
                             }
-                            const pd = (s: string) => { const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d) }
                             const MOS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
 
+                            // Unified click: first click = start, second = end (works across both month panels)
                             const handleDayClick = (iso: string) => {
                               if (calClickCount === 0) {
-                                // First click — set start, clear end
                                 setCalTempStart(iso); setCalTempEnd(''); setCalClickCount(1)
                               } else {
-                                // Second click — set end (swap if before start)
-                                if (iso < calTempStart) {
-                                  setCalTempEnd(calTempStart); setCalTempStart(iso)
-                                } else {
-                                  setCalTempEnd(iso)
-                                }
-                                setCalClickCount(2)
+                                const fs = iso < calTempStart ? iso        : calTempStart
+                                const fe = iso < calTempStart ? calTempStart : iso
+                                setCalTempStart(fs); setCalTempEnd(fe); setCalClickCount(2)
                               }
                             }
 
@@ -2476,34 +2472,31 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                               const y = view.getFullYear(), m = view.getMonth()
                               const fd  = new Date(y, m, 1).getDay()
                               const dim = new Date(y, m+1, 0).getDate()
-                              const isStartCal = label === 'Start Date'
                               const nav = (dir: number) => {
-                                if (isStartCal) setCalStartView(new Date(y, m+dir, 1))
-                                else setCalEndView(new Date(y, m+dir, 1))
+                                if (label === 'Start Date') setCalStartView(new Date(y,m+dir,1))
+                                else setCalEndView(new Date(y,m+dir,1))
                               }
                               const cells: React.ReactNode[] = []
                               for (let i = 0; i < fd; i++) cells.push(<div key={'e'+i} style={{ height:36 }}/>)
                               for (let d = 1; d <= dim; d++) {
-                                const t = new Date(y, m, d)
+                                const t   = new Date(y, m, d)
                                 const iso = fmtIso(t)
-                                const isSt  = iso === activeStart
-                                const isEn  = iso === activeEnd && activeEnd !== ''
-                                const inR   = activeStart && activeEnd && iso > activeStart && iso < activeEnd
+                                const isSt = iso === activeStart
+                                const isEn = iso === activeEnd && !!activeEnd
+                                const inR  = !!activeStart && !!activeEnd && iso > activeStart && iso < activeEnd
                                 const isToday = iso === todayIso
                                 cells.push(
-                                  <div key={d}
-                                    onClick={() => handleDayClick(iso)}
+                                  <div key={d} onClick={() => handleDayClick(iso)}
                                     style={{
-                                      height:36, borderRadius:'50%',
-                                      display:'flex', alignItems:'center', justifyContent:'center',
-                                      fontSize:14, cursor:'pointer',
-                                      fontWeight: isSt || isEn ? 700 : 400,
-                                      background: isSt || isEn ? ALLOY.blue1 : inR ? ALLOY.blue4 : 'none',
-                                      color: isSt || isEn ? ALLOY.white : inR ? ALLOY.blue1 : ALLOY.ink,
-                                      border: isToday && !isSt && !isEn ? `1px solid ${ALLOY.mute}` : 'none',
+                                      height:36, borderRadius:'50%', display:'flex', alignItems:'center',
+                                      justifyContent:'center', fontSize:14, cursor:'pointer',
+                                      fontWeight: isSt||isEn ? 700 : 400,
+                                      background: isSt||isEn ? ALLOY.blue1 : inR ? ALLOY.blue4 : 'none',
+                                      color: isSt||isEn ? ALLOY.white : inR ? ALLOY.blue1 : ALLOY.ink,
+                                      border: isToday&&!isSt&&!isEn ? `1px solid ${ALLOY.mute}` : 'none',
                                     }}
-                                    onMouseEnter={e => { if (!isSt && !isEn) (e.currentTarget as HTMLDivElement).style.background = ALLOY.blue4 }}
-                                    onMouseLeave={e => { if (!isSt && !isEn) (e.currentTarget as HTMLDivElement).style.background = inR ? ALLOY.blue4 : 'none' }}
+                                    onMouseEnter={e => { if(!isSt&&!isEn)(e.currentTarget as HTMLDivElement).style.background=ALLOY.blue4 }}
+                                    onMouseLeave={e => { if(!isSt&&!isEn)(e.currentTarget as HTMLDivElement).style.background=inR?ALLOY.blue4:'none' }}
                                   >{d}</div>
                                 )
                               }
@@ -2521,7 +2514,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                                     </div>
                                   </div>
                                   <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', marginBottom:4 }}>
-                                    {['S','M','T','W','T','F','S'].map((d,i) => (
+                                    {['S','M','T','W','T','F','S'].map((d,i)=>(
                                       <div key={i} style={{ textAlign:'center' as const, fontSize:11, color:ALLOY.mute, fontWeight:500, paddingBottom:5 }}>{d}</div>
                                     ))}
                                   </div>
@@ -2532,22 +2525,17 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
                             return (
                               <div>
-                                {/* Summary button — anchor for the popup */}
+                                {/* Summary button */}
                                 <button
                                   onClick={e => {
                                     e.stopPropagation()
                                     if (!showCalendarPicker) {
-                                      setCalTempStart(committedStart)
-                                      setCalTempEnd(committedEnd)
-                                      setCalClickCount(0)
+                                      setCalTempStart(committedStart); setCalTempEnd(committedEnd); setCalClickCount(0)
                                       const [sy,sm] = committedStart.split('-').map(Number)
                                       const [ey,em] = committedEnd.split('-').map(Number)
-                                      setCalStartView(new Date(sy,sm-1,1))
-                                      setCalEndView(new Date(ey,em-1,1))
+                                      setCalStartView(new Date(sy,sm-1,1)); setCalEndView(new Date(ey,em-1,1))
                                       const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect()
-                                      setCalAnchorRef({ top: rect.bottom + 6, left: rect.left })
-                                    } else {
-                                      setShowCalendarPicker(false)
+                                      setCalAnchorRef({ top: rect.bottom + 8, left: rect.left })
                                     }
                                     setShowCalendarPicker(v => !v)
                                   }}
@@ -2558,60 +2546,51 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                                   <ChevronDown size={12} style={{ color:ALLOY.mute }}/>
                                 </button>
 
-                                {/* Calendar popup — anchored near the button, side-by-side months */}
+                                {/* Calendar popup — positioned near button via anchor */}
                                 {showCalendarPicker && (
                                   <>
-                                    {/* Backdrop */}
-                                    <div
-                                      style={{ position:'fixed' as const, inset:0, zIndex:1000 }}
-                                      onClick={() => { setShowCalendarPicker(false); setCalTempStart(committedStart); setCalTempEnd(committedEnd) }}
-                                    />
-                                    {/* Popup card — positioned near button */}
-                                    <div
-                                      style={{
+                                    <div style={{ position:'fixed' as const, inset:0, zIndex:1000 }}
+                                      onClick={() => { setShowCalendarPicker(false); setCalTempStart(committedStart); setCalTempEnd(committedEnd) }}/>
+                                    <div style={{
                                         position:'fixed' as const,
-                                        top: calAnchorRef ? Math.min(calAnchorRef.top, window.innerHeight - 560) : '50%',
-                                        left: calAnchorRef ? Math.max(10, calAnchorRef.left - 200) : '50%',
-                                        zIndex:1001,
-                                        background:ALLOY.white, border:`1px solid ${ALLOY.line}`,
-                                        borderRadius:8, boxShadow:'0 12px 40px rgba(0,0,0,0.18)',
-                                        padding:20, width:620,
+                                        top: calAnchorRef ? Math.min(calAnchorRef.top, window.innerHeight - 540) : 200,
+                                        left: calAnchorRef ? Math.max(10, Math.min(calAnchorRef.left, window.innerWidth - 640)) : 200,
+                                        zIndex:1001, background:ALLOY.white, border:`1px solid ${ALLOY.line}`,
+                                        borderRadius:8, boxShadow:'0 12px 40px rgba(0,0,0,0.18)', padding:20, width:620,
                                       }}
-                                      onClick={e => e.stopPropagation()}
-                                    >
-                                      {/* Fixed / Rolling selector */}
+                                      onClick={e => e.stopPropagation()}>
                                       <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:14 }}>
                                         <div style={{ display:'flex', alignItems:'center', gap:6, background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:4, padding:'6px 14px', fontSize:12, color:ALLOY.ink, cursor:'pointer', fontWeight:500 }}>
                                           Fixed <ChevronDown size={12} style={{ color:ALLOY.mute }}/>
                                         </div>
                                       </div>
-                                      {/* Helper text */}
                                       <p style={{ fontSize:11, color:ALLOY.mute, textAlign:'center' as const, marginBottom:12 }}>
-                                        {calClickCount === 0 ? 'Click a start date' : calClickCount === 1 ? 'Now click an end date' : `${fmtLabel(calTempStart)} — ${fmtLabel(calTempEnd)}`}
+                                        {calClickCount===0 ? 'Click a start date' : calClickCount===1 ? 'Now click an end date' : `${fmtLabel(calTempStart)} — ${fmtLabel(calTempEnd)}`}
                                       </p>
-                                      {/* Two months side by side */}
                                       <div style={{ display:'flex', gap:8 }}>
                                         {renderMonth(calStartView, 'Start Date')}
                                         <div style={{ width:1, background:ALLOY.line, flexShrink:0 }}/>
-                                        {renderMonth(calEndView,   'End Date')}
+                                        {renderMonth(calEndView, 'End Date')}
                                       </div>
-                                      {/* Footer */}
                                       <div style={{ display:'flex', justifyContent:'flex-end', alignItems:'center', gap:14, borderTop:`1px solid ${ALLOY.line}`, paddingTop:14, marginTop:16 }}>
-                                        <button
-                                          onClick={() => { setShowCalendarPicker(false); setCalTempStart(committedStart); setCalTempEnd(committedEnd) }}
-                                          style={{ background:'none', border:'none', color:ALLOY.blue1, cursor:'pointer', fontSize:14, fontWeight:600, padding:'6px 12px' }}
-                                        >Cancel</button>
+                                        <button onClick={() => { setShowCalendarPicker(false); setCalTempStart(committedStart); setCalTempEnd(committedEnd) }}
+                                          style={{ background:'none', border:'none', color:ALLOY.blue1, cursor:'pointer', fontSize:14, fontWeight:600, padding:'6px 12px' }}>Cancel</button>
                                         <button
                                           disabled={calClickCount < 2}
                                           onClick={() => {
                                             const fs = calTempStart || committedStart
                                             const fe = calTempEnd   || committedEnd
+                                            // 1. Persist dates in widget
                                             updateMulti({ dateStart: fs, dateEnd: fe })
+                                            // 2. Store as active fetch range — prevents any other fetch from reverting
+                                            setActiveFetchStart(fs); setActiveFetchEnd(fe)
                                             setShowCalendarPicker(false)
+                                            // 3. Fetch with new range
                                             fetchGA4(undefined, fs, fe)
                                           }}
-                                          style={{ background: calClickCount < 2 ? ALLOY.line : ALLOY.blue1, border:'none', borderRadius:999, color: calClickCount < 2 ? ALLOY.mute : ALLOY.white, cursor: calClickCount < 2 ? 'not-allowed' : 'pointer', fontSize:14, fontWeight:600, padding:'10px 28px', transition:'background 0.15s' }}
-                                        >Apply</button>
+                                          style={{ background:calClickCount<2?ALLOY.line:ALLOY.blue1, border:'none', borderRadius:999, color:calClickCount<2?ALLOY.mute:ALLOY.white, cursor:calClickCount<2?'not-allowed':'pointer', fontSize:14, fontWeight:600, padding:'10px 28px', transition:'background 0.15s' }}>
+                                          Apply
+                                        </button>
                                       </div>
                                     </div>
                                   </>
