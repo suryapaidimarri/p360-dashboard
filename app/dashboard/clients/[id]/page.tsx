@@ -813,6 +813,36 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     setLoadingFilters(false)
   }
 
+  async function saveSizesToDB(sizes: {[id:string]:{w:number;h:number}}) {
+    try { localStorage.setItem(LS_SIZES_KEY, JSON.stringify(sizes)) } catch {}
+    try {
+      const { createClient } = await import('@/lib/supabase/client')
+      const sb = createClient()
+      await sb.from('dashboard_layouts').upsert({
+        client_id: clientId,
+        key: 'widget_sizes',
+        value: sizes,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'client_id,key' })
+    } catch {}
+  }
+
+  async function loadSizesFromDB() {
+    try {
+      const { createClient } = await import('@/lib/supabase/client')
+      const sb = createClient()
+      const { data } = await sb.from('dashboard_layouts')
+        .select('value')
+        .eq('client_id', clientId)
+        .eq('key', 'widget_sizes')
+        .single()
+      if (data?.value && typeof data.value === 'object') {
+        setWidgetSizes(data.value as any)
+        try { localStorage.setItem(LS_SIZES_KEY, JSON.stringify(data.value)) } catch {}
+      }
+    } catch {}
+  }
+
   async function loadClientInfo() {
     // Use /api/client which uses service role key - always works regardless of RLS
     try {
