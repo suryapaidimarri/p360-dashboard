@@ -1,6 +1,5 @@
 'use client'
 import React, { useState, useEffect } from 'react'
-import ClonePageModal from '@/components/dashboard/ClonePageModal'
 import { ChevronRight, Sparkles, Settings, Calendar, ChevronDown, Plus, MoreHorizontal, Maximize2, X, Grip, RotateCcw, RotateCw, Monitor, Smartphone, ChevronLeft, RefreshCw, CheckCircle2 } from 'lucide-react'
 import Link from 'next/link'
 import { BarChart, Bar, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ScatterChart, Scatter as ScatterPlot, ZAxis } from 'recharts'
@@ -2400,15 +2399,41 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
       {/* Clone Page Modal */}
       {showCloneModal && (
-        <ClonePageModal
-          onClose={() => setShowCloneModal(false)}
-          onClone={(source, newName) => {
-            setDashboards(prev => [...prev, newName])
-            setClonedDashboards(prev => [...prev, newName])
-            setActiveDash(newName)
-            setShowCloneModal(false)
-          }}
-        />
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:100, padding:16 }}
+          onClick={() => setShowCloneModal(false)}>
+          <div style={{ background:'#fff', borderRadius:10, width:'100%', maxWidth:420, overflow:'hidden', boxShadow:'0 20px 60px rgba(0,0,0,0.15)' }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ height:3, background:'#48b5ea' }}/>
+            <div style={{ padding:28 }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
+                <h2 style={{ fontSize:15, fontWeight:700, color:'#1a1a1a' }}>Clone Dashboard</h2>
+                <button onClick={() => setShowCloneModal(false)} style={{ background:'none', border:'none', cursor:'pointer', color:'#999', fontSize:18 }}>✕</button>
+              </div>
+              <div style={{ marginBottom:16 }}>
+                <label style={{ display:'block', fontSize:12, fontWeight:600, color:'#666', marginBottom:6 }}>NEW DASHBOARD NAME</label>
+                <input
+                  defaultValue={activeDash + ' (Copy)'}
+                  id="clone-name-input"
+                  style={{ width:'100%', border:'1px solid #e5e5e5', borderRadius:6, padding:'9px 12px', fontSize:13, color:'#1a1a1a', outline:'none', boxSizing:'border-box' as const }}
+                />
+              </div>
+              <div style={{ display:'flex', gap:8 }}>
+                <button onClick={() => setShowCloneModal(false)}
+                  style={{ flex:1, background:'#f5f5f5', border:'1px solid #e5e5e5', borderRadius:6, padding:'9px', fontSize:13, color:'#666', cursor:'pointer' }}>Cancel</button>
+                <button onClick={() => {
+                  const input = document.getElementById('clone-name-input') as HTMLInputElement
+                  const newName = (input?.value || activeDash + ' (Copy)').trim()
+                  if (!newName) return
+                  setDashboards(prev => [...prev, newName])
+                  setClonedDashboards(prev => [...prev, newName])
+                  setActiveDash(newName)
+                  setShowCloneModal(false)
+                }}
+                  style={{ flex:2, background:'#48b5ea', border:'none', borderRadius:6, padding:'9px', fontSize:13, fontWeight:600, color:'#fff', cursor:'pointer' }}>Clone Dashboard</button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Create Filter Modal */}
