@@ -658,12 +658,14 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [dsSearch, setDsSearch] = useState('')
   const [dimSearch, setDimSearch] = useState('')
   const [metSearch, setMetSearch] = useState('')
-  // Calendar picker state — separate from widget state so Apply commits atomically
+  // Calendar picker state
   const [showCalendarPicker, setShowCalendarPicker] = useState(false)
-  const [calStartView, setCalStartView]   = useState(new Date(2026, 3, 1))  // view month for start
-  const [calEndView,   setCalEndView]     = useState(new Date(2026, 4, 1))  // view month for end
-  const [calTempStart, setCalTempStart]   = useState('')  // pending start ISO
-  const [calTempEnd,   setCalTempEnd]     = useState('')  // pending end ISO
+  const [calAnchorRef, setCalAnchorRef] = useState<{top:number;left:number}|null>(null)
+  const [calStartView, setCalStartView] = useState(new Date(2026, 3, 1))
+  const [calEndView,   setCalEndView]   = useState(new Date(2026, 4, 1))
+  const [calTempStart, setCalTempStart] = useState('')
+  const [calTempEnd,   setCalTempEnd]   = useState('')
+  const [calClickCount, setCalClickCount] = useState(0) // 0=none,1=start picked,2=both
   const [mappingProp, setMappingProp] = useState('')
   const [mappingPropName, setMappingPropName] = useState('')
   const [mappingSite, setMappingSite] = useState('')
@@ -963,7 +965,6 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       const data = await res.json()
       if (data.connected) {
         setGa4Data(data)
-        // Also reload event-dimension data with the same date range
         loadGA4Events(sd, ed)
         const totalsRow = data.timeSeries?.totals?.[0]
         const sessions = parseInt(totalsRow?.metricValues?.[0]?.value || '0')
@@ -2246,12 +2247,10 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                                 <div key={i} style={{ display:'flex', alignItems:'center', gap:8, background:ALLOY.blue4, border:`1px solid ${ALLOY.blue1}`, borderRadius:2, padding:'6px 12px', marginBottom:6 }}>
                                   <span style={{ fontSize:10, fontWeight:700, color:ALLOY.blue1, background:ALLOY.blue4, borderRadius:2, padding:'1px 5px', fontFamily:ALLOY.fontLabel }}>AUT</span>
                                   <span style={{ flex:1, fontSize:12, color:ALLOY.ink }}>{met}</span>
-                                  <button onClick={() => updateField('optionalMetricsList', ((widgetData as any).optionalMetricsList || []).filter((_: string, j: number) => j !== i))}
-                                    style={{ background:'none', border:'none', cursor:'pointer', color:ALLOY.mute, padding:0 }}><X size={11}/></button>
+                                  <button onClick={() => updateField('optionalMetricsList', ((widgetData as any).optionalMetricsList || []).filter((_: string, j: number) => j !== i))} style={{ background:'none', border:'none', cursor:'pointer', color:ALLOY.mute, padding:0 }}><X size={11}/></button>
                                 </div>
                               ))}
-                              <button
-                                onClick={() => { setShowMetDropdown(true); setMetSearch('') }}
+                              <button onClick={() => { setShowMetDropdown(true); setMetSearch('') }}
                                 style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:`1px dashed ${ALLOY.line}`, borderRadius:2, padding:'6px 12px', cursor:'pointer', color:ALLOY.green1, fontSize:9, fontWeight:700, fontFamily:ALLOY.fontLabel, letterSpacing:'0.06em', textTransform:'uppercase' as const, width:'100%' }}>
                                 <Plus size={13}/> Add metric
                               </button>
@@ -2409,26 +2408,22 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                         <div style={{ padding:'14px 0', borderBottom:`1px solid ${ALLOY.line}` }}>
                           <p style={{ fontSize:13, fontWeight:700, color:ALLOY.ink, marginBottom:10 }}>Default date range filter</p>
 
-                          {/* Auto / Custom radio buttons */}
                           {[{val:'auto',label:'Auto: Last 28 days (exclude today)'},{val:'custom',label:'Custom'}].map(opt => (
                             <label key={opt.val}
                               onClick={() => {
                                 updateField('dateRangeType', opt.val)
-                                if (opt.val === 'custom') {
-                                  // Seed temp state from whatever is already saved, or defaults
-                                  const existStart = (widgetData as any).dateStart || '2026-04-01'
-                                  const existEnd   = (widgetData as any).dateEnd   || '2026-05-08'
-                                  setCalTempStart(existStart)
-                                  setCalTempEnd(existEnd)
-                                  // Sync calendar view months to existing dates
-                                  const [sy, sm] = existStart.split('-').map(Number)
-                                  const [ey, em] = existEnd.split('-').map(Number)
-                                  setCalStartView(new Date(sy, sm - 1, 1))
-                                  setCalEndView(new Date(ey, em - 1, 1))
-                                  setShowCalendarPicker(true)
-                                } else {
+                                if (opt.val === 'auto') {
                                   setShowCalendarPicker(false)
                                   fetchGA4(undefined, dateRange, 'today')
+                                } else {
+                                  // seed temp with committed or defaults
+                                  const s = (widgetData as any).dateStart || '2026-04-01'
+                                  const e = (widgetData as any).dateEnd   || '2026-05-08'
+                                  setCalTempStart(s); setCalTempEnd(e); setCalClickCount(0)
+                                  const [sy,sm] = s.split('-').map(Number)
+                                  const [ey,em] = e.split('-').map(Number)
+                                  setCalStartView(new Date(sy, sm-1, 1))
+                                  setCalEndView(new Date(ey, em-1, 1))
                                 }
                               }}
                               style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8, cursor:'pointer' }}>
@@ -2439,13 +2434,12 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                             </label>
                           ))}
 
-                          {/* Custom date range UI */}
+                          {/* Custom date range button + inline calendar */}
                           {(widgetData as any).dateRangeType === 'custom' && (() => {
-                            // Use temp state while calendar is open, committed state otherwise
                             const committedStart = (widgetData as any).dateStart || '2026-04-01'
                             const committedEnd   = (widgetData as any).dateEnd   || '2026-05-08'
-                            const displayStart   = showCalendarPicker ? calTempStart || committedStart : committedStart
-                            const displayEnd     = showCalendarPicker ? calTempEnd   || committedEnd   : committedEnd
+                            const activeStart = showCalendarPicker ? (calTempStart || committedStart) : committedStart
+                            const activeEnd   = showCalendarPicker ? (calTempEnd   || committedEnd)   : committedEnd
                             const todayIso = new Date().toISOString().split('T')[0]
 
                             const fmtIso = (d: Date) => {
@@ -2456,150 +2450,171 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                             }
                             const fmtLabel = (s: string) => {
                               if (!s) return ''
-                              const [y, m, dd] = s.split('-')
-                              return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(m)-1] + ' ' + parseInt(dd) + ', ' + y
+                              const [,m,dd] = s.split('-')
+                              const mos = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+                              return mos[parseInt(m)-1] + ' ' + parseInt(dd) + ', ' + s.split('-')[0]
                             }
-                            const pd = (s: string) => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d) }
+                            const pd = (s: string) => { const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d) }
                             const MOS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
 
-                            // Build one month grid
-                            const renderMonth = (view: Date, side: 'start' | 'end', label: string) => {
+                            const handleDayClick = (iso: string) => {
+                              if (calClickCount === 0) {
+                                // First click — set start, clear end
+                                setCalTempStart(iso); setCalTempEnd(''); setCalClickCount(1)
+                              } else {
+                                // Second click — set end (swap if before start)
+                                if (iso < calTempStart) {
+                                  setCalTempEnd(calTempStart); setCalTempStart(iso)
+                                } else {
+                                  setCalTempEnd(iso)
+                                }
+                                setCalClickCount(2)
+                              }
+                            }
+
+                            const renderMonth = (view: Date, label: string) => {
                               const y = view.getFullYear(), m = view.getMonth()
-                              const fd   = new Date(y, m, 1).getDay()
-                              const dim  = new Date(y, m+1, 0).getDate()
-                              const nav  = (dir: number) => {
-                                const nv = new Date(y, m + dir, 1)
-                                side === 'start' ? setCalStartView(nv) : setCalEndView(nv)
+                              const fd  = new Date(y, m, 1).getDay()
+                              const dim = new Date(y, m+1, 0).getDate()
+                              const isStartCal = label === 'Start Date'
+                              const nav = (dir: number) => {
+                                if (isStartCal) setCalStartView(new Date(y, m+dir, 1))
+                                else setCalEndView(new Date(y, m+dir, 1))
                               }
                               const cells: React.ReactNode[] = []
-                              for (let i = 0; i < fd; i++) cells.push(<div key={'e'+i} style={{ height:38 }}/>)
+                              for (let i = 0; i < fd; i++) cells.push(<div key={'e'+i} style={{ height:36 }}/>)
                               for (let d = 1; d <= dim; d++) {
-                                const t   = new Date(y, m, d)
+                                const t = new Date(y, m, d)
                                 const iso = fmtIso(t)
-                                const isSt    = iso === displayStart
-                                const isEn    = iso === displayEnd
-                                const inRange = displayStart && displayEnd && t > pd(displayStart) && t < pd(displayEnd)
+                                const isSt  = iso === activeStart
+                                const isEn  = iso === activeEnd && activeEnd !== ''
+                                const inR   = activeStart && activeEnd && iso > activeStart && iso < activeEnd
                                 const isToday = iso === todayIso
                                 cells.push(
                                   <div key={d}
-                                    onClick={() => {
-                                      if (side === 'start') setCalTempStart(iso)
-                                      else setCalTempEnd(iso)
-                                    }}
+                                    onClick={() => handleDayClick(iso)}
                                     style={{
-                                      height:38, borderRadius:'50%',
+                                      height:36, borderRadius:'50%',
                                       display:'flex', alignItems:'center', justifyContent:'center',
                                       fontSize:14, cursor:'pointer',
                                       fontWeight: isSt || isEn ? 700 : 400,
-                                      background: isSt || isEn ? ALLOY.blue1 : inRange ? ALLOY.blue4 : 'none',
-                                      color: isSt || isEn ? ALLOY.white : inRange ? ALLOY.blue1 : ALLOY.ink,
+                                      background: isSt || isEn ? ALLOY.blue1 : inR ? ALLOY.blue4 : 'none',
+                                      color: isSt || isEn ? ALLOY.white : inR ? ALLOY.blue1 : ALLOY.ink,
                                       border: isToday && !isSt && !isEn ? `1px solid ${ALLOY.mute}` : 'none',
                                     }}
                                     onMouseEnter={e => { if (!isSt && !isEn) (e.currentTarget as HTMLDivElement).style.background = ALLOY.blue4 }}
-                                    onMouseLeave={e => { if (!isSt && !isEn) (e.currentTarget as HTMLDivElement).style.background = inRange ? ALLOY.blue4 : 'none' }}
-                                  >
-                                    {d}
-                                  </div>
+                                    onMouseLeave={e => { if (!isSt && !isEn) (e.currentTarget as HTMLDivElement).style.background = inR ? ALLOY.blue4 : 'none' }}
+                                  >{d}</div>
                                 )
                               }
                               return (
-                                <div style={{ padding:'0 12px' }}>
-                                  <p style={{ fontSize:14, fontWeight:700, color:ALLOY.ink, marginBottom:12, textAlign:'center' as const }}>{label}</p>
+                                <div style={{ flex:1 }}>
+                                  <p style={{ fontSize:13, fontWeight:700, color:ALLOY.ink, marginBottom:12, textAlign:'center' as const }}>{label}</p>
                                   <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
-                                    <div style={{ display:'flex', alignItems:'center', gap:3, cursor:'pointer' }}>
-                                      <span style={{ fontSize:12, fontWeight:700, color:ALLOY.ink }}>{MOS[m]} {y}</span>
-                                      <ChevronDown size={12} style={{ color:ALLOY.mute }}/>
+                                    <div style={{ display:'flex', alignItems:'center', gap:4, cursor:'pointer' }}>
+                                      <span style={{ fontSize:12, fontWeight:700 }}>{MOS[m]} {y}</span>
+                                      <ChevronDown size={11} style={{ color:ALLOY.mute }}/>
                                     </div>
-                                    <div style={{ display:'flex', gap:0 }}>
-                                      <button onClick={() => nav(-1)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:17, color:ALLOY.ink, padding:'2px 5px', lineHeight:1 }}>‹</button>
-                                      <button onClick={() => nav(1)}  style={{ background:'none', border:'none', cursor:'pointer', fontSize:17, color:ALLOY.ink, padding:'2px 5px', lineHeight:1 }}>›</button>
+                                    <div style={{ display:'flex' }}>
+                                      <button onClick={() => nav(-1)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:16, color:ALLOY.ink, padding:'2px 6px', lineHeight:1 }}>‹</button>
+                                      <button onClick={() => nav(1)}  style={{ background:'none', border:'none', cursor:'pointer', fontSize:16, color:ALLOY.ink, padding:'2px 6px', lineHeight:1 }}>›</button>
                                     </div>
                                   </div>
-                                  {/* Day headers */}
                                   <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', marginBottom:4 }}>
                                     {['S','M','T','W','T','F','S'].map((d,i) => (
-                                      <div key={i} style={{ textAlign:'center' as const, fontSize:12, color:ALLOY.mute, fontWeight:500, paddingBottom:6 }}>{d}</div>
+                                      <div key={i} style={{ textAlign:'center' as const, fontSize:11, color:ALLOY.mute, fontWeight:500, paddingBottom:5 }}>{d}</div>
                                     ))}
                                   </div>
-                                  {/* Day cells */}
-                                  <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', rowGap:4 }}>
-                                    {cells}
-                                  </div>
+                                  <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', rowGap:2 }}>{cells}</div>
                                 </div>
                               )
                             }
 
                             return (
-                              <div style={{ marginTop:6 }}>
-                                {/* Date summary button — always visible when Custom is selected */}
+                              <div>
+                                {/* Summary button — anchor for the popup */}
                                 <button
-                                  onClick={() => {
+                                  onClick={e => {
+                                    e.stopPropagation()
                                     if (!showCalendarPicker) {
                                       setCalTempStart(committedStart)
                                       setCalTempEnd(committedEnd)
+                                      setCalClickCount(0)
+                                      const [sy,sm] = committedStart.split('-').map(Number)
+                                      const [ey,em] = committedEnd.split('-').map(Number)
+                                      setCalStartView(new Date(sy,sm-1,1))
+                                      setCalEndView(new Date(ey,em-1,1))
+                                      const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect()
+                                      setCalAnchorRef({ top: rect.bottom + 6, left: rect.left })
+                                    } else {
+                                      setShowCalendarPicker(false)
                                     }
-                                    setShowCalendarPicker(!showCalendarPicker)
+                                    setShowCalendarPicker(v => !v)
                                   }}
-                                  style={{
-                                    width:'100%', display:'flex', alignItems:'center', gap:8,
-                                    background:ALLOY.white, border:`1px solid ${ALLOY.line}`,
-                                    borderRadius:2, padding:'8px 12px', cursor:'pointer',
-                                    fontSize:12, color:ALLOY.ink, fontFamily:ALLOY.fontBody, marginBottom:4,
-                                  }}
+                                  style={{ width:'100%', display:'flex', alignItems:'center', gap:8, background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'8px 12px', cursor:'pointer', fontSize:12, color:ALLOY.ink, fontFamily:ALLOY.fontBody }}
                                 >
-                                  <span style={{ fontSize:15 }}>📅</span>
-                                  <span style={{ flex:1, textAlign:'left' as const }}>
-                                    {fmtLabel(committedStart)} — {fmtLabel(committedEnd)}
-                                  </span>
-                                  <ChevronDown size={12} style={{ color:ALLOY.mute, flexShrink:0 }}/>
+                                  <span style={{ fontSize:14 }}>📅</span>
+                                  <span style={{ flex:1, textAlign:'left' as const }}>{fmtLabel(committedStart)} — {fmtLabel(committedEnd)}</span>
+                                  <ChevronDown size={12} style={{ color:ALLOY.mute }}/>
                                 </button>
 
-                                {/* Calendar popup — full-screen overlay so it's not constrained by 300px panel */}
+                                {/* Calendar popup — anchored near the button, side-by-side months */}
                                 {showCalendarPicker && (
-                                  <div
-                                    style={{ position:'fixed' as const, inset:0, zIndex:9999, background:'rgba(0,0,0,0.3)', display:'flex', alignItems:'center', justifyContent:'center' }}
-                                    onClick={() => { setCalTempStart(committedStart); setCalTempEnd(committedEnd); setShowCalendarPicker(false) }}
-                                  >
+                                  <>
+                                    {/* Backdrop */}
                                     <div
-                                      style={{ background:ALLOY.white, borderRadius:8, boxShadow:'0 20px 60px rgba(0,0,0,0.25)', padding:24, width:680, maxWidth:'95vw' }}
+                                      style={{ position:'fixed' as const, inset:0, zIndex:1000 }}
+                                      onClick={() => { setShowCalendarPicker(false); setCalTempStart(committedStart); setCalTempEnd(committedEnd) }}
+                                    />
+                                    {/* Popup card — positioned near button */}
+                                    <div
+                                      style={{
+                                        position:'fixed' as const,
+                                        top: calAnchorRef ? Math.min(calAnchorRef.top, window.innerHeight - 560) : '50%',
+                                        left: calAnchorRef ? Math.max(10, calAnchorRef.left - 200) : '50%',
+                                        zIndex:1001,
+                                        background:ALLOY.white, border:`1px solid ${ALLOY.line}`,
+                                        borderRadius:8, boxShadow:'0 12px 40px rgba(0,0,0,0.18)',
+                                        padding:20, width:620,
+                                      }}
                                       onClick={e => e.stopPropagation()}
                                     >
-                                      {/* Fixed dropdown top-right */}
-                                      <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:16 }}>
-                                        <div style={{ display:'flex', alignItems:'center', gap:6, background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:4, padding:'7px 14px', fontSize:13, color:ALLOY.ink, cursor:'pointer', fontWeight:500 }}>
-                                          Fixed <ChevronDown size={13} style={{ color:ALLOY.mute }}/>
+                                      {/* Fixed / Rolling selector */}
+                                      <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:14 }}>
+                                        <div style={{ display:'flex', alignItems:'center', gap:6, background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:4, padding:'6px 14px', fontSize:12, color:ALLOY.ink, cursor:'pointer', fontWeight:500 }}>
+                                          Fixed <ChevronDown size={12} style={{ color:ALLOY.mute }}/>
                                         </div>
                                       </div>
+                                      {/* Helper text */}
+                                      <p style={{ fontSize:11, color:ALLOY.mute, textAlign:'center' as const, marginBottom:12 }}>
+                                        {calClickCount === 0 ? 'Click a start date' : calClickCount === 1 ? 'Now click an end date' : `${fmtLabel(calTempStart)} — ${fmtLabel(calTempEnd)}`}
+                                      </p>
                                       {/* Two months side by side */}
-                                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1px 1fr', gap:0, alignItems:'start' }}>
-                                        {renderMonth(calStartView, 'start', 'Start Date')}
-                                        <div style={{ background:ALLOY.line, alignSelf:'stretch' }}/>
-                                        {renderMonth(calEndView,   'end',   'End Date')}
+                                      <div style={{ display:'flex', gap:8 }}>
+                                        {renderMonth(calStartView, 'Start Date')}
+                                        <div style={{ width:1, background:ALLOY.line, flexShrink:0 }}/>
+                                        {renderMonth(calEndView,   'End Date')}
                                       </div>
                                       {/* Footer */}
-                                      <div style={{ display:'flex', justifyContent:'flex-end', alignItems:'center', gap:16, borderTop:`1px solid ${ALLOY.line}`, paddingTop:16, marginTop:20 }}>
+                                      <div style={{ display:'flex', justifyContent:'flex-end', alignItems:'center', gap:14, borderTop:`1px solid ${ALLOY.line}`, paddingTop:14, marginTop:16 }}>
                                         <button
-                                          onClick={() => { setCalTempStart(committedStart); setCalTempEnd(committedEnd); setShowCalendarPicker(false) }}
-                                          style={{ background:'none', border:'none', color:ALLOY.blue1, cursor:'pointer', fontSize:15, fontWeight:600, padding:'8px 16px' }}
-                                        >
-                                          Cancel
-                                        </button>
+                                          onClick={() => { setShowCalendarPicker(false); setCalTempStart(committedStart); setCalTempEnd(committedEnd) }}
+                                          style={{ background:'none', border:'none', color:ALLOY.blue1, cursor:'pointer', fontSize:14, fontWeight:600, padding:'6px 12px' }}
+                                        >Cancel</button>
                                         <button
+                                          disabled={calClickCount < 2}
                                           onClick={() => {
-                                            const finalStart = calTempStart || committedStart
-                                            const finalEnd   = calTempEnd   || committedEnd
-                                            // Atomic update — both dates in one state update
-                                            updateMulti({ dateStart: finalStart, dateEnd: finalEnd })
+                                            const fs = calTempStart || committedStart
+                                            const fe = calTempEnd   || committedEnd
+                                            updateMulti({ dateStart: fs, dateEnd: fe })
                                             setShowCalendarPicker(false)
-                                            fetchGA4(undefined, finalStart, finalEnd)
+                                            fetchGA4(undefined, fs, fe)
                                           }}
-                                          style={{ background:ALLOY.blue1, border:'none', borderRadius:999, color:ALLOY.white, cursor:'pointer', fontSize:15, fontWeight:600, padding:'10px 28px' }}
-                                        >
-                                          Apply
-                                        </button>
+                                          style={{ background: calClickCount < 2 ? ALLOY.line : ALLOY.blue1, border:'none', borderRadius:999, color: calClickCount < 2 ? ALLOY.mute : ALLOY.white, cursor: calClickCount < 2 ? 'not-allowed' : 'pointer', fontSize:14, fontWeight:600, padding:'10px 28px', transition:'background 0.15s' }}
+                                        >Apply</button>
                                       </div>
                                     </div>
-                                  </div>
+                                  </>
                                 )}
                               </div>
                             )
