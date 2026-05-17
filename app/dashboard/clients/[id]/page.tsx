@@ -2096,7 +2096,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                           <div style={{ width:20, height:20, borderRadius:'50%', background:ALLOY.white, position:'absolute', top:2, left:2, boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}/>
                         </div>
                       </div>
-                      <button onClick={saveWidget} style={{ width:'100%', background:ALLOY.green1, border:'none', borderRadius:2, padding:'10px', fontFamily:ALLOY.fontBody, fontSize:11, fontWeight:700, color:ALLOY.ink, cursor:'pointer', fontFamily:ALLOY.fontLabel, letterSpacing:'0.06em', textTransform:'uppercase' as const }}>Save Changes</button>
+                      <button onClick={saveWidget} style={{ width:'100%', background:ALLOY.green1, border:'none', borderRadius:2, padding:'10px', fontFamily:ALLOY.fontLabel, fontSize:11, fontWeight:700, color:ALLOY.ink, cursor:'pointer', letterSpacing:'0.06em', textTransform:'uppercase' as const }}>Save Changes</button>
                     </>
                   )}
                   {editTab==='Data' && (() => {
@@ -2737,7 +2737,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                 {activeRightPanel==='metrics' && (
                   <div style={{ flex:1, display:'flex', flexDirection:'column' }}>
                     <div style={{ padding:12, borderBottom:`1px solid ${ALLOY.line}` }}>
-                      <button style={{ width:'100%', background:ALLOY.blue1, border:'none', borderRadius:2, padding:'10px', fontFamily:ALLOY.fontBody, fontFamily:ALLOY.fontBody, fontSize:13, fontWeight:600, color:ALLOY.white, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}><Plus size={14}/> Add Custom Metric</button>
+                      <button style={{ width:'100%', background:ALLOY.blue1, border:'none', borderRadius:2, padding:'10px',  fontSize:13, fontWeight:600, color:ALLOY.white, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}><Plus size={14}/> Add Custom Metric</button>
                     </div>
                     <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:24, textAlign:'center' }}>
                       <div style={{ width:60, height:60, borderRadius:'50%', background:ALLOY.paper, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:12, fontFamily:ALLOY.fontBody, fontSize:24 }}>✏️</div>
@@ -2756,7 +2756,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                 {activeRightPanel==='goals' && (
                   <div style={{ flex:1, display:'flex', flexDirection:'column' }}>
                     <div style={{ padding:12, borderBottom:`1px solid ${ALLOY.line}` }}>
-                      <button style={{ width:'100%', background:ALLOY.blue1, border:'none', borderRadius:2, padding:'10px', fontFamily:ALLOY.fontBody, fontFamily:ALLOY.fontBody, fontSize:13, fontWeight:600, color:ALLOY.white, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}><Plus size={14}/> Add Goal</button>
+                      <button style={{ width:'100%', background:ALLOY.blue1, border:'none', borderRadius:2, padding:'10px',  fontSize:13, fontWeight:600, color:ALLOY.white, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}><Plus size={14}/> Add Goal</button>
                     </div>
                     <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:24, textAlign:'center' }}>
                       <div style={{ width:60, height:60, borderRadius:'50%', background:ALLOY.paper, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:12, fontFamily:ALLOY.fontBody, fontSize:24 }}>🚩</div>
@@ -2838,7 +2838,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                   setActiveDash(newName)
                   setShowCloneModal(false)
                 }}
-                  style={{ flex:2, background:ALLOY.blue1, border:'none', borderRadius:2, padding:'9px', fontFamily:ALLOY.fontBody, fontFamily:ALLOY.fontBody, fontSize:13, fontWeight:600, color:ALLOY.white, cursor:'pointer' }}>Clone Dashboard</button>
+                  style={{ flex:2, background:ALLOY.blue1, border:'none', borderRadius:2, padding:'9px',  fontSize:13, fontWeight:600, color:ALLOY.white, cursor:'pointer' }}>Clone Dashboard</button>
               </div>
             </div>
           </div>
@@ -3181,7 +3181,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                 <button onClick={() => setShowMappingModal(false)}
                   style={{ flex:1, background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'10px', fontFamily:ALLOY.fontBody, fontSize:13, color:ALLOY.mute, cursor:'pointer', fontWeight:500 }}>Cancel</button>
                 <button onClick={saveMapping} disabled={!mappingProp||savingMapping}
-                  style={{ flex:2, background:mappingSaved?ALLOY.green1:ALLOY.blue1, border:'none', borderRadius:2, padding:'10px', fontFamily:ALLOY.fontBody, fontFamily:ALLOY.fontBody, fontSize:13, fontWeight:600, color:ALLOY.white, cursor:'pointer', opacity:!mappingProp||savingMapping?0.6:1, transition:'background 0.2s' }}>
+                  style={{ flex:2, background:mappingSaved?ALLOY.green1:ALLOY.blue1, border:'none', borderRadius:2, padding:'10px',  fontSize:13, fontWeight:600, color:ALLOY.white, cursor:'pointer', opacity:!mappingProp||savingMapping?0.6:1, transition:'background 0.2s' }}>
                   {mappingSaved ? '✓ Saved!' : savingMapping ? 'Saving...' : 'Save & Apply'}
                 </button>
               </div>
