@@ -597,8 +597,13 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [showCreateFilter, setShowCreateFilter] = useState(false)
   const [filterJustSaved, setFilterJustSaved] = useState(false)
   const [editingFilterName, setEditingFilterName] = useState<string|null>(null)
-  const [widgetSizes, setWidgetSizes] = useState<{[id:string]:{w:number;h:number}}>({})
+  const LS_SIZES_KEY = `alloy_widget_sizes_${clientId}`
+  const [widgetSizes, setWidgetSizes] = useState<{[id:string]:{w:number;h:number}}>(() => {
+    // Fast load from localStorage cache first (instant, no flash)
+    try { const v = localStorage.getItem(`alloy_widget_sizes_${clientId}`); return v ? JSON.parse(v) : {} } catch { return {} }
+  })
   const [resizingId, setResizingId] = useState<string|null>(null)
+  const [resizeOverlay, setResizeOverlay] = useState<{x:number;y:number;w:number;h:number}|null>(null)
   const [newFilterName, setNewFilterName] = useState('')
   const [newFilterClauses, setNewFilterClauses] = useState([{ include: true, field: '', operator: 'contains', value: '' }])
   const [filterFieldSearch, setFilterFieldSearch] = useState('')
@@ -716,6 +721,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   useEffect(() => {
     loadClientInfo()
     checkConnection().then(() => loadMapping())
+    loadSizesFromDB()
   }, [clientId])
 
   // Hide the layout nav panels when in edit mode
@@ -1201,53 +1207,100 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   }
 
   // ── Resize handle ──────────────────────────────────────────────────────────
-  function ResizeHandle({ id, defaultW = 200, defaultH = 140 }: { id: string; defaultW?: number; defaultH?: number }) {
+  function ResizeHandle({ id }: { id: string }) {
+    if (!editMode) return null
+
     const handleMouseDown = (e: React.MouseEvent) => {
       e.preventDefault()
       e.stopPropagation()
-      const startX = e.clientX
-      const startY = e.clientY
       const el = (e.currentTarget as HTMLElement).closest('[data-widget-id]') as HTMLElement
       if (!el) return
-      const startW = el.offsetWidth
-      const startH = el.offsetHeight
+
+      const rect = el.getBoundingClientRect()
+      const startX = e.clientX
+      const startY = e.clientY
+      const startW = rect.width
+      const startH = rect.height
+
+      // Show a transparent global overlay to block all mouse events during drag
+      const globalOverlay = document.createElement('div')
+      globalOverlay.style.cssText = 'position:fixed;inset:0;z-index:99999;cursor:se-resize;user-select:none;'
+      document.body.appendChild(globalOverlay)
+
+      // Live ghost overlay showing new size
+      const ghost = document.createElement('div')
+      ghost.style.cssText = `position:fixed;border:2px solid #1a73e8;background:rgba(26,115,232,0.06);border-radius:8px;pointer-events:none;z-index:99998;box-shadow:0 0 0 1px rgba(26,115,232,0.2);`
+      ghost.innerHTML = '<div style="position:absolute;bottom:6px;right:8px;font-size:10px;font-weight:600;color:#1a73e8;background:rgba(255,255,255,0.95);padding:2px 6px;border-radius:4px;font-family:monospace;"></div>'
+      document.body.appendChild(ghost)
+
+      const updateGhost = (mx: number, my: number) => {
+        const nw = Math.max(160, startW + mx - startX)
+        const nh = Math.max(100, startH + my - startY)
+        ghost.style.left = rect.left + 'px'
+        ghost.style.top = rect.top + 'px'
+        ghost.style.width = nw + 'px'
+        ghost.style.height = nh + 'px'
+        const label = ghost.querySelector('div')
+        if (label) label.textContent = `${Math.round(nw)} × ${Math.round(nh)}`
+      }
+      updateGhost(startX, startY)
+
+      setResizingId(id)
 
       const onMove = (mv: MouseEvent) => {
-        const newW = Math.max(140, startW + mv.clientX - startX)
-        const newH = Math.max(100, startH + mv.clientY - startY)
-        el.style.width = newW + 'px'
-        el.style.minWidth = newW + 'px'
-        el.style.height = newH + 'px'
-        el.style.minHeight = newH + 'px'
-        el.style.flex = 'none'
+        updateGhost(mv.clientX, mv.clientY)
+        // Also update the actual element live for instant feedback
+        const nw = Math.max(160, startW + mv.clientX - startX)
+        const nh = Math.max(100, startH + mv.clientY - startY)
+        el.style.width = nw + 'px'
+        el.style.minWidth = nw + 'px'
+        el.style.height = nh + 'px'
+        el.style.minHeight = nh + 'px'
+        el.style.flex = '0 0 auto'
       }
+
       const onUp = (mv: MouseEvent) => {
-        const newW = Math.max(140, startW + mv.clientX - startX)
-        const newH = Math.max(100, startH + mv.clientY - startY)
-        setWidgetSizes(prev => ({ ...prev, [id]: { w: newW, h: newH } }))
+        const nw = Math.max(160, startW + mv.clientX - startX)
+        const nh = Math.max(100, startH + mv.clientY - startY)
+        // Save to state and localStorage
+        setWidgetSizes(prev => {
+          const next = { ...prev, [id]: { w: nw, h: nh } }
+          saveSizesToDB(next)
+          return next
+        })
         setResizingId(null)
+        document.body.removeChild(globalOverlay)
+        document.body.removeChild(ghost)
         window.removeEventListener('mousemove', onMove)
         window.removeEventListener('mouseup', onUp)
       }
-      setResizingId(id)
+
       window.addEventListener('mousemove', onMove)
       window.addEventListener('mouseup', onUp)
     }
+
+    const isResizing = resizingId === id
 
     return (
       <div
         onMouseDown={handleMouseDown}
         style={{
-          position: 'absolute', bottom: 2, right: 2, width: 14, height: 14,
-          cursor: 'se-resize', zIndex: 20, display: editMode ? 'flex' : 'none',
-          alignItems: 'center', justifyContent: 'center', opacity: 0.4,
+          position: 'absolute', bottom: 0, right: 0,
+          width: 20, height: 20,
+          cursor: 'se-resize', zIndex: 30,
+          display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end',
+          padding: '3px',
+          opacity: isResizing ? 1 : 0.35,
+          transition: 'opacity 0.15s',
         }}
+        onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = '1'}
+        onMouseLeave={e => { if (resizingId !== id) (e.currentTarget as HTMLElement).style.opacity = '0.35' }}
         title="Drag to resize"
       >
-        <svg width="10" height="10" viewBox="0 0 10 10">
-          <line x1="10" y1="3" x2="3" y2="10" stroke="#666" strokeWidth="1.5" strokeLinecap="round"/>
-          <line x1="10" y1="6" x2="6" y2="10" stroke="#666" strokeWidth="1.5" strokeLinecap="round"/>
-          <line x1="10" y1="9" x2="9" y2="10" stroke="#666" strokeWidth="1.5" strokeLinecap="round"/>
+        <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+          <path d="M2 10 L10 2" stroke={isResizing ? '#1a73e8' : '#888'} strokeWidth="1.5" strokeLinecap="round"/>
+          <path d="M5.5 10 L10 5.5" stroke={isResizing ? '#1a73e8' : '#888'} strokeWidth="1.5" strokeLinecap="round"/>
+          <path d="M9 10 L10 9" stroke={isResizing ? '#1a73e8' : '#888'} strokeWidth="1.5" strokeLinecap="round"/>
         </svg>
       </div>
     )
@@ -1284,7 +1337,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       return (
         <div data-widget-id={w.id}
           onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
-          style={{ background:'#fff', border:`2px solid ${borderCol}`, borderRadius:8, padding:12, position:'relative', minHeight: widgetSizes[w.id]?.h || 130, cursor: editMode ? 'pointer' : 'default', transition:'border-color 0.15s', ...(widgetSizes[w.id] ? { width: widgetSizes[w.id].w, minWidth: widgetSizes[w.id].w } : {}) }}>
+          style={{ background:'#fff', border:`2px solid ${borderCol}`, borderRadius:8, padding:12, position:'relative', minHeight: widgetSizes[w.id]?.h || 130, cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s', ...(widgetSizes[w.id] ? { width: widgetSizes[w.id].w, minWidth: widgetSizes[w.id].w, flex: '0 0 auto' } : { flex: '1 1 220px' }) }}>
           {editControls}
           <ResizeHandle id={w.id}/>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6 }}>
@@ -1320,7 +1373,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     return (
       <div data-widget-id={w.id}
         onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
-        style={{ background:bgColor, border:`2px solid ${borderCol}`, borderRadius:8, padding:16, position:'relative', minHeight: widgetSizes[w.id]?.h || 110, cursor: editMode ? 'pointer' : 'default', transition:'border-color 0.15s', ...(widgetSizes[w.id] ? { width: widgetSizes[w.id].w, minWidth: widgetSizes[w.id].w } : {}) }}>
+        style={{ background:bgColor, border:`2px solid ${borderCol}`, borderRadius:8, padding:16, position:'relative', minHeight: widgetSizes[w.id]?.h || 110, cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s', ...(widgetSizes[w.id] ? { width: widgetSizes[w.id].w, minWidth: widgetSizes[w.id].w, flex: '0 0 auto' } : { flex: '1 1 180px' }) }}>
         {editControls}
         <ResizeHandle id={w.id}/>
         <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:10 }}>
@@ -1345,7 +1398,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     return (
       <div data-widget-id={id}
         onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
-        style={{ background:'#fff', border:`2px solid ${isSelected && editMode ? '#48b5ea' : '#e5e5e5'}`, borderRadius:8, padding:16, position:'relative', cursor: editMode ? 'pointer' : 'default', transition:'border-color 0.15s', ...(sz ? { width: sz.w, minWidth: sz.w, minHeight: sz.h } : {}) }}>
+        style={{ background:'#fff', border:`2px solid ${isSelected && editMode ? '#48b5ea' : '#e5e5e5'}`, borderRadius:8, padding:16, position:'relative', cursor: editMode ? 'pointer' : 'default', transition: resizingId === id ? 'none' : 'border-color 0.15s', ...(sz ? { width: sz.w, minWidth: sz.w, minHeight: sz.h, flex: '0 0 auto' } : { flex: '1 1 260px' }) }}>
         {editMode && <div style={{ position:'absolute', top:6, left:6, cursor:'grab', color:'#d0d0d0' }}><Grip size={13}/></div>}
         {editMode && (
           <div onClick={e => e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', alignItems:'center', gap:4 }}>
