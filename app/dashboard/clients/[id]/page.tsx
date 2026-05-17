@@ -658,22 +658,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [dsSearch, setDsSearch] = useState('')
   const [dimSearch, setDimSearch] = useState('')
   const [metSearch, setMetSearch] = useState('')
-  // Persisted active fetch date range — survives refresh
-  const LS_DATE_KEY = `alloy_custom_date_${clientId}`
-  const [activeFetchStart, setActiveFetchStart] = useState<string|null>(() => {
-    try { const v = localStorage.getItem(`alloy_custom_date_${clientId}`); return v ? JSON.parse(v).start || null : null } catch { return null }
-  })
-  const [activeFetchEnd, setActiveFetchEnd] = useState<string|null>(() => {
-    try { const v = localStorage.getItem(`alloy_custom_date_${clientId}`); return v ? JSON.parse(v).end || null : null } catch { return null }
-  })
-  // Calendar picker UI state
-  const [showCalendarPicker, setShowCalendarPicker] = useState(false)
-  const [calAnchorRef, setCalAnchorRef] = useState<{top:number;left:number}|null>(null)
-  const [calStartView, setCalStartView] = useState(new Date(2026, 3, 1))
-  const [calEndView,   setCalEndView]   = useState(new Date(2026, 4, 1))
-  const [calTempStart, setCalTempStart] = useState('')
-  const [calTempEnd,   setCalTempEnd]   = useState('')
-  const [calClickCount, setCalClickCount] = useState(0)
+  const [showShareMenu, setShowShareMenu] = useState(false)
+  const [shareSubmenu, setShareSubmenu] = useState<'pdf'|'email'|'link'|null>(null)
   const [mappingProp, setMappingProp] = useState('')
   const [mappingPropName, setMappingPropName] = useState('')
   const [mappingSite, setMappingSite] = useState('')
@@ -816,25 +802,10 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
         metrics: (w as any).metrics,
         filters: (w as any).filters,
         dataSource: w.dataSource,
-        dateRangeType: (w as any).dateRangeType,
-        dateStart: (w as any).dateStart,
-        dateEnd: (w as any).dateEnd,
       }))
       localStorage.setItem(LS_WIDGETS_KEY, JSON.stringify(toSave))
     } catch {}
   }, [widgets])
-
-  // Persist custom date range to localStorage so it survives refresh
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    try {
-      if (activeFetchStart && activeFetchEnd) {
-        localStorage.setItem(LS_DATE_KEY, JSON.stringify({ start: activeFetchStart, end: activeFetchEnd }))
-      } else {
-        localStorage.removeItem(LS_DATE_KEY)
-      }
-    } catch {}
-  }, [activeFetchStart, activeFetchEnd])
 
   // Auto-load event data when any widget uses Event Name dimension
   useEffect(() => {
@@ -843,16 +814,14 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
         const dims: string[] = (w as any).dimensions || []
         return dims.includes('Event Name') || dims.includes('eventName')
       })
-      if (needsEvents) loadGA4Events(activeFetchStart ?? undefined, activeFetchEnd ?? undefined)
+      if (needsEvents) loadGA4Events()
     }
   }, [widgets, connection, selectedProperty])
 
-  async function loadGA4Events(startDate?: string, endDate?: string) {
+  async function loadGA4Events() {
     if (!connection?.connected || !selectedProperty) return
-    const sd = startDate ?? activeFetchStart ?? dateRange
-    const ed = endDate   ?? activeFetchEnd   ?? 'today'
     try {
-      const res = await fetch(`/api/ga4/custom?client_id=${clientId}&property_id=${selectedProperty}&dimensions=eventName&metrics=eventCount&start_date=${sd}&end_date=${ed}`)
+      const res = await fetch(`/api/ga4/custom?client_id=${clientId}&property_id=${selectedProperty}&dimensions=eventName&metrics=eventCount&start_date=30daysAgo&end_date=today`)
       if (res.ok) {
         const data = await res.json()
         const rows = data.rows || []
@@ -965,37 +934,27 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     try {
       const res = await fetch(`/api/mapping?client_id=${clientId}`)
       const data = await res.json()
-      // Restore persisted custom date range if present
-      let savedStart: string|null = null, savedEnd: string|null = null
-      try {
-        const saved = localStorage.getItem(LS_DATE_KEY)
-        if (saved) { const p = JSON.parse(saved); savedStart = p.start || null; savedEnd = p.end || null }
-      } catch {}
-      if (savedStart && savedEnd) { setActiveFetchStart(savedStart); setActiveFetchEnd(savedEnd) }
       if (data.ga4_property_id) {
         setSelectedProperty(data.ga4_property_id)
         setMappingProp(data.ga4_property_id)
         setMappingPropName(data.ga4_property_name || '')
         setMappingSite(data.gsc_site_url || '')
-        fetchGA4(data.ga4_property_id, savedStart || undefined, savedEnd || undefined)
+        fetchGA4(data.ga4_property_id)
       } else {
-        fetchGA4(undefined, savedStart || undefined, savedEnd || undefined)
+        fetchGA4()
       }
     } catch { fetchGA4() }
   }
 
-  async function fetchGA4(propertyId?: string, startDate?: string, endDate?: string) {
+  async function fetchGA4(propertyId?: string) {
     const pid = propertyId || selectedProperty
     if (!pid) return
     setLoadingData(true)
-    const sd = startDate ?? activeFetchStart ?? dateRange
-    const ed = endDate   ?? activeFetchEnd   ?? 'today'
     try {
-      const res = await fetch(`/api/ga4?client_id=${clientId}&property_id=${pid}&start_date=${sd}&end_date=${ed}`)
+      const res = await fetch(`/api/ga4?client_id=${clientId}&property_id=${pid}&start_date=${dateRange}&end_date=today`)
       const data = await res.json()
       if (data.connected) {
         setGa4Data(data)
-        loadGA4Events(sd, ed)
         const totalsRow = data.timeSeries?.totals?.[0]
         const sessions = parseInt(totalsRow?.metricValues?.[0]?.value || '0')
         const users = parseInt(totalsRow?.metricValues?.[1]?.value || '0')
@@ -1673,7 +1632,129 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                   <RefreshCw size={13} style={{ color:ALLOY.mute }}/>
                 </button>
               )}
-              <button style={{ background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'6px 12px', fontSize:12, color:ALLOY.ink, cursor:'pointer' }}>Share</button>
+              {/* Share button with nested dropdown */}
+              <div style={{ position:'relative' as const }}>
+                <button
+                  onClick={e => { e.stopPropagation(); setShowShareMenu(v => !v); setShareSubmenu(null) }}
+                  style={{ background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'6px 12px', fontSize:12, color:ALLOY.ink, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
+                  Share
+                  <ChevronDown size={12} style={{ color:ALLOY.mute }}/>
+                </button>
+
+                {showShareMenu && (
+                  <>
+                    {/* Backdrop */}
+                    <div style={{ position:'fixed' as const, inset:0, zIndex:1000 }} onClick={() => { setShowShareMenu(false); setShareSubmenu(null) }}/>
+
+                    {/* Menu card */}
+                    <div style={{ position:'absolute' as const, right:0, top:'calc(100% + 6px)', zIndex:1001, background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:8, boxShadow:'0 8px 32px rgba(0,0,0,0.14)', minWidth:280, overflow:'hidden' }}
+                      onClick={e => e.stopPropagation()}>
+
+                      {/* ── Main menu ── */}
+                      {!shareSubmenu && (
+                        <div style={{ padding:'6px 0' }}>
+                          {[
+                            { id:'pdf',   icon:'⬇', label:'Download PDF',             hasArrow:true  },
+                            { id:'email', icon:'✉', label:'Email',                     hasArrow:true  },
+                            { id:'link',  icon:'🔗', label:'Share Link',               hasArrow:true  },
+                            { id:'tpl',   icon:'📋', label:'Save Section as Template', hasArrow:false },
+                            { id:'report',icon:'+', label:'Add To Report',             hasArrow:false },
+                          ].map(item => (
+                            <button key={item.id}
+                              onClick={() => {
+                                if (item.id === 'pdf' || item.id === 'email' || item.id === 'link') {
+                                  setShareSubmenu(item.id as any)
+                                } else {
+                                  setShowShareMenu(false)
+                                }
+                              }}
+                              style={{
+                                display:'flex', alignItems:'center', gap:14, width:'100%',
+                                padding:'13px 18px', fontSize:14, color:ALLOY.ink,
+                                background:'none', border:'none', cursor:'pointer',
+                                textAlign:'left' as const,
+                              }}
+                              onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = ALLOY.paper}
+                              onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'none'}
+                            >
+                              <span style={{ fontSize:16, width:20, textAlign:'center' as const }}>{item.icon}</span>
+                              <span style={{ flex:1, fontWeight:400 }}>{item.label}</span>
+                              {item.hasArrow && <ChevronRight size={15} style={{ color:ALLOY.mute }}/>}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* ── Download PDF submenu ── */}
+                      {shareSubmenu === 'pdf' && (
+                        <div>
+                          <div style={{ display:'flex', alignItems:'center', gap:10, padding:'14px 18px', borderBottom:`1px solid ${ALLOY.line}` }}>
+                            <button onClick={() => setShareSubmenu(null)} style={{ background:'none', border:'none', cursor:'pointer', display:'flex', alignItems:'center', color:ALLOY.ink, padding:0 }}>
+                              <ChevronLeft size={16}/>
+                            </button>
+                            <span style={{ fontSize:15, fontWeight:600, color:ALLOY.ink }}>Download PDF</span>
+                          </div>
+                          <div style={{ padding:'6px 0' }}>
+                            {['Download Current Section','Download My Dashboards'].map(label => (
+                              <button key={label}
+                                onClick={() => { setShowShareMenu(false); setShareSubmenu(null) }}
+                                style={{ display:'block', width:'100%', padding:'13px 18px', fontSize:14, color:ALLOY.ink, background:'none', border:'none', cursor:'pointer', textAlign:'left' as const }}
+                                onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = ALLOY.paper}
+                                onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'none'}
+                              >{label}</button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ── Email submenu ── */}
+                      {shareSubmenu === 'email' && (
+                        <div>
+                          <div style={{ display:'flex', alignItems:'center', gap:10, padding:'14px 18px', borderBottom:`1px solid ${ALLOY.line}` }}>
+                            <button onClick={() => setShareSubmenu(null)} style={{ background:'none', border:'none', cursor:'pointer', display:'flex', alignItems:'center', color:ALLOY.ink, padding:0 }}>
+                              <ChevronLeft size={16}/>
+                            </button>
+                            <span style={{ fontSize:15, fontWeight:600, color:ALLOY.ink }}>Email</span>
+                          </div>
+                          <div style={{ padding:'6px 0' }}>
+                            {['Send Current Section','Send My Dashboards'].map(label => (
+                              <button key={label}
+                                onClick={() => { setShowShareMenu(false); setShareSubmenu(null) }}
+                                style={{ display:'block', width:'100%', padding:'13px 18px', fontSize:14, color:ALLOY.ink, background:'none', border:'none', cursor:'pointer', textAlign:'left' as const }}
+                                onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = ALLOY.paper}
+                                onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'none'}
+                              >{label}</button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ── Share Link submenu ── */}
+                      {shareSubmenu === 'link' && (
+                        <div>
+                          <div style={{ display:'flex', alignItems:'center', gap:10, padding:'14px 18px', borderBottom:`1px solid ${ALLOY.line}` }}>
+                            <button onClick={() => setShareSubmenu(null)} style={{ background:'none', border:'none', cursor:'pointer', display:'flex', alignItems:'center', color:ALLOY.ink, padding:0 }}>
+                              <ChevronLeft size={16}/>
+                            </button>
+                            <span style={{ fontSize:15, fontWeight:600, color:ALLOY.ink }}>Share Link</span>
+                          </div>
+                          <div style={{ padding:'6px 0' }}>
+                            {['Share Current Section','Share My Dashboards'].map(label => (
+                              <button key={label}
+                                onClick={() => { setShowShareMenu(false); setShareSubmenu(null) }}
+                                style={{ display:'block', width:'100%', padding:'13px 18px', fontSize:14, color:ALLOY.ink, background:'none', border:'none', cursor:'pointer', textAlign:'left' as const }}
+                                onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = ALLOY.paper}
+                                onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'none'}
+                              >{label}</button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                    </div>
+                  </>
+                )}
+              </div>
               <button style={{ background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'6px 8px', cursor:'pointer' }}><Maximize2 size={13}/></button>
               <button onClick={() => setEditMode(true)} style={{ background:ALLOY.green1, border:'none', borderRadius:2, padding:'6px 16px', fontSize:11, color:ALLOY.ink, cursor:'pointer', fontWeight:700, fontFamily:ALLOY.fontLabel, letterSpacing:'0.06em', textTransform:'uppercase' as const }}>Edit Dashboards</button>
             </div>
@@ -1811,12 +1892,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
           <div style={{ padding:'14px 20px', borderBottom:`1px solid ${ALLOY.line}`, background:ALLOY.white, display:'flex', alignItems:'center', gap:8 }}>
             <div style={{ width:16, height:16, border:`2px solid ${ALLOY.ink}`, borderRadius:2 }}/>
             <span style={{ fontSize:14, fontWeight:700, color:ALLOY.ink }}>{activeDash}</span>
-            {loadingData && (
-            <span style={{ display:'flex', alignItems:'center', gap:6, fontSize:11, color:ALLOY.blue1, marginLeft:8, background:ALLOY.blue4, border:`1px solid ${ALLOY.blue3}`, borderRadius:2, padding:'3px 8px' }}>
-              <span style={{ display:'inline-block', animation:'spin 1s linear infinite' }}>↻</span>
-              Fetching data{activeFetchStart ? ` for ${activeFetchStart} – ${activeFetchEnd}` : ''}...
-            </span>
-          )}
+            {loadingData && <span style={{ fontSize:11, color:ALLOY.blue1, marginLeft:8 }}>↻ Loading...</span>}
             {connection?.connected && !loadingData && !isEmptyDash && <span style={{ fontSize:11, color:ALLOY.green1, marginLeft:8 }}>● Live GA4 data</span>}
           </div>
 
@@ -2115,20 +2191,10 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                     const metrics: string[] = widgetData.metrics || []
 
                     const updateField = (key: string, val: any) => {
-                      setEditingWidget(prev => {
-                        if (!prev) return prev
-                        const updated = { ...prev, [key]: val } as any
-                        setWidgets(ws => ws.map(w => w.id === updated.id ? updated : w))
-                        return updated
-                      })
-                    }
-                    const updateMulti = (patch: Record<string, any>) => {
-                      setEditingWidget(prev => {
-                        if (!prev) return prev
-                        const updated = { ...prev, ...patch } as any
-                        setWidgets(ws => ws.map(w => w.id === updated.id ? updated : w))
-                        return updated
-                      })
+                      const updated = { ...editingWidget, [key]: val } as any
+                      setEditingWidget(updated)
+                      setWidgets(prev => prev.map(w => w.id === updated.id ? updated : w))
+
                     }
 
                     return (
@@ -2276,21 +2342,6 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                             </div>
                           )}
                           <Toggle label="Optional metrics" on={!!(widgetData as any).optionalMetrics} onChange={v => updateField('optionalMetrics', v)}/>
-                          {!!(widgetData as any).optionalMetrics && (
-                            <div style={{ marginTop:8, marginBottom:4 }}>
-                              {((widgetData as any).optionalMetricsList || []).map((met: string, i: number) => (
-                                <div key={i} style={{ display:'flex', alignItems:'center', gap:8, background:ALLOY.blue4, border:`1px solid ${ALLOY.blue1}`, borderRadius:2, padding:'6px 12px', marginBottom:6 }}>
-                                  <span style={{ fontSize:10, fontWeight:700, color:ALLOY.blue1, borderRadius:2, padding:'1px 5px', fontFamily:ALLOY.fontLabel }}>AUT</span>
-                                  <span style={{ flex:1, fontSize:12, color:ALLOY.ink }}>{met}</span>
-                                  <button onClick={() => updateField('optionalMetricsList', ((widgetData as any).optionalMetricsList||[]).filter((_:string,j:number)=>j!==i))} style={{ background:'none', border:'none', cursor:'pointer', color:ALLOY.mute, padding:0 }}><X size={11}/></button>
-                                </div>
-                              ))}
-                              <button onClick={() => { setShowMetDropdown(true); setMetSearch('') }}
-                                style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:`1px dashed ${ALLOY.line}`, borderRadius:2, padding:'6px 12px', cursor:'pointer', color:ALLOY.green1, fontSize:9, fontWeight:700, fontFamily:ALLOY.fontLabel, letterSpacing:'0.06em', textTransform:'uppercase' as const, width:'100%' }}>
-                                <Plus size={13}/> Add metric
-                              </button>
-                            </div>
-                          )}
                           <Toggle label="Metric sliders" on={!!(widgetData as any).metricSliders} onChange={v => updateField('metricSliders', v)}/>
                         </div>
 
@@ -2442,196 +2493,15 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                         {/* Default date range filter */}
                         <div style={{ padding:'14px 0', borderBottom:`1px solid ${ALLOY.line}` }}>
                           <p style={{ fontSize:13, fontWeight:700, color:ALLOY.ink, marginBottom:10 }}>Default date range filter</p>
-
                           {[{val:'auto',label:'Auto: Last 28 days (exclude today)'},{val:'custom',label:'Custom'}].map(opt => (
-                            <label key={opt.val}
-                              onClick={() => {
-                                updateField('dateRangeType', opt.val)
-                                if (opt.val === 'auto') {
-                                  setShowCalendarPicker(false)
-                                  setActiveFetchStart(null); setActiveFetchEnd(null)
-                                  try { localStorage.removeItem(LS_DATE_KEY) } catch {}
-                                  fetchGA4(undefined, undefined, undefined)
-                                } else {
-                                  const s = (widgetData as any).dateStart || '2026-04-01'
-                                  const e = (widgetData as any).dateEnd   || '2026-05-08'
-                                  setCalTempStart(s); setCalTempEnd(e); setCalClickCount(0)
-                                  const [sy,sm] = s.split('-').map(Number)
-                                  const [ey,em] = e.split('-').map(Number)
-                                  setCalStartView(new Date(sy,sm-1,1)); setCalEndView(new Date(ey,em-1,1))
-                                }
-                              }}
-                              style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8, cursor:'pointer' }}>
-                              <div style={{ width:18, height:18, borderRadius:'50%', border:`2px solid ${(widgetData.dateRangeType||'auto')===opt.val?ALLOY.blue1:ALLOY.line}`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                            <label key={opt.val} style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8, cursor:'pointer' }}>
+                              <div style={{ width:18, height:18, borderRadius:'50%', border:`2px solid ${(widgetData.dateRangeType||'auto')===opt.val?ALLOY.blue1:ALLOY.line}`, display:'flex', alignItems:'center', justifyContent:'center' }}>
                                 {(widgetData.dateRangeType||'auto')===opt.val && <div style={{ width:8, height:8, borderRadius:'50%', background:ALLOY.blue1 }}/>}
                               </div>
                               <span style={{ fontSize:12, color:ALLOY.ink }}>{opt.label}</span>
                             </label>
                           ))}
-
-                          {/* Custom date range UI */}
-                          {(widgetData as any).dateRangeType === 'custom' && (() => {
-                            const committedStart = (widgetData as any).dateStart || '2026-04-01'
-                            const committedEnd   = (widgetData as any).dateEnd   || '2026-05-08'
-                            const activeStart = showCalendarPicker ? (calTempStart || committedStart) : committedStart
-                            const activeEnd   = showCalendarPicker ? (calTempEnd   || committedEnd)   : committedEnd
-                            const todayIso = new Date().toISOString().split('T')[0]
-
-                            const fmtIso = (d: Date) => {
-                              return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0')
-                            }
-                            const fmtLabel = (s: string) => {
-                              if (!s) return ''
-                              const [y,m,dd] = s.split('-')
-                              return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(m)-1] + ' ' + parseInt(dd) + ', ' + y
-                            }
-                            const MOS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
-
-                            const handleDayClick = (iso: string) => {
-                              if (calClickCount === 0) {
-                                setCalTempStart(iso); setCalTempEnd(''); setCalClickCount(1)
-                              } else {
-                                const fs = iso < calTempStart ? iso        : calTempStart
-                                const fe = iso < calTempStart ? calTempStart : iso
-                                setCalTempStart(fs); setCalTempEnd(fe); setCalClickCount(2)
-                              }
-                            }
-
-                            const renderMonth = (view: Date, label: string) => {
-                              const y = view.getFullYear(), m = view.getMonth()
-                              const fd  = new Date(y, m, 1).getDay()
-                              const dim = new Date(y, m+1, 0).getDate()
-                              const nav = (dir: number) => {
-                                if (label === 'Start Date') setCalStartView(new Date(y,m+dir,1))
-                                else setCalEndView(new Date(y,m+dir,1))
-                              }
-                              const cells: React.ReactNode[] = []
-                              for (let i = 0; i < fd; i++) cells.push(<div key={'e'+i} style={{ height:36 }}/>)
-                              for (let d = 1; d <= dim; d++) {
-                                const t   = new Date(y, m, d)
-                                const iso = fmtIso(t)
-                                const isSt = iso === activeStart
-                                const isEn = iso === activeEnd && !!activeEnd
-                                const inR  = !!activeStart && !!activeEnd && iso > activeStart && iso < activeEnd
-                                const isToday = iso === todayIso
-                                cells.push(
-                                  <div key={d} onClick={() => handleDayClick(iso)}
-                                    style={{
-                                      height:36, borderRadius:'50%', display:'flex', alignItems:'center',
-                                      justifyContent:'center', fontSize:14, cursor:'pointer',
-                                      fontWeight: isSt||isEn ? 700 : 400,
-                                      background: isSt||isEn ? ALLOY.blue1 : inR ? ALLOY.blue4 : 'none',
-                                      color: isSt||isEn ? ALLOY.white : inR ? ALLOY.blue1 : ALLOY.ink,
-                                      border: isToday&&!isSt&&!isEn ? `1px solid ${ALLOY.mute}` : 'none',
-                                    }}
-                                    onMouseEnter={e => { if(!isSt&&!isEn)(e.currentTarget as HTMLDivElement).style.background=ALLOY.blue4 }}
-                                    onMouseLeave={e => { if(!isSt&&!isEn)(e.currentTarget as HTMLDivElement).style.background=inR?ALLOY.blue4:'none' }}
-                                  >{d}</div>
-                                )
-                              }
-                              return (
-                                <div style={{ flex:1 }}>
-                                  <p style={{ fontSize:13, fontWeight:700, color:ALLOY.ink, marginBottom:12, textAlign:'center' as const }}>{label}</p>
-                                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
-                                    <div style={{ display:'flex', alignItems:'center', gap:4, cursor:'pointer' }}>
-                                      <span style={{ fontSize:12, fontWeight:700 }}>{MOS[m]} {y}</span>
-                                      <ChevronDown size={11} style={{ color:ALLOY.mute }}/>
-                                    </div>
-                                    <div style={{ display:'flex' }}>
-                                      <button onClick={() => nav(-1)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:16, color:ALLOY.ink, padding:'2px 6px', lineHeight:1 }}>‹</button>
-                                      <button onClick={() => nav(1)}  style={{ background:'none', border:'none', cursor:'pointer', fontSize:16, color:ALLOY.ink, padding:'2px 6px', lineHeight:1 }}>›</button>
-                                    </div>
-                                  </div>
-                                  <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', marginBottom:4 }}>
-                                    {['S','M','T','W','T','F','S'].map((d,i)=>(
-                                      <div key={i} style={{ textAlign:'center' as const, fontSize:11, color:ALLOY.mute, fontWeight:500, paddingBottom:5 }}>{d}</div>
-                                    ))}
-                                  </div>
-                                  <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', rowGap:2 }}>{cells}</div>
-                                </div>
-                              )
-                            }
-
-                            return (
-                              <div>
-                                {/* Date summary button */}
-                                <button
-                                  onClick={e => {
-                                    e.stopPropagation()
-                                    if (!showCalendarPicker) {
-                                      setCalTempStart(committedStart); setCalTempEnd(committedEnd); setCalClickCount(0)
-                                      const [sy,sm] = committedStart.split('-').map(Number)
-                                      const [ey,em] = committedEnd.split('-').map(Number)
-                                      setCalStartView(new Date(sy,sm-1,1)); setCalEndView(new Date(ey,em-1,1))
-                                      const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect()
-                                      setCalAnchorRef({ top: rect.bottom + 8, left: rect.left })
-                                    }
-                                    setShowCalendarPicker(v => !v)
-                                  }}
-                                  style={{ width:'100%', display:'flex', alignItems:'center', gap:8, background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'8px 12px', cursor:'pointer', fontSize:12, color:ALLOY.ink, fontFamily:ALLOY.fontBody }}
-                                >
-                                  <span style={{ fontSize:14 }}>📅</span>
-                                  <span style={{ flex:1, textAlign:'left' as const }}>{fmtLabel(committedStart)} — {fmtLabel(committedEnd)}</span>
-                                  <ChevronDown size={12} style={{ color:ALLOY.mute }}/>
-                                </button>
-
-                                {/* Calendar popup — fixed, anchored near button */}
-                                {showCalendarPicker && (
-                                  <>
-                                    <div style={{ position:'fixed' as const, inset:0, zIndex:1000 }}
-                                      onClick={() => { setShowCalendarPicker(false); setCalTempStart(committedStart); setCalTempEnd(committedEnd) }}/>
-                                    <div style={{
-                                        position:'fixed' as const,
-                                        top: calAnchorRef ? Math.min(calAnchorRef.top, window.innerHeight - 540) : 200,
-                                        left: calAnchorRef ? Math.max(10, Math.min(calAnchorRef.left, window.innerWidth - 640)) : 200,
-                                        zIndex:1001, background:ALLOY.white, border:`1px solid ${ALLOY.line}`,
-                                        borderRadius:8, boxShadow:'0 12px 40px rgba(0,0,0,0.18)', padding:20, width:620,
-                                      }}
-                                      onClick={e => e.stopPropagation()}>
-                                      {/* Fixed / Rolling */}
-                                      <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:14 }}>
-                                        <div style={{ display:'flex', alignItems:'center', gap:6, background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:4, padding:'6px 14px', fontSize:12, color:ALLOY.ink, cursor:'pointer', fontWeight:500 }}>
-                                          Fixed <ChevronDown size={12} style={{ color:ALLOY.mute }}/>
-                                        </div>
-                                      </div>
-                                      {/* Instruction */}
-                                      <p style={{ fontSize:11, color:ALLOY.mute, textAlign:'center' as const, marginBottom:12 }}>
-                                        {calClickCount===0 ? 'Click a start date' : calClickCount===1 ? 'Now click an end date' : `${fmtLabel(calTempStart)} — ${fmtLabel(calTempEnd)}`}
-                                      </p>
-                                      {/* Two months */}
-                                      <div style={{ display:'flex', gap:8 }}>
-                                        {renderMonth(calStartView, 'Start Date')}
-                                        <div style={{ width:1, background:ALLOY.line, flexShrink:0 }}/>
-                                        {renderMonth(calEndView, 'End Date')}
-                                      </div>
-                                      {/* Footer */}
-                                      <div style={{ display:'flex', justifyContent:'flex-end', alignItems:'center', gap:14, borderTop:`1px solid ${ALLOY.line}`, paddingTop:14, marginTop:16 }}>
-                                        <button onClick={() => { setShowCalendarPicker(false); setCalTempStart(committedStart); setCalTempEnd(committedEnd) }}
-                                          style={{ background:'none', border:'none', color:ALLOY.blue1, cursor:'pointer', fontSize:14, fontWeight:600, padding:'6px 12px' }}>Cancel</button>
-                                        <button
-                                          disabled={calClickCount < 2}
-                                          onClick={() => {
-                                            const fs = calTempStart || committedStart
-                                            const fe = calTempEnd   || committedEnd
-                                            // Atomic update: widget fields + active fetch range + localStorage
-                                            updateMulti({ dateStart: fs, dateEnd: fe })
-                                            setActiveFetchStart(fs); setActiveFetchEnd(fe)
-                                            try { localStorage.setItem(LS_DATE_KEY, JSON.stringify({ start: fs, end: fe })) } catch {}
-                                            setShowCalendarPicker(false)
-                                            fetchGA4(undefined, fs, fe)
-                                          }}
-                                          style={{ background:calClickCount<2?ALLOY.line:ALLOY.blue1, border:'none', borderRadius:999, color:calClickCount<2?ALLOY.mute:ALLOY.white, cursor:calClickCount<2?'not-allowed':'pointer', fontSize:14, fontWeight:600, padding:'10px 28px', transition:'background 0.15s' }}>
-                                          Apply
-                                        </button>
-                                      </div>
-                                    </div>
-                                  </>
-                                )}
-                              </div>
-                            )
-                          })()}
-
-                          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:8 }}>
+                          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:4 }}>
                             <span style={{ fontSize:12, color:ALLOY.ink }}>Comparison date range</span>
                             <div style={{ width:36, height:20, borderRadius:2, background:ALLOY.line, position:'relative', cursor:'pointer' }}>
                               <div style={{ width:16, height:16, borderRadius:'50%', background:ALLOY.white, position:'absolute', top:2, left:2, boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}/>
