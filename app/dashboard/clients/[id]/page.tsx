@@ -1,6 +1,6 @@
 'use client'
 import React, { useState, useEffect } from 'react'
-import { ChevronRight, Sparkles, Settings, Calendar, ChevronDown, Plus, MoreHorizontal, Maximize2, X, Grip, RotateCcw, RotateCw, Monitor, Smartphone, ChevronLeft, RefreshCw, CheckCircle2 } from 'lucide-react'
+import { ChevronRight, Sparkles, Settings, Calendar, ChevronDown, Plus, MoreHorizontal, Maximize2, X, Grip, RotateCcw, RotateCw, Monitor, Smartphone, ChevronLeft, RefreshCw, CheckCircle2, Download, Mail, Link2, LayoutGrid } from 'lucide-react'
 import Link from 'next/link'
 import { BarChart, Bar, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ScatterChart, Scatter as ScatterPlot, ZAxis } from 'recharts'
 
@@ -1632,13 +1632,13 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                   <RefreshCw size={13} style={{ color:ALLOY.mute }}/>
                 </button>
               )}
-              {/* Share button with nested dropdown */}
+              {/* Share button — Alloy design system */}
               <div style={{ position:'relative' as const }}>
                 <button
                   onClick={e => { e.stopPropagation(); setShowShareMenu(v => !v); setShareSubmenu(null) }}
-                  style={{ background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'6px 12px', fontSize:12, color:ALLOY.ink, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
+                  style={{ display:'flex', alignItems:'center', gap:6, background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'6px 12px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, cursor:'pointer', fontWeight:500 }}>
                   Share
-                  <ChevronDown size={12} style={{ color:ALLOY.mute }}/>
+                  <ChevronDown size={11} style={{ color:ALLOY.mute }}/>
                 </button>
 
                 {showShareMenu && (
@@ -1646,110 +1646,80 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                     {/* Backdrop */}
                     <div style={{ position:'fixed' as const, inset:0, zIndex:1000 }} onClick={() => { setShowShareMenu(false); setShareSubmenu(null) }}/>
 
-                    {/* Menu card */}
-                    <div style={{ position:'absolute' as const, right:0, top:'calc(100% + 6px)', zIndex:1001, background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:8, boxShadow:'0 8px 32px rgba(0,0,0,0.14)', minWidth:280, overflow:'hidden' }}
+                    {/* Menu card — Alloy: borderRadius:2, white bg, line border, tight spacing */}
+                    <div
+                      style={{ position:'absolute' as const, right:0, top:'calc(100% + 4px)', zIndex:1001, background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, boxShadow:'0 4px 16px rgba(0,0,0,0.10)', minWidth:264, overflow:'hidden' }}
                       onClick={e => e.stopPropagation()}>
 
                       {/* ── Main menu ── */}
-                      {!shareSubmenu && (
-                        <div style={{ padding:'6px 0' }}>
-                          {[
-                            { id:'pdf',   icon:'⬇', label:'Download PDF',             hasArrow:true  },
-                            { id:'email', icon:'✉', label:'Email',                     hasArrow:true  },
-                            { id:'link',  icon:'🔗', label:'Share Link',               hasArrow:true  },
-                            { id:'tpl',   icon:'📋', label:'Save Section as Template', hasArrow:false },
-                            { id:'report',icon:'+', label:'Add To Report',             hasArrow:false },
-                          ].map(item => (
-                            <button key={item.id}
-                              onClick={() => {
-                                if (item.id === 'pdf' || item.id === 'email' || item.id === 'link') {
-                                  setShareSubmenu(item.id as any)
-                                } else {
-                                  setShowShareMenu(false)
-                                }
-                              }}
-                              style={{
-                                display:'flex', alignItems:'center', gap:14, width:'100%',
-                                padding:'13px 18px', fontSize:14, color:ALLOY.ink,
-                                background:'none', border:'none', cursor:'pointer',
-                                textAlign:'left' as const,
-                              }}
-                              onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = ALLOY.paper}
-                              onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'none'}
-                            >
-                              <span style={{ fontSize:16, width:20, textAlign:'center' as const }}>{item.icon}</span>
-                              <span style={{ flex:1, fontWeight:400 }}>{item.label}</span>
-                              {item.hasArrow && <ChevronRight size={15} style={{ color:ALLOY.mute }}/>}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* ── Download PDF submenu ── */}
-                      {shareSubmenu === 'pdf' && (
-                        <div>
-                          <div style={{ display:'flex', alignItems:'center', gap:10, padding:'14px 18px', borderBottom:`1px solid ${ALLOY.line}` }}>
-                            <button onClick={() => setShareSubmenu(null)} style={{ background:'none', border:'none', cursor:'pointer', display:'flex', alignItems:'center', color:ALLOY.ink, padding:0 }}>
-                              <ChevronLeft size={16}/>
-                            </button>
-                            <span style={{ fontSize:15, fontWeight:600, color:ALLOY.ink }}>Download PDF</span>
-                          </div>
-                          <div style={{ padding:'6px 0' }}>
-                            {['Download Current Section','Download My Dashboards'].map(label => (
-                              <button key={label}
-                                onClick={() => { setShowShareMenu(false); setShareSubmenu(null) }}
-                                style={{ display:'block', width:'100%', padding:'13px 18px', fontSize:14, color:ALLOY.ink, background:'none', border:'none', cursor:'pointer', textAlign:'left' as const }}
-                                onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = ALLOY.paper}
-                                onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'none'}
-                              >{label}</button>
+                      {!shareSubmenu && (() => {
+                        const ITEMS = [
+                          { id:'pdf',    Icon: Download,   label:'Download PDF',             arrow:true  },
+                          { id:'email',  Icon: Mail,       label:'Email',                    arrow:true  },
+                          { id:'link',   Icon: Link2,      label:'Share Link',               arrow:true  },
+                          { id:'tpl',    Icon: LayoutGrid, label:'Save Section as Template', arrow:false },
+                          { id:'report', Icon: Plus,       label:'Add To Report',            arrow:false },
+                        ] as const
+                        return (
+                          <div style={{ padding:'4px 0' }}>
+                            {ITEMS.map(({ id, Icon, label, arrow }, idx) => (
+                              <React.Fragment key={id}>
+                                {/* Divider before template/report group */}
+                                {idx === 3 && <div style={{ height:1, background:ALLOY.line, margin:'4px 0' }}/>}
+                                <button
+                                  onClick={() => { if (id === 'pdf' || id === 'email' || id === 'link') setShareSubmenu(id); else setShowShareMenu(false) }}
+                                  style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'9px 14px', fontFamily:ALLOY.fontBody, fontSize:13, color:ALLOY.ink, background:'none', border:'none', cursor:'pointer', textAlign:'left' as const }}
+                                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = ALLOY.paper; (e.currentTarget as HTMLButtonElement).style.color = ALLOY.green1 }}
+                                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; (e.currentTarget as HTMLButtonElement).style.color = ALLOY.ink }}
+                                >
+                                  <Icon size={14} style={{ color:ALLOY.mute, flexShrink:0 }} strokeWidth={1.5}/>
+                                  <span style={{ flex:1, fontWeight:400 }}>{label}</span>
+                                  {arrow && <ChevronRight size={13} style={{ color:ALLOY.mute }}/>}
+                                </button>
+                              </React.Fragment>
                             ))}
                           </div>
-                        </div>
-                      )}
+                        )
+                      })()}
 
-                      {/* ── Email submenu ── */}
-                      {shareSubmenu === 'email' && (
-                        <div>
-                          <div style={{ display:'flex', alignItems:'center', gap:10, padding:'14px 18px', borderBottom:`1px solid ${ALLOY.line}` }}>
-                            <button onClick={() => setShareSubmenu(null)} style={{ background:'none', border:'none', cursor:'pointer', display:'flex', alignItems:'center', color:ALLOY.ink, padding:0 }}>
-                              <ChevronLeft size={16}/>
-                            </button>
-                            <span style={{ fontSize:15, fontWeight:600, color:ALLOY.ink }}>Email</span>
+                      {/* ── Submenu template — reused for pdf / email / link ── */}
+                      {shareSubmenu && (() => {
+                        const SUB: Record<string, { title: string; items: string[] }> = {
+                          pdf:   { title:'Download PDF',  items:['Download Current Section', 'Download My Dashboards'] },
+                          email: { title:'Email',         items:['Send Current Section',     'Send My Dashboards']     },
+                          link:  { title:'Share Link',    items:['Share Current Section',    'Share My Dashboards']    },
+                        }
+                        const sub = SUB[shareSubmenu]
+                        return (
+                          <div>
+                            {/* Submenu header — Alloy label style */}
+                            <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 14px', borderBottom:`1px solid ${ALLOY.line}`, background:ALLOY.paper }}>
+                              <button
+                                onClick={() => setShareSubmenu(null)}
+                                style={{ display:'flex', alignItems:'center', justifyContent:'center', width:24, height:24, background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, cursor:'pointer', flexShrink:0 }}>
+                                <ChevronLeft size={13} style={{ color:ALLOY.ink }}/>
+                              </button>
+                              <span style={{ fontFamily:ALLOY.fontLabel, fontSize:9, fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'0.1em', color:ALLOY.ink }}>
+                                {sub.title}
+                              </span>
+                            </div>
+                            {/* Submenu items */}
+                            <div style={{ padding:'4px 0' }}>
+                              {sub.items.map(label => (
+                                <button key={label}
+                                  onClick={() => { setShowShareMenu(false); setShareSubmenu(null) }}
+                                  style={{ display:'flex', alignItems:'center', width:'100%', padding:'9px 14px', fontFamily:ALLOY.fontBody, fontSize:13, color:ALLOY.ink, background:'none', border:'none', cursor:'pointer', textAlign:'left' as const }}
+                                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = ALLOY.green4; (e.currentTarget as HTMLButtonElement).style.color = ALLOY.green1 }}
+                                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; (e.currentTarget as HTMLButtonElement).style.color = ALLOY.ink }}
+                                >
+                                  <span style={{ flex:1 }}>{label}</span>
+                                  {/* Green accent bar on left of item (Alloy nav pattern) */}
+                                </button>
+                              ))}
+                            </div>
                           </div>
-                          <div style={{ padding:'6px 0' }}>
-                            {['Send Current Section','Send My Dashboards'].map(label => (
-                              <button key={label}
-                                onClick={() => { setShowShareMenu(false); setShareSubmenu(null) }}
-                                style={{ display:'block', width:'100%', padding:'13px 18px', fontSize:14, color:ALLOY.ink, background:'none', border:'none', cursor:'pointer', textAlign:'left' as const }}
-                                onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = ALLOY.paper}
-                                onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'none'}
-                              >{label}</button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* ── Share Link submenu ── */}
-                      {shareSubmenu === 'link' && (
-                        <div>
-                          <div style={{ display:'flex', alignItems:'center', gap:10, padding:'14px 18px', borderBottom:`1px solid ${ALLOY.line}` }}>
-                            <button onClick={() => setShareSubmenu(null)} style={{ background:'none', border:'none', cursor:'pointer', display:'flex', alignItems:'center', color:ALLOY.ink, padding:0 }}>
-                              <ChevronLeft size={16}/>
-                            </button>
-                            <span style={{ fontSize:15, fontWeight:600, color:ALLOY.ink }}>Share Link</span>
-                          </div>
-                          <div style={{ padding:'6px 0' }}>
-                            {['Share Current Section','Share My Dashboards'].map(label => (
-                              <button key={label}
-                                onClick={() => { setShowShareMenu(false); setShareSubmenu(null) }}
-                                style={{ display:'block', width:'100%', padding:'13px 18px', fontSize:14, color:ALLOY.ink, background:'none', border:'none', cursor:'pointer', textAlign:'left' as const }}
-                                onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = ALLOY.paper}
-                                onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'none'}
-                              >{label}</button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                        )
+                      })()}
 
                     </div>
                   </>
