@@ -660,6 +660,9 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [metSearch, setMetSearch] = useState('')
   const [showShareMenu, setShowShareMenu] = useState(false)
   const [shareSubmenu, setShareSubmenu] = useState<'pdf'|'email'|'link'|null>(null)
+  const [shareToast, setShareToast] = useState<string|null>(null)
+  const [shareEmailInput, setShareEmailInput] = useState('')
+  const [shareLinkCopied, setShareLinkCopied] = useState(false)
   const [mappingProp, setMappingProp] = useState('')
   const [mappingPropName, setMappingPropName] = useState('')
   const [mappingSite, setMappingSite] = useState('')
@@ -1632,11 +1635,10 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                   <RefreshCw size={13} style={{ color:ALLOY.mute }}/>
                 </button>
               )}
-              {/* Share button — Alloy design system */}
+              {/* Share button — Alloy design system, fully functional */}
               <div style={{ position:'relative' as const }}>
-                {/* Trigger button — matches all other topbar buttons exactly */}
                 <button
-                  onClick={e => { e.stopPropagation(); setShowShareMenu(v => !v); setShareSubmenu(null) }}
+                  onClick={e => { e.stopPropagation(); setShowShareMenu(v => !v); setShareSubmenu(null); setShareEmailInput(''); setShareLinkCopied(false) }}
                   style={{ display:'flex', alignItems:'center', gap:5, background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'6px 12px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, cursor:'pointer', fontWeight:400, lineHeight:1 }}>
                   Share
                   <ChevronDown size={11} style={{ color:ALLOY.mute, flexShrink:0 }}/>
@@ -1644,23 +1646,19 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
                 {showShareMenu && (
                   <>
-                    {/* Transparent backdrop */}
                     <div style={{ position:'fixed' as const, inset:0, zIndex:1000 }} onClick={() => { setShowShareMenu(false); setShareSubmenu(null) }}/>
-
-                    {/* Dropdown card — Alloy: borderRadius:2, ALLOY.white, 1px line border */}
                     <div
-                      style={{ position:'absolute' as const, right:0, top:'calc(100% + 3px)', zIndex:1001, background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, boxShadow:'0 2px 12px rgba(0,0,0,0.08)', minWidth:244, overflow:'hidden' }}
+                      style={{ position:'absolute' as const, right:0, top:'calc(100% + 3px)', zIndex:1001, background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, boxShadow:'0 2px 12px rgba(0,0,0,0.08)', minWidth:260, overflow:'hidden' }}
                       onClick={e => e.stopPropagation()}>
 
                       {/* ── Main menu ── */}
                       {!shareSubmenu && (() => {
-                        // Inline SVG icon components matching Alloy's 14px lucide outline style
-                        const ITEMS: { id: string; Icon: React.ElementType; label: string; arrow: boolean; accent?: boolean }[] = [
-                          { id:'pdf',    Icon:Download,    label:'Download PDF',             arrow:true  },
-                          { id:'email',  Icon:Mail,        label:'Email',                    arrow:true  },
-                          { id:'link',   Icon:Link2,       label:'Share Link',               arrow:true  },
-                          { id:'tpl',    Icon:LayoutGrid,  label:'Save Section as Template', arrow:false },
-                          { id:'report', Icon:Plus,        label:'Add To Report',            arrow:false, accent:true },
+                        const ITEMS: { id:string; Icon:React.ElementType; label:string; arrow:boolean; accent?:boolean }[] = [
+                          { id:'pdf',    Icon:Download,   label:'Download PDF',             arrow:true  },
+                          { id:'email',  Icon:Mail,       label:'Email',                    arrow:true  },
+                          { id:'link',   Icon:Link2,      label:'Share Link',               arrow:true  },
+                          { id:'tpl',    Icon:LayoutGrid, label:'Save Section as Template', arrow:false },
+                          { id:'report', Icon:Plus,       label:'Add To Report',            arrow:false, accent:true },
                         ]
                         return (
                           <div>
@@ -1669,26 +1667,36 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                                 {idx === 3 && <div style={{ height:1, background:ALLOY.line }}/>}
                                 <div
                                   onClick={() => {
-                                    if (id === 'pdf' || id === 'email' || id === 'link') setShareSubmenu(id as any)
-                                    else setShowShareMenu(false)
+                                    if (id === 'pdf' || id === 'email' || id === 'link') {
+                                      setShareSubmenu(id as any)
+                                    } else if (id === 'tpl') {
+                                      // Save Section as Template — save to localStorage
+                                      const tplName = `${activeDash} — ${new Date().toLocaleDateString()}`
+                                      try {
+                                        const existing = JSON.parse(localStorage.getItem('alloy_templates') || '[]')
+                                        existing.push({ id: Date.now().toString(), name: tplName, dash: activeDash, client: clientName, saved: new Date().toISOString() })
+                                        localStorage.setItem('alloy_templates', JSON.stringify(existing))
+                                      } catch {}
+                                      setShowShareMenu(false)
+                                      setShareToast(`"${activeDash}" saved as template`)
+                                      setTimeout(() => setShareToast(null), 3000)
+                                    } else if (id === 'report') {
+                                      // Add To Report — save to report queue
+                                      try {
+                                        const existing = JSON.parse(localStorage.getItem('alloy_report_queue') || '[]')
+                                        existing.push({ id: Date.now().toString(), dash: activeDash, client: clientName, clientId, added: new Date().toISOString() })
+                                        localStorage.setItem('alloy_report_queue', JSON.stringify(existing))
+                                      } catch {}
+                                      setShowShareMenu(false)
+                                      setShareToast(`"${activeDash}" added to report`)
+                                      setTimeout(() => setShareToast(null), 3000)
+                                    }
                                   }}
-                                  style={{ display:'flex', alignItems:'center', gap:9, width:'100%', padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color: accent ? ALLOY.green1 : ALLOY.ink, fontWeight:400, cursor:'pointer', lineHeight:'1.4', userSelect:'none' as const }}
-                                  onMouseEnter={e => {
-                                    const el = e.currentTarget as HTMLDivElement
-                                    el.style.background = ALLOY.green4
-                                    el.style.color = ALLOY.green1
-                                    const svg = el.querySelector('svg') as SVGElement | null
-                                    if (svg) svg.style.color = ALLOY.green1
-                                  }}
-                                  onMouseLeave={e => {
-                                    const el = e.currentTarget as HTMLDivElement
-                                    el.style.background = 'none'
-                                    el.style.color = accent ? ALLOY.green1 : ALLOY.ink
-                                    const svg = el.querySelector('svg') as SVGElement | null
-                                    if (svg) svg.style.color = accent ? ALLOY.green1 : ALLOY.mute
-                                  }}
+                                  style={{ display:'flex', alignItems:'center', gap:9, width:'100%', padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:accent?ALLOY.green1:ALLOY.ink, fontWeight:400, cursor:'pointer', lineHeight:'1.4', userSelect:'none' as const }}
+                                  onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.background=ALLOY.green4; el.style.color=ALLOY.green1; const svg=el.querySelector('svg') as SVGElement|null; if(svg) svg.style.color=ALLOY.green1 }}
+                                  onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.background='none'; el.style.color=accent?ALLOY.green1:ALLOY.ink; const svg=el.querySelector('svg') as SVGElement|null; if(svg) svg.style.color=accent?ALLOY.green1:ALLOY.mute }}
                                 >
-                                  <Icon size={13} style={{ color: accent ? ALLOY.green1 : ALLOY.mute, flexShrink:0 }} strokeWidth={1.5}/>
+                                  <Icon size={13} style={{ color:accent?ALLOY.green1:ALLOY.mute, flexShrink:0 }} strokeWidth={1.5}/>
                                   <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:'inherit', fontWeight:400, flex:1 }}>{label}</span>
                                   {arrow && <ChevronRight size={11} style={{ color:ALLOY.mute, flexShrink:0 }}/>}
                                 </div>
@@ -1698,61 +1706,162 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                         )
                       })()}
 
-                      {/* ── Submenu — single template reused for pdf / email / link ── */}
+                      {/* ── Submenus ── */}
                       {shareSubmenu && (() => {
-                        const SUB: Record<string, { title:string; items:string[] }> = {
-                          pdf:   { title:'Download PDF', items:['Download Current Section','Download My Dashboards'] },
-                          email: { title:'Email',        items:['Send Current Section','Send My Dashboards']        },
-                          link:  { title:'Share Link',   items:['Share Current Section','Share My Dashboards']      },
-                        }
-                        const sub = SUB[shareSubmenu]
-                        return (
+                        const pageUrl = typeof window !== 'undefined' ? window.location.href : ''
+                        const dateLabel = activeFetchStart ? `${activeFetchStart} to ${activeFetchEnd}` : 'Last 30 days'
+                        const emailSubject = `${clientName} — ${activeDash} Dashboard`
+                        const emailBody = `Hi,
+
+Please find the ${activeDash} dashboard for ${clientName} (${dateLabel}).
+
+View online: ${pageUrl}
+
+Alloy Intelligence`
+
+                        const SubHeader = ({ title }: { title:string }) => (
+                          <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 12px', borderBottom:`1px solid ${ALLOY.line}`, background:ALLOY.paper }}>
+                            <button onClick={() => setShareSubmenu(null)}
+                              style={{ display:'flex', alignItems:'center', justifyContent:'center', width:22, height:22, background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, cursor:'pointer', flexShrink:0 }}
+                              onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background=ALLOY.green4}
+                              onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background=ALLOY.white}>
+                              <ChevronLeft size={12} style={{ color:ALLOY.ink }}/>
+                            </button>
+                            <span style={{ fontFamily:ALLOY.fontLabel, fontSize:9, fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'0.12em', color:ALLOY.mute }}>{title}</span>
+                          </div>
+                        )
+
+                        const SubItem = ({ label, onClick }: { label:string; onClick:()=>void }) => (
+                          <div onClick={onClick}
+                            style={{ display:'flex', alignItems:'center', padding:'8px 14px 8px 16px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, fontWeight:400, cursor:'pointer', lineHeight:'1.4', borderLeft:'2px solid transparent', userSelect:'none' as const }}
+                            onMouseEnter={e => { const el=e.currentTarget as HTMLDivElement; el.style.background=ALLOY.green4; el.style.color=ALLOY.green1; el.style.borderLeft=`2px solid ${ALLOY.green1}` }}
+                            onMouseLeave={e => { const el=e.currentTarget as HTMLDivElement; el.style.background='none'; el.style.color=ALLOY.ink; el.style.borderLeft='2px solid transparent' }}>
+                            <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:'inherit' }}>{label}</span>
+                          </div>
+                        )
+
+                        // ── PDF submenu ──
+                        if (shareSubmenu === 'pdf') return (
                           <div>
-                            {/* Header: back arrow + ALLOY.label title */}
-                            <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 12px', borderBottom:`1px solid ${ALLOY.line}`, background:ALLOY.paper }}>
-                              <button
-                                onClick={() => setShareSubmenu(null)}
-                                style={{ display:'flex', alignItems:'center', justifyContent:'center', width:22, height:22, background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, cursor:'pointer', flexShrink:0 }}
-                                onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = ALLOY.green4}
-                                onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = ALLOY.white}
-                              >
-                                <ChevronLeft size={12} style={{ color:ALLOY.ink }}/>
-                              </button>
-                              {/* Barlow label — matches every section heading in the app */}
-                              <span style={{ fontFamily:ALLOY.fontLabel, fontSize:9, fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'0.12em', color:ALLOY.mute }}>
-                                {sub.title}
-                              </span>
-                            </div>
-                            {/* Sub-items */}
+                            <SubHeader title="Download PDF"/>
                             <div style={{ padding:'4px 0' }}>
-                              {sub.items.map(label => (
-                                <div key={label}
-                                  onClick={() => { setShowShareMenu(false); setShareSubmenu(null) }}
-                                  style={{ display:'flex', alignItems:'center', padding:'8px 14px 8px 16px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, fontWeight:400, background:'none', cursor:'pointer', lineHeight:'1.4', borderLeft:'2px solid transparent', userSelect:'none' as const }}
-                                  onMouseEnter={e => {
-                                    const el = e.currentTarget as HTMLDivElement
-                                    el.style.background = ALLOY.green4
-                                    el.style.color = ALLOY.green1
-                                    el.style.borderLeft = `2px solid ${ALLOY.green1}`
-                                  }}
-                                  onMouseLeave={e => {
-                                    const el = e.currentTarget as HTMLDivElement
-                                    el.style.background = 'none'
-                                    el.style.color = ALLOY.ink
-                                    el.style.borderLeft = '2px solid transparent'
-                                  }}
-                                >
-                                  <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:'inherit', fontWeight:400 }}>{label}</span>
-                                </div>
-                              ))}
+                              <SubItem label="Download Current Section" onClick={() => {
+                                setShowShareMenu(false); setShareSubmenu(null)
+                                // Use browser print with a minimal print stylesheet
+                                const style = document.createElement('style')
+                                style.id = 'alloy-print-style'
+                                style.innerHTML = `@media print { body > * { display:none!important; } #alloy-canvas { display:block!important; } @page { margin:10mm; } }`
+                                document.head.appendChild(style)
+                                const canvas = document.getElementById('alloy-canvas')
+                                if (canvas) canvas.style.display = 'block'
+                                window.print()
+                                setTimeout(() => { document.getElementById('alloy-print-style')?.remove() }, 1000)
+                              }}/>
+                              <SubItem label="Download My Dashboards" onClick={() => {
+                                setShowShareMenu(false); setShareSubmenu(null)
+                                window.print()
+                              }}/>
                             </div>
                           </div>
                         )
+
+                        // ── Email submenu ──
+                        if (shareSubmenu === 'email') return (
+                          <div>
+                            <SubHeader title="Email"/>
+                            {/* Email input */}
+                            <div style={{ padding:'10px 14px', borderBottom:`1px solid ${ALLOY.line}` }}>
+                              <p style={{ fontFamily:ALLOY.fontLabel, fontSize:9, fontWeight:600, color:ALLOY.mute, textTransform:'uppercase' as const, letterSpacing:'0.1em', marginBottom:6 }}>Recipient email</p>
+                              <input
+                                type="email"
+                                value={shareEmailInput}
+                                onChange={e => setShareEmailInput(e.target.value)}
+                                placeholder="name@company.com"
+                                style={{ width:'100%', border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'7px 10px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, outline:'none', background:ALLOY.paper, boxSizing:'border-box' as const }}
+                              />
+                            </div>
+                            <div style={{ padding:'4px 0' }}>
+                              <SubItem label="Send Current Section" onClick={() => {
+                                setShowShareMenu(false); setShareSubmenu(null)
+                                const to = shareEmailInput.trim()
+                                const subject = encodeURIComponent(emailSubject)
+                                const body = encodeURIComponent(emailBody)
+                                window.open(`mailto:${to}?subject=${subject}&body=${body}`)
+                              }}/>
+                              <SubItem label="Send My Dashboards" onClick={() => {
+                                setShowShareMenu(false); setShareSubmenu(null)
+                                const to = shareEmailInput.trim()
+                                const subject = encodeURIComponent(`${clientName} — All Dashboards`)
+                                const body = encodeURIComponent(`Hi,
+
+Here is the full dashboard for ${clientName}.
+
+View online: ${pageUrl}
+
+Alloy Intelligence`)
+                                window.open(`mailto:${to}?subject=${subject}&body=${body}`)
+                              }}/>
+                            </div>
+                          </div>
+                        )
+
+                        // ── Share Link submenu ──
+                        if (shareSubmenu === 'link') return (
+                          <div>
+                            <SubHeader title="Share Link"/>
+                            {/* URL display + copy */}
+                            <div style={{ padding:'10px 14px', borderBottom:`1px solid ${ALLOY.line}` }}>
+                              <p style={{ fontFamily:ALLOY.fontLabel, fontSize:9, fontWeight:600, color:ALLOY.mute, textTransform:'uppercase' as const, letterSpacing:'0.1em', marginBottom:6 }}>Dashboard URL</p>
+                              <div style={{ display:'flex', gap:6, alignItems:'center' }}>
+                                <div style={{ flex:1, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'7px 10px', fontFamily:ALLOY.fontBody, fontSize:11, color:ALLOY.mute, background:ALLOY.paper, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' as const }}>
+                                  {pageUrl}
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(pageUrl).then(() => {
+                                      setShareLinkCopied(true)
+                                      setTimeout(() => setShareLinkCopied(false), 2000)
+                                    })
+                                  }}
+                                  style={{ flexShrink:0, background:shareLinkCopied?ALLOY.green1:ALLOY.ink, border:'none', borderRadius:2, padding:'7px 12px', fontFamily:ALLOY.fontLabel, fontSize:9, fontWeight:700, color:ALLOY.white, cursor:'pointer', textTransform:'uppercase' as const, letterSpacing:'0.06em', transition:'background 0.2s', whiteSpace:'nowrap' as const }}>
+                                  {shareLinkCopied ? '✓ Copied' : 'Copy'}
+                                </button>
+                              </div>
+                            </div>
+                            <div style={{ padding:'4px 0' }}>
+                              <SubItem label="Share Current Section" onClick={() => {
+                                navigator.clipboard.writeText(pageUrl).then(() => {
+                                  setShareLinkCopied(true); setShowShareMenu(false); setShareSubmenu(null)
+                                  setShareToast('Link copied to clipboard')
+                                  setTimeout(() => setShareToast(null), 3000)
+                                })
+                              }}/>
+                              <SubItem label="Share My Dashboards" onClick={() => {
+                                const base = typeof window !== 'undefined' ? window.location.origin + window.location.pathname : ''
+                                navigator.clipboard.writeText(base).then(() => {
+                                  setShowShareMenu(false); setShareSubmenu(null)
+                                  setShareToast('Dashboard link copied')
+                                  setTimeout(() => setShareToast(null), 3000)
+                                })
+                              }}/>
+                            </div>
+                          </div>
+                        )
+
+                        return null
                       })()}
                     </div>
                   </>
                 )}
               </div>
+
+              {/* Toast notification for share actions */}
+              {shareToast && (
+                <div style={{ position:'fixed' as const, bottom:24, left:'50%', transform:'translateX(-50%)', zIndex:9999, background:ALLOY.ink, color:ALLOY.white, fontFamily:ALLOY.fontBody, fontSize:12, padding:'10px 20px', borderRadius:2, boxShadow:'0 4px 16px rgba(0,0,0,0.2)', display:'flex', alignItems:'center', gap:8, pointerEvents:'none' as const }}>
+                  <span style={{ color:ALLOY.green1, fontSize:14 }}>✓</span>
+                  {shareToast}
+                </div>
+              )}
               <button style={{ background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'6px 8px', cursor:'pointer' }}><Maximize2 size={13}/></button>
               <button onClick={() => setEditMode(true)} style={{ background:ALLOY.green1, border:'none', borderRadius:2, padding:'6px 16px', fontSize:11, color:ALLOY.ink, cursor:'pointer', fontWeight:700, fontFamily:ALLOY.fontLabel, letterSpacing:'0.06em', textTransform:'uppercase' as const }}>Edit Dashboards</button>
             </div>
@@ -1883,7 +1992,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
         </div>
 
         {/* Canvas — click background to close edit panel */}
-        <div
+        <div id="alloy-canvas"
           style={{ flex:1, display:'flex', flexDirection:'column', overflowY: isEmptyDash ? 'hidden' : 'auto', background:ALLOY.paper }}
           onClick={() => { if (editingWidget) setEditingWidget(null) }}
         >
