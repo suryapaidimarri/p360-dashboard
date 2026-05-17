@@ -1709,7 +1709,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                       {/* ── Submenus ── */}
                       {shareSubmenu && (() => {
                         const pageUrl = typeof window !== 'undefined' ? window.location.href : ''
-                        const dateLabel = activeFetchStart ? `${activeFetchStart} to ${activeFetchEnd}` : 'Last 30 days'
+                        const dateRangeLabel: Record<string,string> = { '7daysAgo':'Last 7 days', '30daysAgo':'Last 30 days', '90daysAgo':'Last 90 days' }
+                        const dateLabel = dateRangeLabel[dateRange] || 'Last 30 days'
                         const emailSubject = `${clientName} — ${activeDash} Dashboard`
                         const emailBody = `Hi,
 
