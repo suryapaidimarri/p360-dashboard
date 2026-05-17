@@ -169,7 +169,7 @@ function formatNum(n: number) {
 }
 
 // ── DynamicChart: renders the right chart based on widget.chartType ────────────
-function DynamicChart({ chartType, data, height = 80, dimensions = ['Date'], metrics = ['Sessions'] }: { chartType: string; data: any[]; height?: number; dimensions?: string[]; metrics?: string[] }) {
+function DynamicChart({ chartType, data, height = 80, dimensions = ['Date'], metrics = ['Sessions'], opts = {} }: { chartType: string; data: any[]; height?: number; dimensions?: string[]; metrics?: string[]; opts?: any }) {
   const colors = ['#4285f4','#ea8600','#a142f4','#34a853','#ea4335','#24c1e0']
   const c = colors[0]
   if (!data || data.length === 0) return null
@@ -483,7 +483,7 @@ function DynamicChart({ chartType, data, height = 80, dimensions = ['Date'], met
 function NewDashCanvas({ onClone }: { onClone: () => void }) {
   return (
     <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', background:ALLOY.paper }}>
-      <p style={{ fontSize:15, color:'#555', marginBottom:2 }}>Start building by dragging widgets</p>
+      <p style={{ fontSize:15, color:ALLOY.ink, marginBottom:2 }}>Start building by dragging widgets</p>
       <p style={{ fontSize:13, color:ALLOY.mute, marginBottom:20 }}>or</p>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, width:520 }}>
 
@@ -1252,7 +1252,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       <div style={{ position:'relative', display:'inline-flex' }}>
         <button onClick={e => { e.stopPropagation(); setOpenMenu(isOpen ? null : wid) }}
           style={{ background:'rgba(255,255,255,0.92)', border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'2px 6px', cursor:'pointer', display:'flex', alignItems:'center' }}>
-          <MoreHorizontal size={13} style={{ color:'#555' }}/>
+          <MoreHorizontal size={13} style={{ color:ALLOY.ink }}/>
         </button>
         {isOpen && (
           <div style={{ position:'absolute', right:0, top:'calc(100% + 4px)', background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, boxShadow:'0 8px 24px rgba(0,0,0,0.12)', padding:4, minWidth:160, zIndex:999 }}
@@ -1266,6 +1266,19 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
             <button onClick={() => setOpenMenu(null)} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'9px 14px', fontSize:13, color:ALLOY.red1, background:'none', border:'none', cursor:'pointer', borderRadius:2 }}>🗑 Remove</button>
           </div>
         )}
+      </div>
+    )
+  }
+
+  // ── Toggle component ──────────────────────────────────────────────────────
+  function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label?: string }) {
+    return (
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:10 }}>
+        {label && <span style={{ fontSize:12, color:ALLOY.ink }}>{label}</span>}
+        <div onClick={() => onChange(!on)}
+          style={{ width:36, height:20, borderRadius:999, background: on ? ALLOY.green1 : ALLOY.line, position:'relative', cursor:'pointer', transition:'background 0.2s', flexShrink:0 }}>
+          <div style={{ width:16, height:16, borderRadius:'50%', background:ALLOY.white, position:'absolute', top:2, left: on ? 18 : 2, transition:'left 0.2s', boxShadow:'0 1px 3px rgba(0,0,0,0.25)' }}/>
+        </div>
       </div>
     )
   }
@@ -1509,7 +1522,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
             <span style={{ fontSize:11, background:ALLOY.paper, color:ALLOY.mute, padding:'2px 8px', borderRadius:2 }}>Client</span>
             <button onClick={() => { setEditMode(false); setEditingWidget(null); setOpenMenu(null) }}
               style={{ marginLeft:'auto', width:28, height:28, borderRadius:'50%', background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
-              <X size={14} style={{ color:'#555' }}/>
+              <X size={14} style={{ color:ALLOY.ink }}/>
             </button>
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 16px', borderBottom:`1px solid ${ALLOY.line}`, background:ALLOY.white, flexShrink:0 }}>
@@ -1683,7 +1696,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                       onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.opacity='1'}
                       onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.opacity = dashMenu===d?'1':'0.4'}
                     >
-                      <MoreHorizontal size={14} style={{ color:'#555' }}/>
+                      <MoreHorizontal size={14} style={{ color:ALLOY.ink }}/>
                     </button>
                   </div>
                 )}
@@ -1740,7 +1753,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
             </div>
             {DATA_SOURCES.map(s => (
               <button key={s} onClick={() => setOpenSrc(p => { const n = new Set(p); n.has(s)?n.delete(s):n.add(s); return n })}
-                style={{ width:'100%', textAlign:'left', display:'flex', alignItems:'center', gap:8, padding:'7px 16px', fontSize:13, cursor:'pointer', background:'none', border:'none', color:'#555' }}>
+                style={{ width:'100%', textAlign:'left', display:'flex', alignItems:'center', gap:8, padding:'7px 16px', fontSize:13, cursor:'pointer', background:'none', border:'none', color:ALLOY.ink }}>
                 <ChevronRight size={12} style={{ transform:openSrc.has(s)?'rotate(90deg)':'none', transition:'0.15s', color:ALLOY.mute }}/>{s}
               </button>
             ))}
@@ -2138,7 +2151,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                                 </div>
                               </div>
                               <div style={{ overflowY:'auto' as const, maxHeight:240 }}>
-                                <p style={{ fontSize:11, color:'#555', padding:'8px 14px 4px', fontWeight:600 }}>Default group</p>
+                                <p style={{ fontSize:11, color:ALLOY.ink, padding:'8px 14px 4px', fontWeight:600 }}>Default group</p>
                                 {ALL_GA4_DIMENSIONS.filter((d:string) => d.toLowerCase().includes(dimSearch.toLowerCase()) && !dimensions.includes(d)).map((dim:string) => (
                                   <div key={dim} onClick={() => { updateField('dimensions', [...dimensions, dim]); setShowDimDropdown(false); setDimSearch('') }}
                                     style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 14px', cursor:'pointer' }}
@@ -2158,12 +2171,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                               </div>
                             </div>
                           )}
-                          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:10 }}>
-                            <span style={{ fontSize:12, color:'#555' }}>Drill down</span>
-                            <div style={{ width:36, height:20, borderRadius:2, background:ALLOY.line, position:'relative', cursor:'pointer' }}>
-                              <div style={{ width:16, height:16, borderRadius:'50%', background:ALLOY.white, position:'absolute', top:2, left:2, boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}/>
-                            </div>
-                          </div>
+                          <Toggle label="Drill down" on={!!(widgetData as any).drillDown} onChange={v => updateField('drillDown', v)}/>
                         </div>
 
                         {/* Metric */}
@@ -2191,7 +2199,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                                 </div>
                               </div>
                               <div style={{ overflowY:'auto' as const, maxHeight:240 }}>
-                                <p style={{ fontSize:11, color:'#555', padding:'8px 14px 4px', fontWeight:600 }}>Default group</p>
+                                <p style={{ fontSize:11, color:ALLOY.ink, padding:'8px 14px 4px', fontWeight:600 }}>Default group</p>
                                 {ALL_GA4_METRICS.filter((m:string) => m.toLowerCase().includes(metSearch.toLowerCase()) && !metrics.includes(m)).map((met:string) => (
                                   <div key={met} onClick={() => { updateField('metrics', [...metrics, met]); setShowMetDropdown(false); setMetSearch('') }}
                                     style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 14px', cursor:'pointer' }}
@@ -2209,21 +2217,15 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                               </div>
                             </div>
                           )}
-                          {[{label:'Optional metrics'},{label:'Metric sliders'}].map(row => (
-                            <div key={row.label} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:10 }}>
-                              <span style={{ fontSize:12, color:'#555' }}>{row.label}</span>
-                              <div style={{ width:36, height:20, borderRadius:2, background:ALLOY.line, position:'relative', cursor:'pointer' }}>
-                                <div style={{ width:16, height:16, borderRadius:'50%', background:ALLOY.white, position:'absolute', top:2, left:2, boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}/>
-                              </div>
-                            </div>
-                          ))}
+                          <Toggle label="Optional metrics" on={!!(widgetData as any).optionalMetrics} onChange={v => updateField('optionalMetrics', v)}/>
+                          <Toggle label="Metric sliders" on={!!(widgetData as any).metricSliders} onChange={v => updateField('metricSliders', v)}/>
                         </div>
 
                         {/* Filter */}
                         <div style={{ padding:'14px 0', borderBottom:`1px solid ${ALLOY.line}`, position:'relative' as const }}>
                           <p style={{ fontSize:13, fontWeight:700, color:ALLOY.ink, marginBottom:4 }}>Filter</p>
                           <p style={{ fontSize:11, color:ALLOY.mute, marginBottom:8 }}>Report Filter</p>
-                          <div style={{ background:ALLOY.paper, border:'1px solid #e0e0e0', borderRadius:999, padding:'7px 14px', fontSize:12, color:'#555', marginBottom:10 }}>
+                          <div style={{ background:ALLOY.paper, border:'1px solid #e0e0e0', borderRadius:999, padding:'7px 14px', fontSize:12, color:ALLOY.ink, marginBottom:10 }}>
                             {(widgetData.filters as string[])?.length > 0 ? (widgetData.filters as string[]).join(', ') : 'No filter applied'}
                           </div>
 
@@ -2257,17 +2259,14 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                             </div>
                           )}
 
-                          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
-                            <span style={{ fontSize:12, color:'#555' }}>Inherit filters</span>
-                            <div style={{ width:36, height:20, borderRadius:2, background:ALLOY.line, position:'relative', cursor:'pointer' }}>
-                              <div style={{ width:16, height:16, borderRadius:'50%', background:ALLOY.white, position:'absolute', top:2, left:2, boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}/>
-                            </div>
+                          <div style={{ marginBottom:8 }}>
+                            <Toggle label="Inherit filters" on={!!(widgetData as any).inheritFilters} onChange={v => updateField('inheritFilters', v)}/>
                           </div>
 
-                          <p style={{ fontSize:12, color:'#555', marginBottom:6 }}>Filters on this chart</p>
+                          <p style={{ fontSize:12, color:ALLOY.ink, marginBottom:6 }}>Filters on this chart</p>
                           <button
                             onClick={() => { setShowFilterDropdown(!showFilterDropdown); setFilterSearch(''); if (ga4Filters.length === 0) loadGA4Filters() }}
-                            style={{ display:'flex', alignItems:'center', gap:8, background:ALLOY.blue4, border:'1px dashed #90caf9', borderRadius:999, padding:'6px 14px', cursor:'pointer', color:ALLOY.blue1, fontSize:12, width:'100%', justifyContent:'center' }}>
+                            style={{ display:'flex', alignItems:'center', gap:8, background:'transparent', border:`1px dashed ${ALLOY.green1}`, borderRadius:2, padding:'8px 14px', cursor:'pointer', color:ALLOY.green1, fontSize:9, fontWeight:700, fontFamily:ALLOY.fontLabel, letterSpacing:'0.06em', width:'100%', justifyContent:'center', textTransform:'uppercase' as const }}>
                             <Plus size={13}/> Add filter
                           </button>
 
@@ -2379,7 +2378,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                             </label>
                           ))}
                           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:4 }}>
-                            <span style={{ fontSize:12, color:'#555' }}>Comparison date range</span>
+                            <span style={{ fontSize:12, color:ALLOY.ink }}>Comparison date range</span>
                             <div style={{ width:36, height:20, borderRadius:2, background:ALLOY.line, position:'relative', cursor:'pointer' }}>
                               <div style={{ width:16, height:16, borderRadius:'50%', background:ALLOY.white, position:'absolute', top:2, left:2, boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}/>
                             </div>
@@ -2398,17 +2397,12 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                             </label>
                           ))}
                           <div style={{ display:'flex', alignItems:'center', gap:8, background:ALLOY.white, border:'1px solid #e0e0e0', borderRadius:2, padding:'6px 12px', marginTop:4 }}>
-                            <span style={{ fontSize:11, color:'#555' }}>Rows per page</span>
+                            <span style={{ fontSize:11, color:ALLOY.ink }}>Rows per page</span>
                             <select style={{ flex:1, border:'none', outline:'none', fontSize:12, color:ALLOY.ink, background:'transparent' }}>
                               <option>10</option><option>25</option><option selected>100</option><option>500</option>
                             </select>
                           </div>
-                          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:10 }}>
-                            <span style={{ fontSize:12, color:'#555' }}>Show summary row</span>
-                            <div style={{ width:36, height:20, borderRadius:2, background:ALLOY.line, position:'relative', cursor:'pointer' }}>
-                              <div style={{ width:16, height:16, borderRadius:'50%', background:ALLOY.white, position:'absolute', top:2, left:2, boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}/>
-                            </div>
-                          </div>
+                          <Toggle label="Show summary row" on={!!(widgetData as any).showSummaryRow} onChange={v => updateField('showSummaryRow', v)}/>
                         </div>
 
                         {/* Sort */}
@@ -2437,14 +2431,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                         {/* Chart interactions */}
                         <div style={{ padding:'14px 0' }}>
                           <p style={{ fontSize:13, fontWeight:700, color:ALLOY.ink, marginBottom:10 }}>Chart interactions</p>
-                          {[{label:'Cross-filtering', on:false},{label:'Open links in new tab', on:true}].map(row => (
-                            <div key={row.label} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
-                              <span style={{ fontSize:12, color:'#555' }}>{row.label}</span>
-                              <div style={{ width:36, height:20, borderRadius:2, background:row.on?ALLOY.blue1:ALLOY.line, position:'relative', cursor:'pointer' }}>
-                                <div style={{ width:16, height:16, borderRadius:'50%', background:ALLOY.white, position:'absolute', top:2, left:row.on?18:2, boxShadow:'0 1px 3px rgba(0,0,0,0.2)', transition:'left 0.2s' }}/>
-                              </div>
-                            </div>
-                          ))}
+                          <Toggle label="Cross-filtering" on={!!(widgetData as any).crossFiltering} onChange={v => updateField('crossFiltering', v)}/>
+                          <Toggle label="Open links in new tab" on={(widgetData as any).openLinksNewTab !== false} onChange={v => updateField('openLinksNewTab', v)}/>
                         </div>
 
                       </div>
@@ -2631,7 +2619,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                     </div>
                     <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:24, textAlign:'center' }}>
                       <div style={{ width:60, height:60, borderRadius:'50%', background:ALLOY.paper, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:12, fontSize:24 }}>✏️</div>
-                      <p style={{ fontSize:13, color:'#555', lineHeight:1.6 }}>No custom metrics yet</p>
+                      <p style={{ fontSize:13, color:ALLOY.ink, lineHeight:1.6 }}>No custom metrics yet</p>
                     </div>
                   </div>
                 )}
@@ -2650,7 +2638,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                     </div>
                     <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:24, textAlign:'center' }}>
                       <div style={{ width:60, height:60, borderRadius:'50%', background:ALLOY.paper, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:12, fontSize:24 }}>🚩</div>
-                      <p style={{ fontSize:13, color:'#555', lineHeight:1.6 }}>No goals yet</p>
+                      <p style={{ fontSize:13, color:ALLOY.ink, lineHeight:1.6 }}>No goals yet</p>
                     </div>
                   </div>
                 )}
@@ -2826,7 +2814,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                               </div>
                             </div>
                             <div style={{ overflowY:'auto' as const, flex:1 }}>
-                              <p style={{ fontSize:11, color:'#555', padding:'6px 12px 2px', fontWeight:600 }}>Default group</p>
+                              <p style={{ fontSize:11, color:ALLOY.ink, padding:'6px 12px 2px', fontWeight:600 }}>Default group</p>
                               {GA4_DIM_FIELDS.filter(f => f.toLowerCase().includes(filterFieldSearch.toLowerCase())).map(field => (
                                 <div key={field}
                                   onClick={() => { const c = [...newFilterClauses]; c[idx] = {...c[idx], field}; setNewFilterClauses(c); setOpenClauseFieldIdx(null); setFilterFieldSearch('') }}
