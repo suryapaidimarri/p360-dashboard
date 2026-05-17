@@ -597,6 +597,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [showCreateFilter, setShowCreateFilter] = useState(false)
   const [filterJustSaved, setFilterJustSaved] = useState(false)
   const [editingFilterName, setEditingFilterName] = useState<string|null>(null)
+  const [widgetSizes, setWidgetSizes] = useState<{[id:string]:{w:number;h:number}}>({})
+  const [resizingId, setResizingId] = useState<string|null>(null)
   const [newFilterName, setNewFilterName] = useState('')
   const [newFilterClauses, setNewFilterClauses] = useState([{ include: true, field: '', operator: 'contains', value: '' }])
   const [filterFieldSearch, setFilterFieldSearch] = useState('')
@@ -1198,6 +1200,59 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     )
   }
 
+  // ── Resize handle ──────────────────────────────────────────────────────────
+  function ResizeHandle({ id, defaultW = 200, defaultH = 140 }: { id: string; defaultW?: number; defaultH?: number }) {
+    const handleMouseDown = (e: React.MouseEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      const startX = e.clientX
+      const startY = e.clientY
+      const el = (e.currentTarget as HTMLElement).closest('[data-widget-id]') as HTMLElement
+      if (!el) return
+      const startW = el.offsetWidth
+      const startH = el.offsetHeight
+
+      const onMove = (mv: MouseEvent) => {
+        const newW = Math.max(140, startW + mv.clientX - startX)
+        const newH = Math.max(100, startH + mv.clientY - startY)
+        el.style.width = newW + 'px'
+        el.style.minWidth = newW + 'px'
+        el.style.height = newH + 'px'
+        el.style.minHeight = newH + 'px'
+        el.style.flex = 'none'
+      }
+      const onUp = (mv: MouseEvent) => {
+        const newW = Math.max(140, startW + mv.clientX - startX)
+        const newH = Math.max(100, startH + mv.clientY - startY)
+        setWidgetSizes(prev => ({ ...prev, [id]: { w: newW, h: newH } }))
+        setResizingId(null)
+        window.removeEventListener('mousemove', onMove)
+        window.removeEventListener('mouseup', onUp)
+      }
+      setResizingId(id)
+      window.addEventListener('mousemove', onMove)
+      window.addEventListener('mouseup', onUp)
+    }
+
+    return (
+      <div
+        onMouseDown={handleMouseDown}
+        style={{
+          position: 'absolute', bottom: 2, right: 2, width: 14, height: 14,
+          cursor: 'se-resize', zIndex: 20, display: editMode ? 'flex' : 'none',
+          alignItems: 'center', justifyContent: 'center', opacity: 0.4,
+        }}
+        title="Drag to resize"
+      >
+        <svg width="10" height="10" viewBox="0 0 10 10">
+          <line x1="10" y1="3" x2="3" y2="10" stroke="#666" strokeWidth="1.5" strokeLinecap="round"/>
+          <line x1="10" y1="6" x2="6" y2="10" stroke="#666" strokeWidth="1.5" strokeLinecap="round"/>
+          <line x1="10" y1="9" x2="9" y2="10" stroke="#666" strokeWidth="1.5" strokeLinecap="round"/>
+        </svg>
+      </div>
+    )
+  }
+
   function KPICard({ w }: { w: Widget }) {
     const c = KPI_BG[w.color] || KPI_BG.white
     const isWhite = w.color === 'white'
@@ -1227,9 +1282,11 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       // ── Full chart mode: replaces entire card with chart ──
       const activeFilters: string[] = (w as any).filters || []
       return (
-        <div onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
-          style={{ background:'#fff', border:`2px solid ${borderCol}`, borderRadius:8, padding:12, position:'relative', minHeight:130, cursor: editMode ? 'pointer' : 'default', transition:'border-color 0.15s' }}>
+        <div data-widget-id={w.id}
+          onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
+          style={{ background:'#fff', border:`2px solid ${borderCol}`, borderRadius:8, padding:12, position:'relative', minHeight: widgetSizes[w.id]?.h || 130, cursor: editMode ? 'pointer' : 'default', transition:'border-color 0.15s', ...(widgetSizes[w.id] ? { width: widgetSizes[w.id].w, minWidth: widgetSizes[w.id].w } : {}) }}>
           {editControls}
+          <ResizeHandle id={w.id}/>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6 }}>
             <span style={{ fontSize:12, color:'#666', fontWeight:500 }}>{w.title}</span>
             <div style={{ display:'flex', alignItems:'center', gap:6 }}>
@@ -1261,9 +1318,11 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       : '—'
 
     return (
-      <div onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
-        style={{ background:bgColor, border:`2px solid ${borderCol}`, borderRadius:8, padding:16, position:'relative', minHeight:110, cursor: editMode ? 'pointer' : 'default', transition:'border-color 0.15s' }}>
+      <div data-widget-id={w.id}
+        onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
+        style={{ background:bgColor, border:`2px solid ${borderCol}`, borderRadius:8, padding:16, position:'relative', minHeight: widgetSizes[w.id]?.h || 110, cursor: editMode ? 'pointer' : 'default', transition:'border-color 0.15s', ...(widgetSizes[w.id] ? { width: widgetSizes[w.id].w, minWidth: widgetSizes[w.id].w } : {}) }}>
         {editControls}
+        <ResizeHandle id={w.id}/>
         <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:10 }}>
           <span style={{ fontSize:12, color:c.sub, fontWeight:500 }}>{w.title}</span>
           {w.change && <span style={{ fontSize:10, fontWeight:700, marginLeft:8, padding:'2px 6px', borderRadius:4, color:isWhite?(w.up?'#22c55e':'#ef4444'):'rgba(255,255,255,0.95)', background:isWhite?(w.up?'#f0fdf4':'#fef2f2'):'rgba(255,255,255,0.18)' }}>{w.up?'▲':'▼'} {w.change}</span>}
@@ -1282,9 +1341,11 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   function ChartCard({ id, children }: { id: string; children: React.ReactNode }) {
     const w = widgets.find(x => x.id === id) || widgets[0]
     const isSelected = editingWidget?.id === id
+    const sz = widgetSizes[id]
     return (
-      <div onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
-        style={{ background:'#fff', border:`2px solid ${isSelected && editMode ? '#48b5ea' : '#e5e5e5'}`, borderRadius:8, padding:16, position:'relative', cursor: editMode ? 'pointer' : 'default', transition:'border-color 0.15s' }}>
+      <div data-widget-id={id}
+        onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
+        style={{ background:'#fff', border:`2px solid ${isSelected && editMode ? '#48b5ea' : '#e5e5e5'}`, borderRadius:8, padding:16, position:'relative', cursor: editMode ? 'pointer' : 'default', transition:'border-color 0.15s', ...(sz ? { width: sz.w, minWidth: sz.w, minHeight: sz.h } : {}) }}>
         {editMode && <div style={{ position:'absolute', top:6, left:6, cursor:'grab', color:'#d0d0d0' }}><Grip size={13}/></div>}
         {editMode && (
           <div onClick={e => e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', alignItems:'center', gap:4 }}>
@@ -1294,6 +1355,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
             <WidgetDot wid={id} onEdit={() => startEdit(w)}/>
           </div>
         )}
+        <ResizeHandle id={id}/>
         {children}
       </div>
     )
@@ -1592,10 +1654,10 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                 <h2 style={{ fontSize:20, fontWeight:700, color:'#fff' }}>Website Performance</h2>
                 {connection?.connected && <p style={{ fontSize:11, color:'rgba(255,255,255,0.8)', marginTop:4 }}>Real-time data from {connection.email}</p>}
               </div>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginBottom:10 }}>
+              <div style={{ display:'flex', flexWrap:'wrap' as const, gap:10, marginBottom:10 }}>
                 {widgets.map(w => <KPICard key={w.id} w={w}/>)}
               </div>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10, marginBottom:10 }}>
+              <div style={{ display:'flex', flexWrap:'wrap' as const, gap:10, marginBottom:10, alignItems:'flex-start' }}>
                 <ChartCard id="c1">
                   <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
                     <span style={{ fontSize:11, color:'#666', fontWeight:500 }}>{widgets.find(x=>x.id==='c1')?.title || 'Sessions Over Time'}</span>
@@ -1635,7 +1697,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                   </div>
                 </div>
               </div>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10, marginBottom:10 }}>
+              <div style={{ display:'flex', flexWrap:'wrap' as const, gap:10, marginBottom:10, alignItems:'flex-start' }}>
                 <ChartCard id="d1">
                   <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
                     <span style={{ fontSize:11, fontWeight:600 }}>{widgets.find(x=>x.id==='d1')?.title || 'Users By Device'}</span>
