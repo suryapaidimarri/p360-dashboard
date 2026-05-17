@@ -951,6 +951,49 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     const appliedFilters: string[] = (w.filters as string[]) || []
     const primaryDim = dims[0] || 'Date'
 
+    // Helper: apply user-defined filter clauses to rows
+    function applyUserFilters(rows: {d:string;v:number}[]): {d:string;v:number}[] {
+      if (appliedFilters.length === 0) return rows
+      let result = rows
+      for (const filterName of appliedFilters) {
+        const filterDef = userFilters.find((gf: any) => gf.name === filterName)
+        if (!filterDef?.clauses?.length) continue
+        for (const clause of filterDef.clauses) {
+          if (!clause.field) continue
+          const fieldLower = clause.field.toLowerCase()
+          // Only apply filters relevant to the current dimension
+          const isDimMatch = primaryDim.toLowerCase().includes(fieldLower) || fieldLower.includes(primaryDim.toLowerCase()) ||
+            (fieldLower.includes('event') && (primaryDim === 'Event Name' || primaryDim === 'eventName'))
+          if (!isDimMatch) continue
+          const selectedVals: string[] = clause.values || []
+          const textVal = (clause.value || '').toLowerCase()
+          const op = (clause.operator || '').toLowerCase()
+          const include = clause.include !== false
+          result = result.filter(row => {
+            const dVal = (row.d || '').toLowerCase()
+            let matches = false
+            if (op === 'in' || op === 'in list') {
+              matches = selectedVals.length > 0
+                ? selectedVals.some(v => dVal === v.toLowerCase() || dVal.includes(v.toLowerCase()))
+                : true
+            } else if (op === 'equal to (=)' || op === '=' || op === 'equals') {
+              matches = dVal === textVal
+            } else if (op === 'contains') {
+              matches = dVal.includes(textVal)
+            } else if (op === 'starts with') {
+              matches = dVal.startsWith(textVal)
+            } else if (op === 'regexp match' || op === 'regexp contains') {
+              try { matches = new RegExp(textVal).test(dVal) } catch { matches = true }
+            } else {
+              matches = selectedVals.length > 0 ? selectedVals.some(v => dVal.includes(v.toLowerCase())) : true
+            }
+            return include ? matches : !matches
+          })
+        }
+      }
+      return result
+    }
+
     // Helper: apply channel filter to reduce data values
     function applyChannelFilter(rows: any[]): any[] {
       if (appliedFilters.length === 0) return rows
@@ -1034,17 +1077,17 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     }
     if (primaryDim === 'Event Name' || primaryDim === 'eventName') {
       // Use cached event rows if available, otherwise use fallback events
-      if (ga4EventRows.length > 0) return ga4EventRows
-      // Trigger load if connected
-      if (connection?.connected && selectedProperty && ga4EventNames.length === 0) {
-        loadGA4Events()
-      }
-      // Fallback common events
-      return [
-        {d:'page_view',v:45230},{d:'session_start',v:28100},{d:'first_visit',v:12400},
-        {d:'scroll',v:9800},{d:'click',v:7200},{d:'user_engagement',v:5600},
-        {d:'view_search_results',v:2100},{d:'file_download',v:890},
-      ]
+      const baseRows = ga4EventRows.length > 0 ? ga4EventRows : (() => {
+        // Trigger load if connected
+        if (connection?.connected && selectedProperty && ga4EventNames.length === 0) loadGA4Events()
+        return [
+          {d:'page_view',v:45230},{d:'session_start',v:28100},{d:'first_visit',v:12400},
+          {d:'scroll',v:9800},{d:'click',v:7200},{d:'user_engagement',v:5600},
+          {d:'view_search_results',v:2100},{d:'file_download',v:890},
+        ]
+      })()
+      // Apply user-defined filters (e.g. Event Name In [page_view])
+      return applyUserFilters(baseRows)
     }
     // Any other dimension or Date: use time series with selected metric index
     if (!ga4Data) return STATIC_SESSIONS
