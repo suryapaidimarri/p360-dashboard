@@ -1393,7 +1393,10 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     const isWhite = w.color === 'white'
     const isSelected = editingWidget?.id === w.id
     const bgColor = w.bgHex || c.bg
-    const borderCol = isSelected && editMode ? ALLOY.blue1 : (w.borderColor || c.border)
+    const borderCol = isSelected && editMode ? ALLOY.green1 : (w.borderColor || c.border)
+    const selectedRing = isSelected && editMode
+      ? { border:`2.5px solid ${ALLOY.green1}`, boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` }
+      : {}
     const textCol = w.textColor || c.text
 
     // KPI types — show number scorecard layout
@@ -1419,7 +1422,12 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       return (
         <div data-widget-id={w.id}
           onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
-          style={{ background:ALLOY.white, border:`2px solid ${borderCol}`, borderRadius:2, padding:12, position:'relative', minHeight: widgetSizes[w.id]?.h || 130, cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s', ...(widgetSizes[w.id] ? { width: widgetSizes[w.id].w, minWidth: widgetSizes[w.id].w, flex: '0 0 auto' } : { flex: '1 1 220px' }) }}>
+          style={{ background:ALLOY.white, borderRadius:2, padding:12, position:'relative', minHeight: widgetSizes[w.id]?.h || 130, cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, border:`2px solid ${borderCol}`, ...selectedRing, ...(widgetSizes[w.id] ? { width: widgetSizes[w.id].w, minWidth: widgetSizes[w.id].w, flex: '0 0 auto' } : { flex: '1 1 220px' }) }}>
+          {isSelected && editMode && (
+            <div style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
+              ✦ Editing
+            </div>
+          )}
           {editControls}
           <ResizeHandle id={w.id}/>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6 }}>
@@ -1455,7 +1463,12 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     return (
       <div data-widget-id={w.id}
         onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
-        style={{ background:bgColor, border:`2px solid ${borderCol}`, borderRadius:2, padding:16, position:'relative', minHeight: widgetSizes[w.id]?.h || 110, cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s', ...(widgetSizes[w.id] ? { width: widgetSizes[w.id].w, minWidth: widgetSizes[w.id].w, flex: '0 0 auto' } : { flex: '1 1 180px' }) }}>
+        style={{ background:bgColor, borderRadius:2, padding:16, position:'relative', minHeight: widgetSizes[w.id]?.h || 110, cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, border:`2px solid ${borderCol}`, ...selectedRing, ...(widgetSizes[w.id] ? { width: widgetSizes[w.id].w, minWidth: widgetSizes[w.id].w, flex: '0 0 auto' } : { flex: '1 1 180px' }) }}>
+        {isSelected && editMode && (
+          <div style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
+            ✦ Editing
+          </div>
+        )}
         {editControls}
         <ResizeHandle id={w.id}/>
         <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:10 }}>
@@ -1480,7 +1493,12 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     return (
       <div data-widget-id={id}
         onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
-        style={{ background:ALLOY.white, border:`2px solid ${isSelected && editMode ? ALLOY.blue1 : ALLOY.line}`, borderRadius:2, padding:16, position:'relative', cursor: editMode ? 'pointer' : 'default', transition: resizingId === id ? 'none' : 'border-color 0.15s', ...(sz ? { width: sz.w, minWidth: sz.w, minHeight: sz.h, flex: '0 0 auto' } : { flex: '1 1 260px' }) }}>
+        style={{ background:ALLOY.white, borderRadius:2, padding:16, position:'relative', cursor: editMode ? 'pointer' : 'default', transition: resizingId === id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, ...(isSelected && editMode ? { border:`2.5px solid ${ALLOY.green1}`, boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` } : { border:`2px solid ${ALLOY.line}` }), ...(sz ? { width: sz.w, minWidth: sz.w, minHeight: sz.h, flex: '0 0 auto' } : { flex: '1 1 260px' }) }}>
+        {isSelected && editMode && (
+          <div style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
+            ✦ Editing
+          </div>
+        )}
         {editMode && <div style={{ position:'absolute', top:6, left:6, cursor:'grab', color:ALLOY.line }}><Grip size={13}/></div>}
         {editMode && (
           <div onClick={e => e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', alignItems:'center', gap:4 }}>
@@ -2142,7 +2160,7 @@ Alloy Intelligence`)
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ display:'flex', alignItems:'center', gap:7, marginBottom:3 }}>
                         {/* Color swatch — shows which widget is selected */}
-                        <div style={{ width:10, height:10, borderRadius:2, flexShrink:0, background: (KPI_BG[editingWidget.color] || KPI_BG.white).bg, border:`1px solid ${ALLOY.line}` }}/>
+                        <div style={{ width:12, height:12, borderRadius:2, flexShrink:0, background:(KPI_BG[editingWidget.color]||KPI_BG.white).bg, border:`1.5px solid ${ALLOY.green1}`, boxShadow:`0 0 0 2px ${ALLOY.green4}` }}/>
                         <p style={{ fontSize:13, fontWeight:700, color:ALLOY.ink, lineHeight:1.2, fontFamily:ALLOY.fontDisplay, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' as const }}>{editingWidget.title}</p>
                       </div>
                       <p style={{ fontFamily:ALLOY.fontLabel, fontSize:9, color:ALLOY.mute, letterSpacing:'0.08em', textTransform:'uppercase' as const, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' as const }}>{editingWidget.dataSource}</p>
