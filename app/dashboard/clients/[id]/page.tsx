@@ -2139,9 +2139,13 @@ Alloy Intelligence`)
                     <button onClick={() => { setEditingWidget(null); setActiveRightPanel('integrations') }} style={{ width:28, height:28, borderRadius:'50%', background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0 }}>
                       <ChevronLeft size={14} style={{ color:ALLOY.ink }}/>
                     </button>
-                    <div>
-                      <p style={{ fontSize:14, fontWeight:700, color:ALLOY.ink, lineHeight:1.2, fontFamily:ALLOY.fontDisplay }}>Edit Widget</p>
-                      <p style={{ fontSize:11, color:ALLOY.mute, marginTop:2, fontFamily:ALLOY.fontBody }}>{editingWidget.dataSource}</p>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:7, marginBottom:3 }}>
+                        {/* Color swatch — shows which widget is selected */}
+                        <div style={{ width:10, height:10, borderRadius:2, flexShrink:0, background: (KPI_BG[editingWidget.color] || KPI_BG.white).bg, border:`1px solid ${ALLOY.line}` }}/>
+                        <p style={{ fontSize:13, fontWeight:700, color:ALLOY.ink, lineHeight:1.2, fontFamily:ALLOY.fontDisplay, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' as const }}>{editingWidget.title}</p>
+                      </div>
+                      <p style={{ fontFamily:ALLOY.fontLabel, fontSize:9, color:ALLOY.mute, letterSpacing:'0.08em', textTransform:'uppercase' as const, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' as const }}>{editingWidget.dataSource}</p>
                     </div>
                   </div>
                   <div style={{ display:'flex', borderBottom:`1px solid ${ALLOY.line}` }}>
