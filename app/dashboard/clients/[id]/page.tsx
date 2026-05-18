@@ -1371,9 +1371,6 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
           <MoreHorizontal size={13} style={{ color:ALLOY.ink }}/>
         </button>
         {isOpen && (
-          <>
-            {/* Backdrop to close menu */}
-            <div style={{ position:'fixed' as const, inset:0, zIndex:998 }} onClick={() => setOpenMenu(null)}/>
             <div style={{ position:'absolute', right:0, top:'calc(100% + 4px)', background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, boxShadow:'0 4px 16px rgba(0,0,0,0.10)', padding:'4px 0', minWidth:168, zIndex:999 }}
               onClick={e => e.stopPropagation()}>
               {/* Edit */}
@@ -1427,7 +1424,6 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                 <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.red1 }}>Remove</span>
               </div>
             </div>
-          </>
         )}
       </div>
     )
@@ -2040,36 +2036,7 @@ Alloy Intelligence`)
                 </div>
               )}
 
-              {/* Fullscreen widget overlay — works in both edit and view mode */}
-              {fullscreenWidget && (
-                <div style={{ position:'fixed' as const, inset:0, background:'rgba(0,0,0,0.7)', zIndex:2000, display:'flex', alignItems:'center', justifyContent:'center', padding:24 }}
-                  onClick={() => setFullscreenWidget(null)}>
-                  <div style={{ background:ALLOY.white, borderRadius:2, width:'90vw', maxWidth:1100, maxHeight:'90vh', overflow:'hidden', display:'flex', flexDirection:'column' as const, boxShadow:'0 24px 80px rgba(0,0,0,0.3)' }}
-                    onClick={e => e.stopPropagation()}>
-                    {/* Header */}
-                    <div style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 20px', borderBottom:`1px solid ${ALLOY.line}`, background:ALLOY.white, flexShrink:0 }}>
-                      <div style={{ width:10, height:10, borderRadius:2, background:(KPI_BG[fullscreenWidget.color]||KPI_BG.white).bg, border:`1px solid ${ALLOY.line}`, flexShrink:0 }}/>
-                      <span style={{ fontFamily:ALLOY.fontDisplay, fontSize:16, fontWeight:700, color:ALLOY.ink, flex:1 }}>{fullscreenWidget.title}</span>
-                      <span style={{ fontFamily:ALLOY.fontLabel, fontSize:9, color:ALLOY.mute, textTransform:'uppercase' as const, letterSpacing:'0.1em' }}>{fullscreenWidget.dataSource}</span>
-                      {connection?.connected && <span style={{ fontFamily:ALLOY.fontLabel, fontSize:9, color:ALLOY.green1, fontWeight:600 }}>● Live</span>}
-                      <button onClick={() => setFullscreenWidget(null)}
-                        style={{ width:28, height:28, borderRadius:2, background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0, marginLeft:8 }}>
-                        <X size={14} style={{ color:ALLOY.ink }}/>
-                      </button>
-                    </div>
-                    {/* Chart area */}
-                    <div style={{ flex:1, padding:24, overflow:'auto' }}>
-                      <DynamicChart
-                        chartType={fullscreenWidget.chartType}
-                        data={getWidgetData(fullscreenWidget)}
-                        height={420}
-                        dimensions={(fullscreenWidget as any).dimensions}
-                        metrics={(fullscreenWidget as any).metrics}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
+
               <button style={{ background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'6px 8px', cursor:'pointer' }}><Maximize2 size={13}/></button>
               <button onClick={() => setEditMode(true)} style={{ background:ALLOY.green1, border:'none', borderRadius:2, padding:'6px 16px', fontSize:11, color:ALLOY.ink, cursor:'pointer', fontWeight:700, fontFamily:ALLOY.fontLabel, letterSpacing:'0.06em', textTransform:'uppercase' as const }}>Edit Dashboards</button>
             </div>
@@ -2224,7 +2191,7 @@ Alloy Intelligence`)
                 {connection?.connected && <p style={{ fontSize:11, color:ALLOY.mute, marginTop:4, fontFamily:ALLOY.fontLabel, letterSpacing:'0.04em' }}>REAL-TIME DATA · {connection.email}</p>}
               </div>
               <div style={{ display:'flex', flexWrap:'wrap' as const, gap:10, marginBottom:10 }}>
-                {widgets.map(w => <KPICard key={w.id} w={w}/>)}
+                {widgets.filter(w => !(w as any)._removed).map(w => <KPICard key={w.id} w={w}/>)}
               </div>
               <div style={{ display:'flex', flexWrap:'wrap' as const, gap:10, marginBottom:10, alignItems:'flex-start' }}>
                 <ChartCard id="c1">
@@ -3109,6 +3076,37 @@ Alloy Intelligence`)
       </div>
 
       {/* Drill-down panel */}
+      {/* Fullscreen widget overlay — works in both edit AND view mode */}
+      {fullscreenWidget && (
+        <div style={{ position:'fixed' as const, inset:0, background:'rgba(0,0,0,0.75)', zIndex:2000, display:'flex', alignItems:'center', justifyContent:'center', padding:24 }}
+          onClick={() => setFullscreenWidget(null)}>
+          <div style={{ background:ALLOY.white, borderRadius:2, width:'92vw', maxWidth:1200, maxHeight:'92vh', overflow:'hidden', display:'flex', flexDirection:'column' as const, boxShadow:'0 24px 80px rgba(0,0,0,0.35)' }}
+            onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 24px', borderBottom:`1px solid ${ALLOY.line}`, background:ALLOY.white, flexShrink:0 }}>
+              <div style={{ width:10, height:10, borderRadius:2, background:(KPI_BG[fullscreenWidget.color]||KPI_BG.white).bg, border:`1.5px solid ${ALLOY.green1}`, flexShrink:0 }}/>
+              <span style={{ fontFamily:ALLOY.fontDisplay, fontSize:16, fontWeight:700, color:ALLOY.ink, flex:1 }}>{fullscreenWidget.title}</span>
+              <span style={{ fontFamily:ALLOY.fontLabel, fontSize:9, color:ALLOY.mute, textTransform:'uppercase' as const, letterSpacing:'0.1em', marginRight:8 }}>{fullscreenWidget.dataSource}</span>
+              {connection?.connected && <span style={{ fontFamily:ALLOY.fontLabel, fontSize:9, color:ALLOY.green1, fontWeight:600, marginRight:12 }}>● Live</span>}
+              <button onClick={() => setFullscreenWidget(null)}
+                style={{ width:30, height:30, borderRadius:2, background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0 }}>
+                <X size={14} style={{ color:ALLOY.ink }}/>
+              </button>
+            </div>
+            {/* Chart */}
+            <div style={{ flex:1, padding:32, overflow:'auto', minHeight:0 }}>
+              <DynamicChart
+                chartType={fullscreenWidget.chartType}
+                data={getWidgetData(fullscreenWidget)}
+                height={480}
+                dimensions={(fullscreenWidget as any).dimensions}
+                metrics={(fullscreenWidget as any).metrics}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {drillWidget && !editMode && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:200, display:'flex', alignItems:'stretch', justifyContent:'flex-end' }}
           onClick={() => setDrillWidget(null)}>
