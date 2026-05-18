@@ -1343,36 +1343,42 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     }
 
     const handleShare = () => {
+      setOpenMenu(null)
       const url = typeof window !== 'undefined' ? window.location.href : ''
       const title = resolvedWidget?.title || 'Widget'
 
-      // Try modern clipboard API first (works on HTTPS)
-      if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(url).then(() => {
-          setOpenMenu(null)
-          setShareToast(`Link to "${title}" copied`)
-          setTimeout(() => setShareToast(null), 2500)
-        }).catch(() => legacyCopy())
-      } else {
-        legacyCopy()
+      // Try clipboard API (works on HTTPS/secure context)
+      const tryCopy = () => {
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(url)
+            .then(() => { setShareToast(`Link to "${title}" copied`); setTimeout(() => setShareToast(null), 2500) })
+            .catch(() => showUrlPrompt())
+        } else {
+          showUrlPrompt()
+        }
       }
 
-      function legacyCopy() {
-        // execCommand must happen synchronously in the same event — before any state update
+      // Fallback: show URL in a browser prompt so user can copy manually
+      const showUrlPrompt = () => {
+        // Try execCommand first
         const ta = document.createElement('textarea')
         ta.value = url
-        ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0'
+        ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px'
         document.body.appendChild(ta)
-        ta.focus()
-        ta.select()
-        ta.setSelectionRange(0, 99999)
+        ta.focus(); ta.select()
         let ok = false
         try { ok = document.execCommand('copy') } catch {}
         ta.remove()
-        setOpenMenu(null)
-        setShareToast(ok ? `Link to "${title}" copied` : `URL: ${url}`)
-        setTimeout(() => setShareToast(null), ok ? 2500 : 6000)
+        if (ok) {
+          setShareToast(`Link to "${title}" copied`)
+          setTimeout(() => setShareToast(null), 2500)
+        } else {
+          // Last resort — prompt
+          window.prompt('Copy this link:', url)
+        }
       }
+
+      tryCopy()
     }
 
     const handleRemove = () => {
@@ -2069,13 +2075,7 @@ Alloy Intelligence`)
                 )}
               </div>
 
-              {/* Toast notification for share actions */}
-              {shareToast && (
-                <div style={{ position:'fixed' as const, bottom:24, left:'50%', transform:'translateX(-50%)', zIndex:9999, background:ALLOY.ink, color:ALLOY.white, fontFamily:ALLOY.fontBody, fontSize:12, padding:'10px 20px', borderRadius:2, boxShadow:'0 4px 16px rgba(0,0,0,0.2)', display:'flex', alignItems:'center', gap:8, pointerEvents:'none' as const }}>
-                  <span style={{ color:ALLOY.green1, fontSize:14 }}>✓</span>
-                  {shareToast}
-                </div>
-              )}
+
 
 
               <button style={{ background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'6px 8px', cursor:'pointer' }}><Maximize2 size={13}/></button>
@@ -3499,6 +3499,14 @@ Alloy Intelligence`)
           </div>
         )
       })()}
+
+      {/* ── Toast — works in both edit and view mode ── */}
+      {shareToast && (
+        <div style={{ position:'fixed' as const, bottom:28, left:'50%', transform:'translateX(-50%)', zIndex:9999, background:ALLOY.ink, color:ALLOY.white, fontFamily:ALLOY.fontBody, fontSize:12, fontWeight:500, padding:'11px 22px', borderRadius:2, boxShadow:'0 4px 20px rgba(0,0,0,0.25)', display:'flex', alignItems:'center', gap:10, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
+          <span style={{ color:ALLOY.green1, fontSize:15, lineHeight:1 }}>✓</span>
+          {shareToast}
+        </div>
+      )}
 
       {/* Map Data Sources Modal */}
       {showMappingModal && (
