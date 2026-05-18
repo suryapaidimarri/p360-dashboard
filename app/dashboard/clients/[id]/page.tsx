@@ -733,6 +733,18 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     return DEFAULT_WIDGETS
   })
 
+  // Track removed static widget IDs separately — persists across refresh
+  const LS_REMOVED_KEY = `alloy_removed_widgets_${clientId}`
+  const [removedWidgetIds, setRemovedWidgetIds] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem(`alloy_removed_widgets_${clientId}`)
+      return saved ? new Set(JSON.parse(saved)) : new Set()
+    } catch { return new Set() }
+  })
+
+  // Helper — check if a widget id is removed
+  const isWidgetRemoved = (id: string) => removedWidgetIds.has(id)
+
   // Empty canvas only for dashboards that have no content yet (not real, not cloned)
   const isEmptyDash = !REAL_DASHBOARDS.includes(activeDash) && !clonedDashboards.includes(activeDash)
 
@@ -1280,22 +1292,15 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
         metrics: (resolvedWidget as any).metrics,
         filters: (resolvedWidget as any).filters,
       }, null, 2)
-      const copyText = (t: string) => {
-        try {
-          navigator.clipboard.writeText(t)
-            .then(() => { setShareToast(`"${resolvedWidget.title}" config copied`); setTimeout(() => setShareToast(null), 2500) })
-            .catch(() => fallback(t))
-        } catch { fallback(t) }
-      }
-      const fallback = (t: string) => {
-        const ta = document.createElement('textarea')
-        ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0'
-        document.body.appendChild(ta); ta.select()
-        try { document.execCommand('copy'); setShareToast(`"${resolvedWidget.title}" config copied`) }
-        catch { setShareToast('Copy failed') }
-        document.body.removeChild(ta); setTimeout(() => setShareToast(null), 2500)
-      }
-      copyText(text)
+      const input = document.createElement('input')
+      input.value = text
+      input.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none'
+      document.body.appendChild(input)
+      input.focus(); input.select(); input.setSelectionRange(0, 99999)
+      try { document.execCommand('copy') } catch {}
+      document.body.removeChild(input)
+      setShareToast(`"${resolvedWidget.title}" config copied`)
+      setTimeout(() => setShareToast(null), 2500)
     }
 
     const handleClone = () => {
@@ -1326,39 +1331,49 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       setOpenMenu(null)
       const url = typeof window !== 'undefined' ? window.location.href : ''
       const title = resolvedWidget?.title || 'Widget'
-      const done = () => { setShareToast(`Link to "${title}" copied`); setTimeout(() => setShareToast(null), 2500) }
-      try {
-        navigator.clipboard.writeText(url).then(done).catch(() => {
-          const ta = document.createElement('textarea'); ta.value = url
-          ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select()
-          try { document.execCommand('copy'); done() } catch {}
-          document.body.removeChild(ta)
-        })
-      } catch {
-        const ta = document.createElement('textarea'); ta.value = url
-        ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select()
-        try { document.execCommand('copy'); done() } catch {}
-        document.body.removeChild(ta)
+      // Works on HTTP and HTTPS — use input element trick
+      const input = document.createElement('input')
+      input.value = url
+      input.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none'
+      document.body.appendChild(input)
+      input.focus()
+      input.select()
+      input.setSelectionRange(0, 99999)
+      let success = false
+      try { success = document.execCommand('copy') } catch {}
+      document.body.removeChild(input)
+      if (!success) {
+        try { navigator.clipboard.writeText(url).then(() => {}) } catch {}
       }
+      setShareToast(`Link to "${title}" copied`)
+      setTimeout(() => setShareToast(null), 2500)
     }
 
     const handleRemove = () => {
       setOpenMenu(null)
       if (!resolvedWidget) return
       const rawId = wid.startsWith('static__') ? wid.replace('static__', '') : wid
-      setWidgets(prev => {
-        // For static widgets — hide by marking removed; for dynamic — delete entirely
-        const isStatic = STATIC_IDS.includes(rawId)
-        const updated = isStatic
-          ? prev.map(w => w.id === rawId ? { ...w, _removed: true } as any : w)
-          : prev.filter(w => w.id !== rawId)
-        try {
-          localStorage.setItem(LS_WIDGETS_KEY, JSON.stringify(
-            updated.map(w => ({ ...w, value: undefined, change: undefined, up: undefined }))
-          ))
-        } catch {}
-        return updated
-      })
+      const isStatic = STATIC_IDS.includes(rawId)
+
+      if (isStatic) {
+        // Static widgets: add to removed set + persist
+        setRemovedWidgetIds(prev => {
+          const next = new Set([...prev, rawId])
+          try { localStorage.setItem(LS_REMOVED_KEY, JSON.stringify([...next])) } catch {}
+          return next
+        })
+      } else {
+        // Dynamic widgets: remove from array + persist
+        setWidgets(prev => {
+          const updated = prev.filter(w => w.id !== rawId)
+          try {
+            localStorage.setItem(LS_WIDGETS_KEY, JSON.stringify(
+              updated.map(w => ({ ...w, value: undefined, change: undefined, up: undefined }))
+            ))
+          } catch {}
+          return updated
+        })
+      }
       if (editingWidget?.id === rawId) setEditingWidget(null)
       setShareToast(`"${resolvedWidget.title}" removed`)
       setTimeout(() => setShareToast(null), 2500)
@@ -2191,17 +2206,17 @@ Alloy Intelligence`)
                 {connection?.connected && <p style={{ fontSize:11, color:ALLOY.mute, marginTop:4, fontFamily:ALLOY.fontLabel, letterSpacing:'0.04em' }}>REAL-TIME DATA · {connection.email}</p>}
               </div>
               <div style={{ display:'flex', flexWrap:'wrap' as const, gap:10, marginBottom:10 }}>
-                {widgets.filter(w => !(w as any)._removed).map(w => <KPICard key={w.id} w={w}/>)}
+                {widgets.filter(w => !isWidgetRemoved(w.id)).map(w => <KPICard key={w.id} w={w}/>)}
               </div>
               <div style={{ display:'flex', flexWrap:'wrap' as const, gap:10, marginBottom:10, alignItems:'flex-start' }}>
-                <ChartCard id="c1">
+                {!isWidgetRemoved('c1') && <ChartCard id="c1">
                   <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
                     <span style={{ fontSize:11, color:ALLOY.mute, fontWeight:500, fontFamily:ALLOY.fontBody }}>{widgets.find(x=>x.id==='c1')?.title || 'Sessions Over Time'}</span>
                     {connection?.connected && <span style={{ fontSize:9, color:ALLOY.green1, fontWeight:600, fontFamily:ALLOY.fontLabel }}>● Live</span>}
                   </div>
                   <DynamicChart chartType={widgets.find(x=>x.id==='c1')?.chartType || 'line'} data={getWidgetData(widgets.find(x=>x.id==='c1') || {})} height={80} dimensions={(widgets.find(x=>x.id==='c1') as any)?.dimensions} metrics={(widgets.find(x=>x.id==='c1') as any)?.metrics}/>
-                </ChartCard>
-                <ChartCard id="c2">
+                </ChartCard>}
+                {!isWidgetRemoved('c2') && <ChartCard id="c2">
                   <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:110 }}>
                     <div style={{ position:'relative', width:90, height:90 }}>
                       <ResponsiveContainer width="100%" height="100%">
@@ -2210,16 +2225,16 @@ Alloy Intelligence`)
                       <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center' }}><span style={{ fontSize:18, fontWeight:700, fontFamily:ALLOY.fontDisplay }}>44</span></div>
                     </div>
                   </div>
-                </ChartCard>
+                </ChartCard>}
                 <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-                  <ChartCard id="c3">
+                  {!isWidgetRemoved('c3') && <ChartCard id="c3">
                     <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
                       <span style={{ fontSize:11, color:ALLOY.mute, fontFamily:ALLOY.fontBody }}>Conversion Rate</span>
                       <span style={{ fontSize:10, fontWeight:700, color:ALLOY.red1, background:ALLOY.red4, padding:'2px 5px', borderRadius:2, fontFamily:ALLOY.fontLabel }}>▼ 34%</span>
                     </div>
                     <span style={{ fontSize:24, fontWeight:700, color:ALLOY.ink, fontFamily:ALLOY.fontDisplay }}>3%</span>
-                  </ChartCard>
-                  <div onClick={e => { e.stopPropagation(); if (editMode) startEdit(widgets[3]) }}
+                  </ChartCard>}
+                  {!isWidgetRemoved('bounce') && <div onClick={e => { e.stopPropagation(); if (editMode) startEdit(widgets[3]) }}
                     style={{ background:ALLOY.red1, border:`2px solid ${editingWidget?.id==='bounce' && editMode ? ALLOY.blue1 : ALLOY.red1}`, borderRadius:2, padding:16, position:'relative', cursor: editMode ? 'pointer' : 'default' }}>
                     {editMode && <div style={{ position:'absolute', top:6, left:6, cursor:'grab', color:'rgba(255,255,255,0.35)' }}><Grip size={13}/></div>}
                     {editMode && (
@@ -2230,18 +2245,18 @@ Alloy Intelligence`)
                     )}
                     <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}><span style={{ fontSize:11, color:'rgba(255,255,255,0.85)', fontFamily:ALLOY.fontBody }}>Bounce Rate</span><span style={{ fontFamily:ALLOY.fontBody, fontSize:10, fontWeight:700, color:'rgba(255,255,255,0.95)', background:'rgba(255,255,255,0.18)', padding:'2px 6px', borderRadius:2 }}>▲ 6.84%</span></div>
                     <p style={{ fontSize:26, fontWeight:700, color:ALLOY.white, letterSpacing:'-0.5px', fontFamily:ALLOY.fontDisplay }}>39.23%</p>
-                  </div>
+                  </div>}
                 </div>
               </div>
               <div style={{ display:'flex', flexWrap:'wrap' as const, gap:10, marginBottom:10, alignItems:'flex-start' }}>
-                <ChartCard id="d1">
+                {!isWidgetRemoved('d1') && <ChartCard id="d1">
                   <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
                     <span style={{ fontSize:11, fontWeight:600, fontFamily:ALLOY.fontBody }}>{widgets.find(x=>x.id==='d1')?.title || 'Users By Device'}</span>
                     {connection?.connected && <span style={{ fontSize:9, color:ALLOY.green1, fontWeight:600, fontFamily:ALLOY.fontLabel }}>● Live</span>}
                   </div>
                   <DynamicChart chartType={widgets.find(x=>x.id==='d1')?.chartType || 'column'} data={getWidgetData(widgets.find(x=>x.id==='d1') || {})} height={110} dimensions={(widgets.find(x=>x.id==='d1') as any)?.dimensions} metrics={(widgets.find(x=>x.id==='d1') as any)?.metrics}/>
-                </ChartCard>
-                <ChartCard id="d2">
+                </ChartCard>}
+                {!isWidgetRemoved('d2') && <ChartCard id="d2">
                   <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
                     <span style={{ fontSize:11, fontWeight:600, fontFamily:ALLOY.fontBody }}>Top Referral Sources</span>
                     {connection?.connected && <span style={{ fontSize:9, color:ALLOY.green1, fontWeight:600, fontFamily:ALLOY.fontLabel }}>● Live</span>}
@@ -2253,8 +2268,8 @@ Alloy Intelligence`)
                     </div>
                     <div style={{ flex:1 }}>{sourceData.slice(0,4).map((d:any,i:number) => <div key={d.name} style={{ display:'flex', alignItems:'center', gap:4, marginBottom:3 }}><div style={{ width:6, height:6, borderRadius:'50%', background:['#2196f3','#64b5f6',ALLOY.blue3,'#bbdefb'][i%4], flexShrink:0 }}/><span style={{ fontSize:9, color:ALLOY.mute, flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', fontFamily:ALLOY.fontBody }}>{d.name}</span><span style={{ fontSize:9, fontWeight:600, fontFamily:ALLOY.fontBody }}>{d.value?.toLocaleString()}</span></div>)}</div>
                   </div>
-                </ChartCard>
-                <ChartCard id="d3">
+                </ChartCard>}
+                {!isWidgetRemoved('d3') && <ChartCard id="d3">
                   <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
                     <span style={{ fontSize:12, fontWeight:600, fontFamily:ALLOY.fontBody }}>Traffic by Cities</span>
                     {connection?.connected && <span style={{ fontSize:9, color:ALLOY.green1, fontWeight:600, fontFamily:ALLOY.fontLabel }}>● Live</span>}
@@ -2265,15 +2280,15 @@ Alloy Intelligence`)
                       <div style={{ height:4, background:ALLOY.line, borderRadius:2, overflow:'hidden' }}><div style={{ height:'100%', width:`${(c.val/maxCity)*100}%`, background:ALLOY.green1, borderRadius:2 }}/></div>
                     </div>
                   ))}
-                </ChartCard>
+                </ChartCard>}
               </div>
-              <ChartCard id="v1">
+              {!isWidgetRemoved('v1') && <ChartCard id="v1">
                 <div style={{ display:'flex', justifyContent:'space-between', marginBottom:10 }}>
                   <span style={{ fontSize:12, fontWeight:600, fontFamily:ALLOY.fontBody }}>{widgets.find(x=>x.id==='v1')?.title || 'Website Views'}</span>
                   {connection?.connected && <span style={{ fontSize:9, color:ALLOY.green1, fontWeight:600, fontFamily:ALLOY.fontLabel }}>● Live GA4</span>}
                 </div>
                 <DynamicChart chartType={widgets.find(x=>x.id==='v1')?.chartType || 'area'} data={getWidgetData(widgets.find(x=>x.id==='v1') || {})} height={130} dimensions={(widgets.find(x=>x.id==='v1') as any)?.dimensions} metrics={(widgets.find(x=>x.id==='v1') as any)?.metrics}/>
-              </ChartCard>
+              </ChartCard>}
             </div>
           )}
 
