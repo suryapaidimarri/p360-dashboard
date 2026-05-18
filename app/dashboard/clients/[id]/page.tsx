@@ -661,6 +661,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [showShareMenu, setShowShareMenu] = useState(false)
   const [shareSubmenu, setShareSubmenu] = useState<'pdf'|'email'|'link'|null>(null)
   const [shareToast, setShareToast] = useState<string|null>(null)
+  const [fullscreenWidget, setFullscreenWidget] = useState<Widget|null>(null)
   const [shareEmailInput, setShareEmailInput] = useState('')
   const [shareLinkCopied, setShareLinkCopied] = useState(false)
   const [mappingProp, setMappingProp] = useState('')
@@ -1266,28 +1267,35 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
     const handleFullScreen = () => {
       setOpenMenu(null)
-      if (resolvedWidget) {
-        setDrillWidget(resolvedWidget)
-        setDrillChannel('All')
-      }
+      if (resolvedWidget) setFullscreenWidget(resolvedWidget)
     }
 
     const handleCopy = () => {
       setOpenMenu(null)
       if (!resolvedWidget) return
-      // Copy widget config as JSON to clipboard
-      const exportData = {
-        title: resolvedWidget.title,
-        chartType: resolvedWidget.chartType,
-        dataSource: resolvedWidget.dataSource,
-        color: resolvedWidget.color,
+      const text = JSON.stringify({
+        title: resolvedWidget.title, chartType: resolvedWidget.chartType,
+        dataSource: resolvedWidget.dataSource, color: resolvedWidget.color,
         dimensions: (resolvedWidget as any).dimensions,
         metrics: (resolvedWidget as any).metrics,
         filters: (resolvedWidget as any).filters,
+      }, null, 2)
+      const copyText = (t: string) => {
+        try {
+          navigator.clipboard.writeText(t)
+            .then(() => { setShareToast(`"${resolvedWidget.title}" config copied`); setTimeout(() => setShareToast(null), 2500) })
+            .catch(() => fallback(t))
+        } catch { fallback(t) }
       }
-      navigator.clipboard.writeText(JSON.stringify(exportData, null, 2))
-        .then(() => { setShareToast(`"${resolvedWidget.title}" config copied`); setTimeout(() => setShareToast(null), 2500) })
-        .catch(() => { setShareToast('Copy failed — try again'); setTimeout(() => setShareToast(null), 2000) })
+      const fallback = (t: string) => {
+        const ta = document.createElement('textarea')
+        ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0'
+        document.body.appendChild(ta); ta.select()
+        try { document.execCommand('copy'); setShareToast(`"${resolvedWidget.title}" config copied`) }
+        catch { setShareToast('Copy failed') }
+        document.body.removeChild(ta); setTimeout(() => setShareToast(null), 2500)
+      }
+      copyText(text)
     }
 
     const handleClone = () => {
@@ -1318,9 +1326,20 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       setOpenMenu(null)
       const url = typeof window !== 'undefined' ? window.location.href : ''
       const title = resolvedWidget?.title || 'Widget'
-      navigator.clipboard.writeText(url)
-        .then(() => { setShareToast(`Link to "${title}" copied`); setTimeout(() => setShareToast(null), 2500) })
-        .catch(() => { setShareToast('Share failed'); setTimeout(() => setShareToast(null), 2000) })
+      const done = () => { setShareToast(`Link to "${title}" copied`); setTimeout(() => setShareToast(null), 2500) }
+      try {
+        navigator.clipboard.writeText(url).then(done).catch(() => {
+          const ta = document.createElement('textarea'); ta.value = url
+          ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select()
+          try { document.execCommand('copy'); done() } catch {}
+          document.body.removeChild(ta)
+        })
+      } catch {
+        const ta = document.createElement('textarea'); ta.value = url
+        ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select()
+        try { document.execCommand('copy'); done() } catch {}
+        document.body.removeChild(ta)
+      }
     }
 
     const handleRemove = () => {
@@ -1549,7 +1568,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
             <button style={{ background:isWhite?'rgba(0,0,0,0.05)':'rgba(255,255,255,0.15)', border:'none', borderRadius:2, padding:'3px 5px', cursor:'pointer', display:'flex' }}>
               <Maximize2 size={10} style={{ color:isWhite?ALLOY.mute:'rgba(255,255,255,0.7)' }}/>
             </button>
-            <WidgetDot wid={w.id} onEdit={() => startEdit(w)}/>
+            <WidgetDot wid={w.id} onEdit={() => startEdit(w)} widget={w}/>
           </div>
         )}
       </>
@@ -1644,7 +1663,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
             <button style={{ background:'rgba(0,0,0,0.04)', border:'none', borderRadius:2, padding:'3px 5px', cursor:'pointer', display:'flex' }}>
               <Maximize2 size={10} style={{ color:ALLOY.mute }}/>
             </button>
-            <WidgetDot wid={`static__${id}`} onEdit={() => startEdit(w)}/>
+            <WidgetDot wid={`static__${id}`} onEdit={() => startEdit(w)} widget={w}/>
           </div>
         )}
         <ResizeHandle id={w.id}/>
@@ -2020,6 +2039,37 @@ Alloy Intelligence`)
                   {shareToast}
                 </div>
               )}
+
+              {/* Fullscreen widget overlay — works in both edit and view mode */}
+              {fullscreenWidget && (
+                <div style={{ position:'fixed' as const, inset:0, background:'rgba(0,0,0,0.7)', zIndex:2000, display:'flex', alignItems:'center', justifyContent:'center', padding:24 }}
+                  onClick={() => setFullscreenWidget(null)}>
+                  <div style={{ background:ALLOY.white, borderRadius:2, width:'90vw', maxWidth:1100, maxHeight:'90vh', overflow:'hidden', display:'flex', flexDirection:'column' as const, boxShadow:'0 24px 80px rgba(0,0,0,0.3)' }}
+                    onClick={e => e.stopPropagation()}>
+                    {/* Header */}
+                    <div style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 20px', borderBottom:`1px solid ${ALLOY.line}`, background:ALLOY.white, flexShrink:0 }}>
+                      <div style={{ width:10, height:10, borderRadius:2, background:(KPI_BG[fullscreenWidget.color]||KPI_BG.white).bg, border:`1px solid ${ALLOY.line}`, flexShrink:0 }}/>
+                      <span style={{ fontFamily:ALLOY.fontDisplay, fontSize:16, fontWeight:700, color:ALLOY.ink, flex:1 }}>{fullscreenWidget.title}</span>
+                      <span style={{ fontFamily:ALLOY.fontLabel, fontSize:9, color:ALLOY.mute, textTransform:'uppercase' as const, letterSpacing:'0.1em' }}>{fullscreenWidget.dataSource}</span>
+                      {connection?.connected && <span style={{ fontFamily:ALLOY.fontLabel, fontSize:9, color:ALLOY.green1, fontWeight:600 }}>● Live</span>}
+                      <button onClick={() => setFullscreenWidget(null)}
+                        style={{ width:28, height:28, borderRadius:2, background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0, marginLeft:8 }}>
+                        <X size={14} style={{ color:ALLOY.ink }}/>
+                      </button>
+                    </div>
+                    {/* Chart area */}
+                    <div style={{ flex:1, padding:24, overflow:'auto' }}>
+                      <DynamicChart
+                        chartType={fullscreenWidget.chartType}
+                        data={getWidgetData(fullscreenWidget)}
+                        height={420}
+                        dimensions={(fullscreenWidget as any).dimensions}
+                        metrics={(fullscreenWidget as any).metrics}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
               <button style={{ background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'6px 8px', cursor:'pointer' }}><Maximize2 size={13}/></button>
               <button onClick={() => setEditMode(true)} style={{ background:ALLOY.green1, border:'none', borderRadius:2, padding:'6px 16px', fontSize:11, color:ALLOY.ink, cursor:'pointer', fontWeight:700, fontFamily:ALLOY.fontLabel, letterSpacing:'0.06em', textTransform:'uppercase' as const }}>Edit Dashboards</button>
             </div>
@@ -2208,7 +2258,7 @@ Alloy Intelligence`)
                     {editMode && (
                       <div onClick={e => e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', gap:4 }}>
                         <button style={{ background:'rgba(255,255,255,0.2)', border:'none', borderRadius:2, padding:'3px 5px', cursor:'pointer', display:'flex' }}><Maximize2 size={10} style={{ color:'rgba(255,255,255,0.8)' }}/></button>
-                        <WidgetDot wid="bounce" onEdit={() => startEdit(widgets[3])}/>
+                        <WidgetDot wid="bounce" onEdit={() => startEdit(widgets[3])} widget={widgets[3]}/>
                       </div>
                     )}
                     <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}><span style={{ fontSize:11, color:'rgba(255,255,255,0.85)', fontFamily:ALLOY.fontBody }}>Bounce Rate</span><span style={{ fontFamily:ALLOY.fontBody, fontSize:10, fontWeight:700, color:'rgba(255,255,255,0.95)', background:'rgba(255,255,255,0.18)', padding:'2px 6px', borderRadius:2 }}>▲ 6.84%</span></div>
@@ -2277,7 +2327,7 @@ Alloy Intelligence`)
                     {editMode && <div style={{ position:'absolute', top:6, left:6, cursor:'grab', color:ALLOY.line }}><Grip size={13}/></div>}
                     {editMode && (
                       <div onClick={e => e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', gap:4 }}>
-                        <WidgetDot wid={w.id} onEdit={() => startEdit(w)}/>
+                        <WidgetDot wid={w.id} onEdit={() => startEdit(w)} widget={w}/>
                       </div>
                     )}
                     <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
