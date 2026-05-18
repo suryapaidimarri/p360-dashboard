@@ -1488,12 +1488,12 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
   function ChartCard({ id, children }: { id: string; children: React.ReactNode }) {
     const w = widgets.find(x => x.id === id) || widgets[0]
-    const isSelected = editingWidget?.id === id
+    const isSelected = editingWidget?.id === w.id
     const sz = widgetSizes[id]
     return (
-      <div data-widget-id={id}
+      <div data-widget-id={w.id}
         onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
-        style={{ background:ALLOY.white, borderRadius:2, padding:16, position:'relative', cursor: editMode ? 'pointer' : 'default', transition: resizingId === id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, ...(isSelected && editMode ? { border:`2.5px solid ${ALLOY.green1}`, boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` } : { border:`2px solid ${ALLOY.line}` }), ...(sz ? { width: sz.w, minWidth: sz.w, minHeight: sz.h, flex: '0 0 auto' } : { flex: '1 1 260px' }) }}>
+        style={{ background:ALLOY.white, borderRadius:2, padding:16, position:'relative', cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, ...(isSelected && editMode ? { border:`2.5px solid ${ALLOY.green1}`, boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` } : { border:`2px solid ${ALLOY.line}` }), ...(sz ? { width: sz.w, minWidth: sz.w, minHeight: sz.h, flex: '0 0 auto' } : { flex: '1 1 260px' }) }}>
         {isSelected && editMode && (
           <div style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
             ✦ Editing
@@ -1505,10 +1505,10 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
             <button style={{ background:'rgba(0,0,0,0.04)', border:'none', borderRadius:2, padding:'3px 5px', cursor:'pointer', display:'flex' }}>
               <Maximize2 size={10} style={{ color:ALLOY.mute }}/>
             </button>
-            <WidgetDot wid={id} onEdit={() => startEdit(w)}/>
+            <WidgetDot wid={`static__${id}`} onEdit={() => startEdit(w)}/>
           </div>
         )}
-        <ResizeHandle id={id}/>
+        <ResizeHandle id={w.id}/>
         {children}
       </div>
     )
