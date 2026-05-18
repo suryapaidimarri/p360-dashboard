@@ -738,7 +738,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [removedWidgetIds, setRemovedWidgetIds] = useState<Set<string>>(() => {
     try {
       const saved = localStorage.getItem(`alloy_removed_widgets_${clientId}`)
-      return saved ? new Set(JSON.parse(saved)) : new Set()
+      return saved ? new Set(JSON.parse(saved) as string[]) : new Set<string>()
     } catch { return new Set() }
   })
 
@@ -1358,8 +1358,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       if (isStatic) {
         // Static widgets: add to removed set + persist
         setRemovedWidgetIds(prev => {
-          const next = new Set([...prev, rawId])
-          try { localStorage.setItem(LS_REMOVED_KEY, JSON.stringify([...next])) } catch {}
+          const next = new Set(Array.from(prev).concat(rawId))
+          try { localStorage.setItem(LS_REMOVED_KEY, JSON.stringify(Array.from(next))) } catch {}
           return next
         })
       } else {
