@@ -2124,10 +2124,17 @@ Alloy Intelligence`)
             {/* Dynamically added widgets */}
             {dynamicWidgets.length >= 1 && (
               <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10, marginTop:10 }}>
-                {dynamicWidgets.map(w => (
+                {dynamicWidgets.map(w => {
+                  const isDynSelected = editingWidget?.id === w.id && editMode
+                  return (
                   <div key={w.id}
                     onClick={e => { e.stopPropagation(); if (editMode) startEdit(w) }}
-                    style={{ background:ALLOY.white, border:`2px solid ${editingWidget?.id===w.id && editMode?ALLOY.blue1:ALLOY.line}`, borderRadius:2, padding:14, position:'relative', cursor: editMode ? 'pointer' : 'default', minHeight:140 }}>
+                    style={{ background:ALLOY.white, borderRadius:2, padding:14, position:'relative', cursor: editMode ? 'pointer' : 'default', minHeight:140, transition:'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isDynSelected ? 0.45 : 1, ...(isDynSelected ? { border:`2.5px solid ${ALLOY.green1}`, boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` } : { border:`2px solid ${ALLOY.line}` }) }}>
+                    {isDynSelected && (
+                      <div style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
+                        ✦ Editing
+                      </div>
+                    )}
                     {editMode && <div style={{ position:'absolute', top:6, left:6, cursor:'grab', color:ALLOY.line }}><Grip size={13}/></div>}
                     {editMode && (
                       <div onClick={e => e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', gap:4 }}>
@@ -2140,7 +2147,7 @@ Alloy Intelligence`)
                     </div>
                     <DynamicChart chartType={w.chartType} data={getWidgetData(w)} height={100} dimensions={(w as any).dimensions} metrics={(w as any).metrics}/>
                   </div>
-                ))}
+                )})}
               </div>
             )}
         </div>
