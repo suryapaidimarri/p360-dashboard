@@ -3530,22 +3530,19 @@ Alloy Intelligence`)
               {/* Download — print widget */}
               <button
                 onClick={() => {
+                  const cap = shareCapture
                   setShareCapture(null)
-                  const widgetEl = document.querySelector(`[data-widget-id="${shareCapture!.wid}"]`) as HTMLElement | null
+                  if (!cap) return
+                  const widgetEl = document.querySelector('[data-widget-id="' + cap.wid + '"]') as HTMLElement | null
                   if (!widgetEl) { window.print(); return }
-                  // Clone widget into a print window
                   const printWin = window.open('', '_blank', 'width=800,height=600')
                   if (!printWin) { window.print(); return }
-                  const styles = Array.from(document.styleSheets)
-                    .map(s => { try { return Array.from(s.cssRules).map(r=>r.cssText).join('
-') } catch { return '' } })
-                    .join('
-')
-                  printWin.document.write(`
-                    <html><head><title>${shareCapture!.title}</title>
-                    <style>body{margin:24px;background:#fff;font-family:system-ui,sans-serif}${styles}</style></head>
-                    <body>${widgetEl.outerHTML}<script>window.onload=()=>{window.print();setTimeout(()=>window.close(),1000)}<\/script></body></html>
-                  `)
+                  const html = '<html><head><title>' + cap.title + '</title>'
+                    + '<style>body{margin:32px;background:#fff;font-family:system-ui,sans-serif}</style></head>'
+                    + '<body>' + widgetEl.outerHTML
+                    + '<scr' + 'ipt>window.onload=function(){window.print();setTimeout(function(){window.close()},1000)}</scr' + 'ipt>'
+                    + '</body></html>'
+                  printWin.document.write(html)
                   printWin.document.close()
                 }}
                 style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:8, background:ALLOY.ink, border:'none', borderRadius:2, padding:'9px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.white, cursor:'pointer', fontWeight:500 }}>
