@@ -1,6 +1,6 @@
 'use client'
 import React, { useState, useEffect } from 'react'
-import { ChevronRight, Sparkles, Settings, Calendar, ChevronDown, Plus, MoreHorizontal, Maximize2, X, Grip, RotateCcw, RotateCw, Monitor, Smartphone, ChevronLeft, RefreshCw, CheckCircle2, Download, Mail, Link2, LayoutGrid } from 'lucide-react'
+import { ChevronRight, Sparkles, Settings, Calendar, ChevronDown, Plus, MoreHorizontal, Maximize2, X, Grip, RotateCcw, RotateCw, Monitor, Smartphone, ChevronLeft, RefreshCw, CheckCircle2, Download, Mail, Link2, LayoutGrid, Edit, Copy, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { BarChart, Bar, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ScatterChart, Scatter as ScatterPlot, ZAxis } from 'recharts'
 
@@ -1251,8 +1251,100 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     setEditingWidget(null)
   }
 
-  function WidgetDot({ wid, onEdit }: { wid: string; onEdit: () => void }) {
+  function WidgetDot({ wid, onEdit, widget }: { wid: string; onEdit: () => void; widget?: Widget }) {
     const isOpen = openMenu === wid
+
+    // ── Resolve the actual Widget object from wid ──────────────────────────
+    // wid is either 'static__c1' or a dynamic widget id like 'w1234567'
+    const resolvedWidget: Widget | undefined = widget || (() => {
+      const rawId = wid.startsWith('static__') ? wid.replace('static__', '') : wid
+      return widgets.find(w => w.id === rawId)
+    })()
+
+    // ── Actions ──────────────────────────────────────────────────────────────
+    const handleEdit = () => { onEdit(); setOpenMenu(null) }
+
+    const handleFullScreen = () => {
+      setOpenMenu(null)
+      if (resolvedWidget) {
+        setDrillWidget(resolvedWidget)
+        setDrillChannel('All')
+      }
+    }
+
+    const handleCopy = () => {
+      setOpenMenu(null)
+      if (!resolvedWidget) return
+      // Copy widget config as JSON to clipboard
+      const exportData = {
+        title: resolvedWidget.title,
+        chartType: resolvedWidget.chartType,
+        dataSource: resolvedWidget.dataSource,
+        color: resolvedWidget.color,
+        dimensions: (resolvedWidget as any).dimensions,
+        metrics: (resolvedWidget as any).metrics,
+        filters: (resolvedWidget as any).filters,
+      }
+      navigator.clipboard.writeText(JSON.stringify(exportData, null, 2))
+        .then(() => { setShareToast(`"${resolvedWidget.title}" config copied`); setTimeout(() => setShareToast(null), 2500) })
+        .catch(() => { setShareToast('Copy failed — try again'); setTimeout(() => setShareToast(null), 2000) })
+    }
+
+    const handleClone = () => {
+      setOpenMenu(null)
+      if (!resolvedWidget) return
+      const cloneId = `w${Date.now()}`
+      const cloned: Widget = {
+        ...resolvedWidget,
+        id: cloneId,
+        title: `${resolvedWidget.title} (Copy)`,
+      }
+      setWidgets(prev => {
+        const updated = [...prev, cloned]
+        try {
+          localStorage.setItem(LS_WIDGETS_KEY, JSON.stringify(
+            updated.map(w => ({ ...w, value: undefined, change: undefined, up: undefined }))
+          ))
+        } catch {}
+        return updated
+      })
+      setShareToast(`"${resolvedWidget.title}" cloned`)
+      setTimeout(() => setShareToast(null), 2500)
+      // Start editing the clone immediately
+      setTimeout(() => startEdit(cloned), 50)
+    }
+
+    const handleShare = () => {
+      setOpenMenu(null)
+      const url = typeof window !== 'undefined' ? window.location.href : ''
+      const title = resolvedWidget?.title || 'Widget'
+      navigator.clipboard.writeText(url)
+        .then(() => { setShareToast(`Link to "${title}" copied`); setTimeout(() => setShareToast(null), 2500) })
+        .catch(() => { setShareToast('Share failed'); setTimeout(() => setShareToast(null), 2000) })
+    }
+
+    const handleRemove = () => {
+      setOpenMenu(null)
+      if (!resolvedWidget) return
+      const rawId = wid.startsWith('static__') ? wid.replace('static__', '') : wid
+      setWidgets(prev => {
+        // For static widgets — hide by marking removed; for dynamic — delete entirely
+        const isStatic = STATIC_IDS.includes(rawId)
+        const updated = isStatic
+          ? prev.map(w => w.id === rawId ? { ...w, _removed: true } as any : w)
+          : prev.filter(w => w.id !== rawId)
+        try {
+          localStorage.setItem(LS_WIDGETS_KEY, JSON.stringify(
+            updated.map(w => ({ ...w, value: undefined, change: undefined, up: undefined }))
+          ))
+        } catch {}
+        return updated
+      })
+      if (editingWidget?.id === rawId) setEditingWidget(null)
+      setShareToast(`"${resolvedWidget.title}" removed`)
+      setTimeout(() => setShareToast(null), 2500)
+    }
+
     return (
       <div style={{ position:'relative', display:'inline-flex' }}>
         <button onClick={e => { e.stopPropagation(); setOpenMenu(isOpen ? null : wid) }}
@@ -1260,16 +1352,63 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
           <MoreHorizontal size={13} style={{ color:ALLOY.ink }}/>
         </button>
         {isOpen && (
-          <div style={{ position:'absolute', right:0, top:'calc(100% + 4px)', background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, boxShadow:'0 8px 24px rgba(0,0,0,0.12)', padding:4, minWidth:160, zIndex:999 }}
-            onClick={e => e.stopPropagation()}>
-            <button onClick={() => { onEdit(); setOpenMenu(null) }} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, background:'none', border:'none', cursor:'pointer', borderRadius:2, textAlign:'left' as const }}>✏ Edit</button>
-            <button onClick={() => setOpenMenu(null)} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, background:'none', border:'none', cursor:'pointer', borderRadius:2, textAlign:'left' as const }}>⛶ Full Screen</button>
-            <button onClick={() => setOpenMenu(null)} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, background:'none', border:'none', cursor:'pointer', borderRadius:2, textAlign:'left' as const }}>⧉ Copy</button>
-            <button onClick={() => setOpenMenu(null)} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, background:'none', border:'none', cursor:'pointer', borderRadius:2, textAlign:'left' as const }}>❐ Clone</button>
-            <button onClick={() => setOpenMenu(null)} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, background:'none', border:'none', cursor:'pointer', borderRadius:2, textAlign:'left' as const }}>↗ Share</button>
-            <div style={{ height:1, background:ALLOY.line, margin:'2px 0' }}/>
-            <button onClick={() => setOpenMenu(null)} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.red1, background:'none', border:'none', cursor:'pointer', borderRadius:2 }}>🗑 Remove</button>
-          </div>
+          <>
+            {/* Backdrop to close menu */}
+            <div style={{ position:'fixed' as const, inset:0, zIndex:998 }} onClick={() => setOpenMenu(null)}/>
+            <div style={{ position:'absolute', right:0, top:'calc(100% + 4px)', background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, boxShadow:'0 4px 16px rgba(0,0,0,0.10)', padding:'4px 0', minWidth:168, zIndex:999 }}
+              onClick={e => e.stopPropagation()}>
+              {/* Edit */}
+              <div onClick={handleEdit}
+                style={{ display:'flex', alignItems:'center', gap:9, padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, cursor:'pointer', userSelect:'none' as const, borderLeft:'2px solid transparent' }}
+                onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.background=ALLOY.green4; el.style.color=ALLOY.green1; el.style.borderLeft=`2px solid ${ALLOY.green1}` }}
+                onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.background='none'; el.style.color=ALLOY.ink; el.style.borderLeft='2px solid transparent' }}>
+                <Edit size={12} strokeWidth={1.5} style={{ color:'inherit', flexShrink:0 }}/>
+                <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:'inherit' }}>Edit</span>
+              </div>
+              {/* Full Screen */}
+              <div onClick={handleFullScreen}
+                style={{ display:'flex', alignItems:'center', gap:9, padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, cursor:'pointer', userSelect:'none' as const, borderLeft:'2px solid transparent' }}
+                onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.background=ALLOY.green4; el.style.color=ALLOY.green1; el.style.borderLeft=`2px solid ${ALLOY.green1}` }}
+                onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.background='none'; el.style.color=ALLOY.ink; el.style.borderLeft='2px solid transparent' }}>
+                <Maximize2 size={12} strokeWidth={1.5} style={{ color:'inherit', flexShrink:0 }}/>
+                <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:'inherit' }}>Full Screen</span>
+              </div>
+              {/* Copy */}
+              <div onClick={handleCopy}
+                style={{ display:'flex', alignItems:'center', gap:9, padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, cursor:'pointer', userSelect:'none' as const, borderLeft:'2px solid transparent' }}
+                onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.background=ALLOY.green4; el.style.color=ALLOY.green1; el.style.borderLeft=`2px solid ${ALLOY.green1}` }}
+                onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.background='none'; el.style.color=ALLOY.ink; el.style.borderLeft='2px solid transparent' }}>
+                <Copy size={12} strokeWidth={1.5} style={{ color:'inherit', flexShrink:0 }}/>
+                <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:'inherit' }}>Copy</span>
+              </div>
+              {/* Clone */}
+              <div onClick={handleClone}
+                style={{ display:'flex', alignItems:'center', gap:9, padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, cursor:'pointer', userSelect:'none' as const, borderLeft:'2px solid transparent' }}
+                onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.background=ALLOY.green4; el.style.color=ALLOY.green1; el.style.borderLeft=`2px solid ${ALLOY.green1}` }}
+                onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.background='none'; el.style.color=ALLOY.ink; el.style.borderLeft='2px solid transparent' }}>
+                <LayoutGrid size={12} strokeWidth={1.5} style={{ color:'inherit', flexShrink:0 }}/>
+                <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:'inherit' }}>Clone</span>
+              </div>
+              {/* Share */}
+              <div onClick={handleShare}
+                style={{ display:'flex', alignItems:'center', gap:9, padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, cursor:'pointer', userSelect:'none' as const, borderLeft:'2px solid transparent' }}
+                onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.background=ALLOY.green4; el.style.color=ALLOY.green1; el.style.borderLeft=`2px solid ${ALLOY.green1}` }}
+                onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.background='none'; el.style.color=ALLOY.ink; el.style.borderLeft='2px solid transparent' }}>
+                <Link2 size={12} strokeWidth={1.5} style={{ color:'inherit', flexShrink:0 }}/>
+                <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:'inherit' }}>Share</span>
+              </div>
+              {/* Divider */}
+              <div style={{ height:1, background:ALLOY.line, margin:'4px 0' }}/>
+              {/* Remove */}
+              <div onClick={handleRemove}
+                style={{ display:'flex', alignItems:'center', gap:9, padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.red1, cursor:'pointer', userSelect:'none' as const, borderLeft:'2px solid transparent' }}
+                onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.background=ALLOY.red4; el.style.borderLeft=`2px solid ${ALLOY.red1}` }}
+                onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.background='none'; el.style.borderLeft='2px solid transparent' }}>
+                <Trash2 size={12} strokeWidth={1.5} style={{ color:ALLOY.red1, flexShrink:0 }}/>
+                <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.red1 }}>Remove</span>
+              </div>
+            </div>
+          </>
         )}
       </div>
     )
