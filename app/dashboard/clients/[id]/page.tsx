@@ -662,8 +662,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [shareSubmenu, setShareSubmenu] = useState<'pdf'|'email'|'link'|null>(null)
   const [shareToast, setShareToast] = useState<string|null>(null)
   const [fullscreenWidget, setFullscreenWidget] = useState<Widget|null>(null)
-  const [shareCapture, setShareCapture] = useState<{ wid: string; dataUrl: string; title: string } | null>(null)
-  const [shareCapturing, setShareCapturing] = useState<string | null>(null) // wid being captured
+  const [shareCapture, setShareCapture] = useState<{ wid: string; title: string } | null>(null)
   const [shareEmailInput, setShareEmailInput] = useState('')
   const [shareLinkCopied, setShareLinkCopied] = useState(false)
   const [mappingProp, setMappingProp] = useState('')
@@ -1344,42 +1343,12 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       setTimeout(() => startEdit(cloned), 50)
     }
 
-    const handleShare = async () => {
+    const handleShare = () => {
       setOpenMenu(null)
       if (!resolvedWidget) return
       const rawId = wid.startsWith('static__') ? wid.replace('static__', '') : wid
-      const title = resolvedWidget.title
-      setShareCapturing(rawId)
-
-      try {
-        // Try html2canvas via CDN script injection (no npm install needed)
-        const loadHtml2Canvas = (): Promise<any> => {
-          return new Promise((resolve, reject) => {
-            if ((window as any).html2canvas) { resolve((window as any).html2canvas); return }
-            const s = document.createElement('script')
-            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'
-            s.onload = () => resolve((window as any).html2canvas)
-            s.onerror = reject
-            document.head.appendChild(s)
-          })
-        }
-
-        const el = document.querySelector(`[data-widget-id="${rawId}"]`) as HTMLElement | null
-        if (!el) throw new Error('element not found')
-
-        const h2c = await loadHtml2Canvas()
-        const canvas = await h2c(el, { backgroundColor: '#ffffff', scale: 2, useCORS: true, logging: false })
-        const dataUrl = canvas.toDataURL('image/png')
-        setShareCapture({ wid: rawId, dataUrl, title })
-      } catch {
-        // Final fallback — copy URL to clipboard
-        const url = window.location.href
-        try { await navigator.clipboard.writeText(url) } catch {}
-        setShareToast('Link copied to clipboard')
-        setTimeout(() => setShareToast(null), 2500)
-      } finally {
-        setShareCapturing(null)
-      }
+      // Open share modal — no external library needed
+      setShareCapture({ wid: rawId, title: resolvedWidget.title })
     }
 
     const handleRemove = () => {
@@ -1458,10 +1427,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                 style={{ display:'flex', alignItems:'center', gap:9, padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, cursor:'pointer', userSelect:'none' as const, borderLeft:'2px solid transparent' }}
                 onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.background=ALLOY.green4; el.style.color=ALLOY.green1; el.style.borderLeft=`2px solid ${ALLOY.green1}` }}
                 onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.background='none'; el.style.color=ALLOY.ink; el.style.borderLeft='2px solid transparent' }}>
-                {shareCapturing === (wid.startsWith('static__') ? wid.replace('static__','') : wid)
-                  ? <><span style={{ display:'inline-block', animation:'spin 0.8s linear infinite', fontSize:12 }}>↻</span><span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.mute }}>Preparing...</span></>
-                  : <><Link2 size={12} strokeWidth={1.5} style={{ color:'inherit', flexShrink:0 }}/><span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:'inherit' }}>Share</span></>
-                }
+                <Link2 size={12} strokeWidth={1.5} style={{ color:'inherit', flexShrink:0 }}/>
+                <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:'inherit' }}>Share</span>
               </div>
               {/* Divider */}
               <div style={{ height:1, background:ALLOY.line, margin:'4px 0' }}/>
@@ -3514,42 +3481,72 @@ Alloy Intelligence`)
               <span style={{ fontFamily:ALLOY.fontLabel, fontSize:9, fontWeight:600, color:ALLOY.mute, textTransform:'uppercase' as const, letterSpacing:'0.1em', flex:1 }}>Share — {shareCapture.title}</span>
               <button onClick={() => setShareCapture(null)} style={{ background:'none', border:'none', cursor:'pointer', color:ALLOY.mute, display:'flex' }}><X size={14}/></button>
             </div>
-            {/* Preview */}
-            <div style={{ padding:16, background:'#f0f0f0', display:'flex', alignItems:'center', justifyContent:'center' }}>
-              <img src={shareCapture.dataUrl} alt={shareCapture.title} style={{ maxWidth:'100%', maxHeight:260, borderRadius:2, boxShadow:'0 4px 16px rgba(0,0,0,0.15)', objectFit:'contain' }}/>
+            {/* Widget preview card */}
+            <div style={{ padding:20, background:ALLOY.paper, display:'flex', flexDirection:'column' as const, gap:10 }}>
+              {/* URL row */}
+              <div style={{ display:'flex', alignItems:'center', gap:8, background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'8px 12px' }}>
+                <Link2 size={12} style={{ color:ALLOY.mute, flexShrink:0 }} strokeWidth={1.5}/>
+                <span style={{ flex:1, fontFamily:ALLOY.fontBody, fontSize:11, color:ALLOY.mute, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' as const }}>
+                  {typeof window !== 'undefined' ? window.location.href : ''}
+                </span>
+              </div>
+              {/* Widget info */}
+              <div style={{ background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'12px 14px', display:'flex', alignItems:'center', gap:12 }}>
+                <div style={{ width:36, height:36, borderRadius:2, background:(KPI_BG[widgets.find(w=>w.id===shareCapture!.wid)?.color||'white']||KPI_BG.white).bg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, border:`1px solid ${ALLOY.line}` }}>
+                  <LayoutGrid size={16} style={{ color:ALLOY.mute }} strokeWidth={1.5}/>
+                </div>
+                <div>
+                  <p style={{ fontFamily:ALLOY.fontDisplay, fontSize:13, fontWeight:700, color:ALLOY.ink }}>{shareCapture.title}</p>
+                  <p style={{ fontFamily:ALLOY.fontLabel, fontSize:9, color:ALLOY.mute, textTransform:'uppercase' as const, letterSpacing:'0.08em', marginTop:2 }}>
+                    {widgets.find(w=>w.id===shareCapture!.wid)?.dataSource || 'Google Analytics 4'}
+                  </p>
+                </div>
+              </div>
             </div>
             {/* Actions */}
             <div style={{ display:'flex', gap:8, padding:'12px 16px', borderTop:`1px solid ${ALLOY.line}` }}>
-              {/* Copy image */}
-              <button
-                onClick={async () => {
-                  try {
-                    const res = await fetch(shareCapture.dataUrl)
-                    const blob = await res.blob()
-                    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
-                    setShareCapture(null)
-                    setShareToast(`"${shareCapture.title}" copied as image`)
-                    setTimeout(() => setShareToast(null), 2500)
-                  } catch {
-                    // Fallback: just close and show toast
-                    setShareCapture(null)
-                    setShareToast('Copy not supported — use Download instead')
-                    setTimeout(() => setShareToast(null), 3000)
-                  }
-                }}
-                style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:8, background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'9px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, cursor:'pointer', fontWeight:500 }}>
-                <Copy size={13} strokeWidth={1.5}/> Copy
-              </button>
-              {/* Download PNG */}
+              {/* Copy URL */}
               <button
                 onClick={() => {
-                  const a = document.createElement('a')
-                  a.href = shareCapture.dataUrl
-                  a.download = `${shareCapture.title.replace(/\s+/g,'-').toLowerCase()}.png`
-                  document.body.appendChild(a); a.click(); document.body.removeChild(a)
+                  const url = window.location.href
+                  // Try modern clipboard first, then execCommand fallback
+                  const doCopy = () => {
+                    const ta = document.createElement('textarea')
+                    ta.value = url; ta.style.cssText='position:fixed;top:-9999px;opacity:0'
+                    document.body.appendChild(ta); ta.focus(); ta.select()
+                    try { document.execCommand('copy') } catch {}
+                    document.body.removeChild(ta)
+                  }
+                  if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(url).catch(doCopy)
+                  } else { doCopy() }
                   setShareCapture(null)
-                  setShareToast(`"${shareCapture.title}" downloaded`)
+                  setShareToast('Link copied to clipboard')
                   setTimeout(() => setShareToast(null), 2500)
+                }}
+                style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:8, background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'9px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, cursor:'pointer', fontWeight:500 }}>
+                <Copy size={13} strokeWidth={1.5}/> Copy Link
+              </button>
+              {/* Download — print widget */}
+              <button
+                onClick={() => {
+                  setShareCapture(null)
+                  const widgetEl = document.querySelector(`[data-widget-id="${shareCapture!.wid}"]`) as HTMLElement | null
+                  if (!widgetEl) { window.print(); return }
+                  // Clone widget into a print window
+                  const printWin = window.open('', '_blank', 'width=800,height=600')
+                  if (!printWin) { window.print(); return }
+                  const styles = Array.from(document.styleSheets)
+                    .map(s => { try { return Array.from(s.cssRules).map(r=>r.cssText).join('
+') } catch { return '' } })
+                    .join('
+')
+                  printWin.document.write(`
+                    <html><head><title>${shareCapture!.title}</title>
+                    <style>body{margin:24px;background:#fff;font-family:system-ui,sans-serif}${styles}</style></head>
+                    <body>${widgetEl.outerHTML}<script>window.onload=()=>{window.print();setTimeout(()=>window.close(),1000)}<\/script></body></html>
+                  `)
+                  printWin.document.close()
                 }}
                 style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:8, background:ALLOY.ink, border:'none', borderRadius:2, padding:'9px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.white, cursor:'pointer', fontWeight:500 }}>
                 <Download size={13} strokeWidth={1.5}/> Download
