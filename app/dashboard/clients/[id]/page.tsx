@@ -1283,7 +1283,6 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     }
 
     const handleCopy = () => {
-      setOpenMenu(null)
       if (!resolvedWidget) return
       const text = JSON.stringify({
         title: resolvedWidget.title, chartType: resolvedWidget.chartType,
@@ -1292,15 +1291,31 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
         metrics: (resolvedWidget as any).metrics,
         filters: (resolvedWidget as any).filters,
       }, null, 2)
-      const input = document.createElement('input')
-      input.value = text
-      input.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none'
-      document.body.appendChild(input)
-      input.focus(); input.select(); input.setSelectionRange(0, 99999)
-      try { document.execCommand('copy') } catch {}
-      document.body.removeChild(input)
-      setShareToast(`"${resolvedWidget.title}" config copied`)
-      setTimeout(() => setShareToast(null), 2500)
+      const widgetTitle = resolvedWidget.title
+
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(() => {
+          setOpenMenu(null)
+          setShareToast(`"${widgetTitle}" config copied`)
+          setTimeout(() => setShareToast(null), 2500)
+        }).catch(() => legacyCopy())
+      } else {
+        legacyCopy()
+      }
+
+      function legacyCopy() {
+        const ta = document.createElement('textarea')
+        ta.value = text
+        ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0'
+        document.body.appendChild(ta)
+        ta.focus(); ta.select(); ta.setSelectionRange(0, 99999)
+        let ok = false
+        try { ok = document.execCommand('copy') } catch {}
+        ta.remove()
+        setOpenMenu(null)
+        setShareToast(ok ? `"${widgetTitle}" config copied` : 'Copy failed — try again')
+        setTimeout(() => setShareToast(null), 2500)
+      }
     }
 
     const handleClone = () => {
@@ -1328,25 +1343,36 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     }
 
     const handleShare = () => {
-      setOpenMenu(null)
       const url = typeof window !== 'undefined' ? window.location.href : ''
       const title = resolvedWidget?.title || 'Widget'
-      // Works on HTTP and HTTPS — use input element trick
-      const input = document.createElement('input')
-      input.value = url
-      input.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none'
-      document.body.appendChild(input)
-      input.focus()
-      input.select()
-      input.setSelectionRange(0, 99999)
-      let success = false
-      try { success = document.execCommand('copy') } catch {}
-      document.body.removeChild(input)
-      if (!success) {
-        try { navigator.clipboard.writeText(url).then(() => {}) } catch {}
+
+      // Try modern clipboard API first (works on HTTPS)
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(url).then(() => {
+          setOpenMenu(null)
+          setShareToast(`Link to "${title}" copied`)
+          setTimeout(() => setShareToast(null), 2500)
+        }).catch(() => legacyCopy())
+      } else {
+        legacyCopy()
       }
-      setShareToast(`Link to "${title}" copied`)
-      setTimeout(() => setShareToast(null), 2500)
+
+      function legacyCopy() {
+        // execCommand must happen synchronously in the same event — before any state update
+        const ta = document.createElement('textarea')
+        ta.value = url
+        ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0'
+        document.body.appendChild(ta)
+        ta.focus()
+        ta.select()
+        ta.setSelectionRange(0, 99999)
+        let ok = false
+        try { ok = document.execCommand('copy') } catch {}
+        ta.remove()
+        setOpenMenu(null)
+        setShareToast(ok ? `Link to "${title}" copied` : `URL: ${url}`)
+        setTimeout(() => setShareToast(null), ok ? 2500 : 6000)
+      }
     }
 
     const handleRemove = () => {
