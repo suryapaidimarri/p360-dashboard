@@ -502,7 +502,7 @@ function DynamicChart({ chartType, data, height = 80, dimensions = ['Date'], met
 }
 
 // ── Empty canvas shown for any dashboard not in REAL_DASHBOARDS ──────────────
-function NewDashCanvas({ onClone }: { onClone: () => void }) {
+function NewDashCanvas({ onClone, onTemplate }: { onClone: () => void; onTemplate: () => void }) {
   return (
     <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', background:ALLOY.paper }}>
       <p style={{ fontSize:15, color:ALLOY.ink, marginBottom:2, fontFamily:ALLOY.fontDisplay }}>Start building by dragging widgets</p>
@@ -510,7 +510,7 @@ function NewDashCanvas({ onClone }: { onClone: () => void }) {
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, width:520 }}>
 
         {/* Add a page template */}
-        <button style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:14, padding:'30px 24px', background:ALLOY.white, border:'1px solid #e8e8e8', borderRadius:2, cursor:'pointer', textAlign:'center' as const }}>
+        <button onClick={onTemplate} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:14, padding:'30px 24px', background:ALLOY.white, border:'1px solid #e8e8e8', borderRadius:2, cursor:'pointer', textAlign:'center' as const }}>
           <div style={{ width:56, height:56, display:'flex', alignItems:'center', justifyContent:'center' }}>
             <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect x="4" y="4" width="12" height="12" rx="2" fill="#D0D0D0"/><rect x="20" y="4" width="12" height="12" rx="2" fill="#D0D0D0"/><rect x="4" y="20" width="12" height="7" rx="1.5" fill="#E8E8E8"/><rect x="20" y="20" width="12" height="7" rx="1.5" fill="#E8E8E8"/><circle cx="10" cy="30" r="2.5" fill="#48b5ea"/></svg>
           </div>
@@ -710,6 +710,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [mappingSaved, setMappingSaved] = useState(false)
   const [showBuilder, setShowBuilder] = useState(false)
   const [showCloneModal, setShowCloneModal] = useState(false)
+  const [showTemplateModal, setShowTemplateModal] = useState(false)
   const [dashMenu, setDashMenu] = useState<string|null>(null)
   const [renamingDash, setRenamingDash] = useState<string|null>(null)
   const [renameValue, setRenameValue] = useState('')
@@ -2259,7 +2260,7 @@ Alloy Intelligence`)
           {isEmptyDash ? (
             // ── Empty canvas fills remaining height ──
             <div style={{ flex:1, display:'flex' }}>
-              <NewDashCanvas onClone={() => setShowCloneModal(true)} />
+              <NewDashCanvas onClone={() => setShowCloneModal(true)} onTemplate={() => setShowTemplateModal(true)} />
             </div>
           ) : (
             // ── Real dashboard content ──
@@ -3438,6 +3439,52 @@ Alloy Intelligence`)
 
 
       {/* Clone Page Modal */}
+      {showTemplateModal && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:100, padding:16 }}
+          onClick={() => setShowTemplateModal(false)}>
+          <div style={{ background:ALLOY.white, borderRadius:2, width:'100%', maxWidth:640, maxHeight:'80vh', overflow:'hidden', boxShadow:'0 20px 60px rgba(0,0,0,0.15)', display:'flex', flexDirection:'column' }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ height:3, background:ALLOY.green1 }}/>
+            <div style={{ padding:'24px 28px 16px', borderBottom:`1px solid ${ALLOY.line}`, display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
+              <div>
+                <h2 style={{ fontSize:15, fontWeight:700, color:ALLOY.ink, fontFamily:ALLOY.fontDisplay }}>Choose a Template</h2>
+                <p style={{ fontSize:12, color:ALLOY.mute, marginTop:3 }}>Select a ready-made dashboard layout</p>
+              </div>
+              <button onClick={() => setShowTemplateModal(false)} style={{ background:'none', border:'none', cursor:'pointer', color:ALLOY.mute, fontSize:18 }}>✕</button>
+            </div>
+            <div style={{ flex:1, overflowY:'auto', padding:24 }}>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12 }}>
+                {[
+                  { name:'Website Performance', desc:'Sessions, conversions, engagement & traffic sources', icon:'📊', color:'#48B5EA' },
+                  { name:'Paid Media', desc:'Ad spend, ROAS, impressions & conversion tracking', icon:'💰', color:'#F9B62A' },
+                  { name:'SEO & Organic', desc:'Organic traffic, rankings, backlinks & keywords', icon:'🔍', color:'#20BB71' },
+                  { name:'Social Media', desc:'Followers, engagement, reach & post performance', icon:'📱', color:'#F64674' },
+                  { name:'E-Commerce', desc:'Revenue, orders, AOV & product performance', icon:'🛒', color:'#9C27B0' },
+                  { name:'Executive Summary', desc:'High-level KPIs across all channels', icon:'📈', color:'#111' },
+                ].map(t => (
+                  <button key={t.name}
+                    onClick={() => {
+                      setDashboards(prev => [...prev, t.name])
+                      setClonedDashboards(prev => [...prev, t.name])
+                      setActiveDash(t.name)
+                      setShowTemplateModal(false)
+                    }}
+                    style={{ display:'flex', flexDirection:'column', alignItems:'flex-start', gap:10, padding:'20px 16px', background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, cursor:'pointer', textAlign:'left' as const, transition:'border-color 0.15s' }}
+                    onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.borderColor = ALLOY.green1}
+                    onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.borderColor = ALLOY.line}>
+                    <div style={{ width:36, height:36, borderRadius:4, background:t.color, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>{t.icon}</div>
+                    <div>
+                      <p style={{ fontSize:13, fontWeight:600, color:ALLOY.ink, marginBottom:4, fontFamily:ALLOY.fontBody }}>{t.name}</p>
+                      <p style={{ fontSize:11, color:ALLOY.mute, lineHeight:1.5, fontFamily:ALLOY.fontBody }}>{t.desc}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showCloneModal && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:100, padding:16 }}
           onClick={() => setShowCloneModal(false)}>
