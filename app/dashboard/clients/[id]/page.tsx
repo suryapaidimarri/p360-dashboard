@@ -904,13 +904,15 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   // ── Drag & Drop reorder ──────────────────────────────────────────────────
   const widgetsRef = React.useRef(widgets)
   React.useEffect(() => { widgetsRef.current = widgets }, [widgets])
+  const isDraggingRef = React.useRef(false)
 
   function startDrag(e: React.MouseEvent, dragId: string) {
     if (!editMode) return
     e.preventDefault()
     e.stopPropagation()
 
-    const sourceEl = (e.currentTarget as HTMLElement).closest('[data-widget-id]') as HTMLElement
+    // Walk up from event target to find the widget card
+    const sourceEl = (e.target as HTMLElement).closest('[data-widget-id]') as HTMLElement
     if (!sourceEl) return
 
     const rect = sourceEl.getBoundingClientRect()
@@ -1021,11 +1023,13 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
         }
       }
 
+      isDraggingRef.current = false
       setDraggingId(null)
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('mouseup', onUp)
     }
 
+    isDraggingRef.current = true
     setDraggingId(dragId)
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mouseup', onUp)
@@ -1797,7 +1801,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
     const editControls = (
       <>
-        {editMode && <div onMouseDown={e => startDrag(e, w.id)} style={{position:'absolute',top:6,left:6,cursor:'grab',color:ALLOY.mute,zIndex:20,opacity:0,padding:4,borderRadius:3}} className='alloy-grip'><Grip size={13}/></div>}
+        {editMode && <div onMouseDown={e => startDrag(e, w.id)} style={{position:'absolute',top:4,left:4,width:24,height:24,cursor:'grab',color:ALLOY.mute,zIndex:20,opacity:0.4,display:'flex',alignItems:'center',justifyContent:'center',borderRadius:3,background:'rgba(255,255,255,0.8)'}} className='alloy-grip'><Grip size={14}/></div>}
         {editMode && (
           <div onClick={e => e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', alignItems:'center', gap:4 }}>
             <button style={{ background:isWhite?'rgba(0,0,0,0.05)':'rgba(255,255,255,0.15)', border:'none', borderRadius:2, padding:'3px 5px', cursor:'pointer', display:'flex' }}>
@@ -1819,7 +1823,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
           : `1px solid ${ALLOY.line}`
       return (
         <div data-widget-id={w.id}
-          onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
+          onClick={e => { e.stopPropagation(); if (isDraggingRef.current) return; if (editMode) startEdit(w); else openDrill(w) }}
          
           style={{ background:ALLOY.white, borderRadius:2, padding:12, position:'relative', cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, border: chartBorder, ...(isSelected && editMode ? { boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` } : {}), ...(widgetSizes[w.id] ? { width: widgetSizes[w.id].w, minHeight: widgetSizes[w.id].h } : { width: 'calc(33.333% - 8px)', minWidth: 220 }) }}>
           {isSelected && editMode && (
@@ -1863,7 +1867,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
     return (
       <div data-widget-id={w.id} className={editMode ? '' : 'alloy-card-hover'}
-        onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
+        onClick={e => { e.stopPropagation(); if (isDraggingRef.current) return; if (editMode) startEdit(w); else openDrill(w) }}
         style={{ background:bgColor, borderRadius:2, padding:16, position:'relative', cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, border: editMode ? `2px solid ${borderCol}` : isWhite ? `1px solid ${ALLOY.line}` : '2px solid transparent', ...selectedRing, ...(widgetSizes[w.id] ? { width: widgetSizes[w.id].w, minHeight: widgetSizes[w.id].h } : { width: 'calc(25% - 8px)', minWidth: 180 }) }}>
         {isSelected && editMode && (
           <div className="alloy-editing-badge" style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
@@ -1893,7 +1897,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     const sz = widgetSizes[id]
     return (
       <div data-widget-id={w.id}
-        onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
+        onClick={e => { e.stopPropagation(); if (isDraggingRef.current) return; if (editMode) startEdit(w); else openDrill(w) }}
        
         style={{ background:ALLOY.white, borderRadius:2, padding:16, position:'relative', cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, ...(isSelected && editMode ? { border:`2.5px solid ${ALLOY.green1}`, boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` } : { border:`2px solid ${ALLOY.line}` }), ...(sz ? { width: sz.w, minHeight: sz.h } : { width: 'calc(33.333% - 8px)', minWidth: 220 }) }}>
         {isSelected && editMode && (
@@ -1901,7 +1905,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
             ✦ Editing
           </div>
         )}
-        {editMode && <div onMouseDown={e => startDrag(e, w.id)} style={{position:'absolute',top:6,left:6,cursor:'grab',color:ALLOY.mute,zIndex:20,opacity:0,padding:4,borderRadius:3}} className='alloy-grip'><Grip size={13}/></div>}
+        {editMode && <div onMouseDown={e => startDrag(e, w.id)} style={{position:'absolute',top:4,left:4,width:24,height:24,cursor:'grab',color:ALLOY.mute,zIndex:20,opacity:0.4,display:'flex',alignItems:'center',justifyContent:'center',borderRadius:3,background:'rgba(255,255,255,0.8)'}} className='alloy-grip'><Grip size={14}/></div>}
         {editMode && (
           <div onClick={e => e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', alignItems:'center', gap:4 }}>
             <button style={{ background:'rgba(0,0,0,0.04)', border:'none', borderRadius:2, padding:'3px 5px', cursor:'pointer', display:'flex' }}>
@@ -1981,9 +1985,10 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       [data-widget-id]:hover > div[title="Drag to resize"] { opacity: 0.6 !important }
       [data-widget-id]:hover > div[title="Drag to resize"]:hover { opacity: 1 !important }
 
-      /* Show grip on card hover in edit mode */
-      [data-widget-id]:hover .alloy-grip { opacity: 0.6 !important }
-      [data-widget-id] .alloy-grip:hover { opacity: 1 !important; background: rgba(0,0,0,0.06) !important }
+      /* Grip visibility in edit mode */
+      .alloy-grip { opacity: 0.4 }
+      [data-widget-id]:hover .alloy-grip { opacity: 0.8 !important }
+      .alloy-grip:hover { opacity: 1 !important; transform: scale(1.1) }
 
       /* Drop target highlight */
       .alloy-drop-target { outline: 2.5px dashed #20BB71 !important; outline-offset: 2px; background: rgba(32,187,113,0.04) !important; }
@@ -2537,10 +2542,10 @@ Alloy Intelligence`)
                     </div>
                     <span style={{ fontSize:24, fontWeight:700, color:ALLOY.ink, fontFamily:ALLOY.fontDisplay }}>3%</span>
                   </ChartCard>}
-                  {!isWidgetRemoved('bounce') && <div data-widget-id="bounce" onClick={e => { e.stopPropagation(); if (editMode) startEdit(widgets[3]) }}
+                  {!isWidgetRemoved('bounce') && <div data-widget-id="bounce" onClick={e => { e.stopPropagation(); if (isDraggingRef.current) return; if (editMode) startEdit(widgets[3]) }}
                    
                     style={{ background:ALLOY.red1, border:`2px solid ${editingWidget?.id==='bounce' && editMode ? ALLOY.blue1 : ALLOY.red1}`, borderRadius:2, padding:16, position:'relative', cursor: editMode ? 'pointer' : 'default' }}>
-                    {editMode && <div onMouseDown={e => startDrag(e, 'bounce')} style={{position:'absolute',top:6,left:6,cursor:'grab',color:'rgba(255,255,255,0.7)',zIndex:20,opacity:0,padding:4,borderRadius:3}} className='alloy-grip'><Grip size={13}/></div>}
+                    {editMode && <div onMouseDown={e => startDrag(e, 'bounce')} style={{position:'absolute',top:4,left:4,width:24,height:24,cursor:'grab',color:'rgba(255,255,255,0.9)',zIndex:20,opacity:0.4,display:'flex',alignItems:'center',justifyContent:'center',borderRadius:3,background:'rgba(255,255,255,0.2)'}} className='alloy-grip'><Grip size={14}/></div>}
                     {editMode && (
                       <div onClick={e => e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', gap:4 }}>
                         <button style={{ background:'rgba(255,255,255,0.2)', border:'none', borderRadius:2, padding:'3px 5px', cursor:'pointer', display:'flex' }}><Maximize2 size={10} style={{ color:'rgba(255,255,255,0.8)' }}/></button>
@@ -2601,7 +2606,7 @@ Alloy Intelligence`)
                   const isDynSelected = editingWidget?.id === w.id && editMode
                   return (
                   <div key={w.id} data-widget-id={w.id}
-                    onClick={e => { e.stopPropagation(); if (editMode) startEdit(w) }}
+                    onClick={e => { e.stopPropagation(); if (isDraggingRef.current) return; if (editMode) startEdit(w) }}
                    
                     style={{ background:ALLOY.white, borderRadius:2, padding:14, position:'relative', cursor: editMode ? 'pointer' : 'default', minHeight:140, transition:'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isDynSelected ? 0.45 : 1, ...(isDynSelected ? { border:`2.5px solid ${ALLOY.green1}`, boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` } : { border:`2px solid ${ALLOY.line}` }) }}>
                     {isDynSelected && (
@@ -2609,7 +2614,7 @@ Alloy Intelligence`)
                         ✦ Editing
                       </div>
                     )}
-                    {editMode && <div onMouseDown={e => startDrag(e, w.id)} style={{position:'absolute',top:6,left:6,cursor:'grab',color:ALLOY.mute,zIndex:20,opacity:0,padding:4,borderRadius:3}} className='alloy-grip'><Grip size={13}/></div>}
+                    {editMode && <div onMouseDown={e => startDrag(e, w.id)} style={{position:'absolute',top:4,left:4,width:24,height:24,cursor:'grab',color:ALLOY.mute,zIndex:20,opacity:0.4,display:'flex',alignItems:'center',justifyContent:'center',borderRadius:3,background:'rgba(255,255,255,0.8)'}} className='alloy-grip'><Grip size={14}/></div>}
                     {editMode && (
                       <div onClick={e => e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', gap:4 }}>
                         <WidgetDot wid={w.id} onEdit={() => startEdit(w)} onClone={() => cloneWidget(w)} widget={w}/>
