@@ -886,6 +886,18 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     }
   }, [widgets, connection, selectedProperty])
 
+  // Close menus on outside click — use document mousedown so portal clicks don't double-fire
+  useEffect(() => {
+    function handleMouseDown(e: MouseEvent) {
+      const target = e.target as HTMLElement
+      if (target.closest('.alloy-dropdown')) return  // click inside portal menu — don't close
+      setOpenMenu(null)
+      setDashMenu(null)
+    }
+    document.addEventListener('mousedown', handleMouseDown)
+    return () => document.removeEventListener('mousedown', handleMouseDown)
+  }, [])
+
   async function loadGA4Events(startDate?: string, endDate?: string) {
     if (!connection?.connected || !selectedProperty) return
     const sd = startDate ?? activeFetchStart ?? dateRange
@@ -1404,7 +1416,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       }
     }
 
-    const handleClone = () => { onClone() }
+    const handleClone = (e: React.MouseEvent) => { e.stopPropagation(); e.nativeEvent.stopImmediatePropagation(); onClone() }
 
     const handleShare = () => {
       setOpenMenu(null)
@@ -1486,7 +1498,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                 <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:'inherit' }}>Copy</span>
               </div>
               {/* Clone */}
-              <div onClick={e => { e.stopPropagation(); handleClone() }}
+              <div onClick={handleClone}
                 style={{ display:'flex', alignItems:'center', gap:9, padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, cursor:'pointer', userSelect:'none' as const, borderLeft:'2px solid transparent' }}
                 onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.background=ALLOY.green4; el.style.color=ALLOY.green1; el.style.borderLeft=`2px solid ${ALLOY.green1}` }}
                 onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.background='none'; el.style.color=ALLOY.ink; el.style.borderLeft='2px solid transparent' }}>
@@ -1822,8 +1834,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       /* Spin */
       .alloy-spin { animation: alloy-spin 0.8s linear infinite }
     `}</style>
-    <div style={{ display:'flex', flexDirection:'column', height:'100%', overflow:'hidden', background:ALLOY.white, fontFamily:ALLOY.fontBody }}
-      onClick={() => { if (openMenu) setOpenMenu(null); if (dashMenu) setDashMenu(null) }}>
+    <div style={{ display:'flex', flexDirection:'column', height:'100%', overflow:'hidden', background:ALLOY.white, fontFamily:ALLOY.fontBody }}>
 
       {/* Edit mode bars */}
       {editMode && (
