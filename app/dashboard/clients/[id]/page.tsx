@@ -1652,7 +1652,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     const isWhite = w.color === 'white'
     const isSelected = editingWidget?.id === w.id
     const bgColor = w.bgHex || c.bg
-    const borderCol = isSelected && editMode ? ALLOY.green1 : (w.borderColor || c.border)
+    const borderCol = isSelected && editMode ? ALLOY.green1 : (editMode ? (w.borderColor || c.border) : (isWhite ? ALLOY.line : 'transparent'))
     const selectedRing = isSelected && editMode
       ? { border:`2.5px solid ${ALLOY.green1}`, boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` }
       : {}
