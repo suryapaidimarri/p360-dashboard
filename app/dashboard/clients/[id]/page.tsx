@@ -895,17 +895,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     }
   }, [widgets, connection, selectedProperty])
 
-  // Close menus on outside click — use document mousedown so portal clicks don't double-fire
-  useEffect(() => {
-    function handleMouseDown(e: MouseEvent) {
-      const target = e.target as HTMLElement
-      if (target.closest('.alloy-dropdown')) return  // click inside portal menu — don't close
-      setOpenMenu(null)
-      setDashMenu(null)
-    }
-    document.addEventListener('mousedown', handleMouseDown)
-    return () => document.removeEventListener('mousedown', handleMouseDown)
-  }, [])
+  // Menu close is now merged into the drag handler below
 
   async function loadGA4Events(startDate?: string, endDate?: string) {
     if (!connection?.connected || !selectedProperty) return
@@ -1322,6 +1312,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
   // Use refs so event listeners always have fresh values (no stale closure)
   const widgetsRef = React.useRef(widgets)
+  const activeDragRef = React.useRef<{ ghost: HTMLElement; source: HTMLElement; offsetX: number; offsetY: number; dragId: string } | null>(null)
   React.useEffect(() => { widgetsRef.current = widgets }, [widgets])
 
   function reorderWidgets(fromId: string, toId: string) {
@@ -1339,12 +1330,19 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     try { localStorage.setItem(`alloy_widget_order_${clientId}`, JSON.stringify(next)) } catch {}
   }
 
-  // ── Drag & Drop — full card follows cursor ───────────────────────────────
+  // ── Single document mousedown — handles menu close + drag & drop ─────────
   React.useEffect(() => {
-    if (!editMode) return
 
     const handleMouseDown = (e: MouseEvent) => {
-      const handle = (e.target as HTMLElement).closest('[data-drag-handle]') as HTMLElement | null
+      const target = e.target as HTMLElement
+      // Always close menus unless clicking inside a portal dropdown
+      if (!target.closest('.alloy-dropdown')) {
+        setOpenMenu(null)
+        setDashMenu(null)
+      }
+      // Drag only in edit mode
+      if (!editMode) return
+      const handle = target.closest('[data-drag-handle]') as HTMLElement | null
       if (!handle) return
 
       const dragId = handle.dataset.dragHandle!
@@ -1382,6 +1380,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
         overflow: hidden;
       `
       document.body.appendChild(ghost)
+      // Store in ref so re-renders don't lose the ghost
+      activeDragRef.current = { ghost, source: sourceEl, offsetX, offsetY, dragId }
 
       // ── 2. Dim source in place ────────────────────────────────────────────
       sourceEl.style.opacity = '0.2'
@@ -1389,17 +1389,24 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       sourceEl.style.outlineOffset = '2px'
 
       let currentOverId: string | null = null
-      let hasMoved = false
+      let mouseX = e.clientX
+      let mouseY = e.clientY
 
-      // ── 3. Mouse move — move ghost + highlight target ─────────────────────
-      const onMove = (mv: MouseEvent) => {
-        if (!hasMoved) {
-          hasMoved = true
-          ghost.style.transform = 'rotate(2deg) scale(1.03)'
+      // Use rAF for butter-smooth ghost movement
+      let rafId: number
+      const moveGhost = () => {
+        if (activeDragRef.current) {
+          ghost.style.left = (mouseX - offsetX) + 'px'
+          ghost.style.top  = (mouseY - offsetY) + 'px'
         }
+        rafId = requestAnimationFrame(moveGhost)
+      }
+      rafId = requestAnimationFrame(moveGhost)
 
-        ghost.style.left = (mv.clientX - offsetX) + 'px'
-        ghost.style.top  = (mv.clientY - offsetY) + 'px'
+      // ── 3. Mouse move — update coords + highlight target ─────────────────
+      const onMove = (mv: MouseEvent) => {
+        mouseX = mv.clientX
+        mouseY = mv.clientY
 
         // Detect drop target
         ghost.style.display = 'none'
@@ -1477,6 +1484,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
           if (document.body.contains(ghost)) document.body.removeChild(ghost)
         }, 200)
 
+        cancelAnimationFrame(rafId)
+        activeDragRef.current = null
         setDraggingId(null)
         setDragOverId(null)
         window.removeEventListener('mousemove', onMove)
@@ -1489,7 +1498,16 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     }
 
     document.addEventListener('mousedown', handleMouseDown)
-    return () => document.removeEventListener('mousedown', handleMouseDown)
+    return () => {
+      document.removeEventListener('mousedown', handleMouseDown)
+      if (activeDragRef.current) {
+        const { ghost, source } = activeDragRef.current
+        source.style.opacity = ''
+        source.style.outline = ''
+        if (document.body.contains(ghost)) document.body.removeChild(ghost)
+        activeDragRef.current = null
+      }
+    }
   }, [editMode, clientId])
   function addWidget(chartType: string, label: string) {
     const newId = `w${Date.now()}`
