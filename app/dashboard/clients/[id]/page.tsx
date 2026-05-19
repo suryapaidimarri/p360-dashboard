@@ -1933,14 +1933,21 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                   </button>
                 </div>
               )}
-              <select value={dateRange} onChange={e => { setDateRange(e.target.value); fetchGA4() }}
+              <select value={dateRange} onChange={e => {
+                  const newRange = e.target.value
+                  setDateRange(newRange)
+                  // Clear any custom date range when user picks a preset
+                  setActiveFetchStart(null); setActiveFetchEnd(null)
+                  try { localStorage.removeItem(LS_DATE_KEY) } catch {}
+                  fetchGA4(undefined, newRange, 'today')
+                }}
                 style={{ background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'5px 10px', fontFamily:ALLOY.fontBody, fontSize:11, color:ALLOY.ink }}>
                 <option value="7daysAgo">Last 7 days</option>
                 <option value="30daysAgo">Last 30 days</option>
                 <option value="90daysAgo">Last 90 days</option>
               </select>
               {connection?.connected && (
-                <button onClick={() => fetchGA4()} disabled={loadingData} style={{ background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'6px 8px', cursor:'pointer', display:'flex' }}>
+                <button onClick={() => fetchGA4(undefined, activeFetchStart ?? dateRange, activeFetchEnd ?? 'today')} disabled={loadingData} style={{ background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'6px 8px', cursor:'pointer', display:'flex' }}>
                   <RefreshCw size={13} style={{ color:ALLOY.mute }}/>
                 </button>
               )}
@@ -2933,7 +2940,9 @@ Alloy Intelligence`)
                               if (opt.val === 'auto') {
                                 setShowCalendarPicker(false); setActiveFetchStart(null); setActiveFetchEnd(null)
                                 try { localStorage.removeItem(LS_DATE_KEY) } catch {}
-                                fetchGA4()
+                                // Pass dates explicitly — don't rely on state that hasn't cleared yet
+                                fetchGA4(undefined, dateRange, 'today')
+                                loadGA4Events(dateRange, 'today')
                               } else {
                                 const s=(widgetData as any).dateStart||'2026-04-01', e=(widgetData as any).dateEnd||'2026-05-08'
                                 setCalTempStart(s); setCalTempEnd(e); setCalClickCount(0)
