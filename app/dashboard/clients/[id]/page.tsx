@@ -976,6 +976,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
   // ── Unified Drag & Drop ──────────────────────────────────────────────────
   const dragSrcId = React.useRef<string|null>(null)
+  const dragOverId = React.useRef<string|null>(null)
 
   function onDragStart(e: React.DragEvent, dragId: string) {
     if (!editMode) return
@@ -983,44 +984,55 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     setDraggingId(dragId)
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('text/plain', dragId)
-    setTimeout(() => {
-      const card = document.querySelector(`[data-widget-id="${dragId}"]`) as HTMLElement | null
-      if (card) { card.style.opacity = '0.3'; card.style.outline = `2px dashed ${ALLOY.green1}`; card.style.outlineOffset = '3px' }
-    }, 0)
+    // Use a class instead of inline style so React doesn't overwrite it
+    const card = e.currentTarget as HTMLElement
+    card.classList.add('alloy-dragging')
   }
 
   function onDragEnd(e: React.DragEvent) {
-    // Clean up all highlights
-    document.querySelectorAll('[data-widget-id]').forEach((el: Element) => {
-      const h = el as HTMLElement
-      h.style.opacity = ''; h.style.outline = ''; h.style.outlineOffset = ''; h.style.transform = ''; h.style.transition = ''
+    document.querySelectorAll('.alloy-dragging, .alloy-drag-target').forEach(el => {
+      el.classList.remove('alloy-dragging', 'alloy-drag-target')
     })
     dragSrcId.current = null
+    dragOverId.current = null
     setDraggingId(null)
   }
 
   function onDragOver(e: React.DragEvent, overId: string) {
     e.preventDefault()
+    e.stopPropagation()
     e.dataTransfer.dropEffect = 'move'
     if (!dragSrcId.current || dragSrcId.current === overId) return
-    const el = e.currentTarget as HTMLElement
-    el.style.outline = `3px dashed ${ALLOY.green1}`
-    el.style.outlineOffset = '3px'
-    el.style.transform = 'scale(0.97)'
-    el.style.transition = 'transform 0.1s'
+    if (dragOverId.current === overId) return // already highlighted
+    // Clear previous target
+    if (dragOverId.current) {
+      document.querySelector(`[data-widget-id="${dragOverId.current}"]`)?.classList.remove('alloy-drag-target')
+    }
+    dragOverId.current = overId
+    const el = document.querySelector(`[data-widget-id="${overId}"]`)
+    el?.classList.add('alloy-drag-target')
   }
 
   function onDragLeave(e: React.DragEvent) {
-    const el = e.currentTarget as HTMLElement
-    el.style.outline = ''; el.style.outlineOffset = ''; el.style.transform = ''; el.style.transition = ''
+    // Only clear if leaving to outside the widget (not into a child)
+    const related = e.relatedTarget as HTMLElement | null
+    if (related && (e.currentTarget as HTMLElement).contains(related)) return
+    const overId = (e.currentTarget as HTMLElement).getAttribute('data-widget-id')
+    if (overId && dragOverId.current === overId) {
+      dragOverId.current = null
+      ;(e.currentTarget as HTMLElement).classList.remove('alloy-drag-target')
+    }
   }
 
   function onDrop(e: React.DragEvent, toId: string) {
     e.preventDefault()
-    const fromId = dragSrcId.current
+    e.stopPropagation()
+    const fromId = dragSrcId.current || e.dataTransfer.getData('text/plain')
+    document.querySelectorAll('.alloy-dragging, .alloy-drag-target').forEach(el => {
+      el.classList.remove('alloy-dragging', 'alloy-drag-target')
+    })
+    dragOverId.current = null
     if (!fromId || fromId === toId) return
-    const el = e.currentTarget as HTMLElement
-    el.style.outline = ''; el.style.outlineOffset = ''; el.style.transform = ''; el.style.transition = ''
 
     // Update the unified widgetOrder array
     setWidgetOrder(prev => {
@@ -1397,13 +1409,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       /* ── Drag & Drop ── */
       [data-widget-id][draggable="true"] { cursor: grab !important; user-select: none; }
       [data-widget-id][draggable="true"]:active { cursor: grabbing !important; }
-
-      /* Drag over target highlight */
-      .alloy-drag-over { outline: 3px dashed ${ALLOY.green1} !important; outline-offset: 3px; background: rgba(32,187,113,0.04) !important; }
-
-      /* Grip icon fades in on hover in edit mode */
-      .dashboard-edit-mode [data-widget-id] > svg.grip-icon { opacity: 0; transition: opacity 0.15s; }
-      .dashboard-edit-mode [data-widget-id]:hover > svg.grip-icon { opacity: 0.6; }
+      .alloy-dragging { opacity: 0.35 !important; outline: 2px dashed ${ALLOY.green1} !important; outline-offset: 3px !important; }
+      .alloy-drag-target { outline: 3px dashed ${ALLOY.green1} !important; outline-offset: 3px !important; background: rgba(32,187,113,0.06) !important; transform: scale(0.97); transition: transform 0.1s; }
 
       /* Show resize handle on hover */
       [data-widget-id]:hover > div[title="Drag to resize"] { opacity: 0.6 !important }
