@@ -1460,7 +1460,12 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       e.stopPropagation()
       if (isOpen) { setOpenMenu(null); return }
       const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect()
-      setMenuPos({ top: rect.bottom + 4, left: Math.max(4, rect.right - 168) })
+      const menuHeight = 260 // approximate max height of dropdown
+      const spaceBelow = window.innerHeight - rect.bottom
+      const top = spaceBelow < menuHeight
+        ? rect.top - menuHeight + 4   // flip upward
+        : rect.bottom + 4             // normal downward
+      setMenuPos({ top, left: Math.max(4, rect.right - 168) })
       setOpenMenu(wid)
     }
 
