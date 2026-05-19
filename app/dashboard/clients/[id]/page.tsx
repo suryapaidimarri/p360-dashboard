@@ -680,6 +680,20 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [dimSearch, setDimSearch] = useState('')
   const [metSearch, setMetSearch] = useState('')
   const [showShareMenu, setShowShareMenu] = useState(false)
+  const LS_DATE_KEY = `alloy_custom_date_${clientId}`
+  const [activeFetchStart, setActiveFetchStart] = useState<string|null>(() => {
+    try { const v = localStorage.getItem(`alloy_custom_date_${clientId}`); return v ? JSON.parse(v).start || null : null } catch { return null }
+  })
+  const [activeFetchEnd, setActiveFetchEnd] = useState<string|null>(() => {
+    try { const v = localStorage.getItem(`alloy_custom_date_${clientId}`); return v ? JSON.parse(v).end || null : null } catch { return null }
+  })
+  const [showCalendarPicker, setShowCalendarPicker] = useState(false)
+  const [calAnchorRef, setCalAnchorRef] = useState<{top:number;left:number}|null>(null)
+  const [calStartView, setCalStartView] = useState(new Date(2026, 3, 1))
+  const [calEndView,   setCalEndView]   = useState(new Date(2026, 4, 1))
+  const [calTempStart, setCalTempStart] = useState('')
+  const [calTempEnd,   setCalTempEnd]   = useState('')
+  const [calClickCount, setCalClickCount] = useState(0)
   const [shareSubmenu, setShareSubmenu] = useState<'pdf'|'email'|'link'|null>(null)
   const [shareToast, setShareToast] = useState<string|null>(null)
   const [fullscreenWidget, setFullscreenWidget] = useState<Widget|null>(null)
@@ -850,6 +864,15 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     } catch {}
   }, [widgets])
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      if (activeFetchStart && activeFetchEnd) {
+        localStorage.setItem(LS_DATE_KEY, JSON.stringify({ start: activeFetchStart, end: activeFetchEnd }))
+      } else { localStorage.removeItem(LS_DATE_KEY) }
+    } catch {}
+  }, [activeFetchStart, activeFetchEnd])
+
   // Auto-load event data when any widget uses Event Name dimension
   useEffect(() => {
     if (connection?.connected && selectedProperty && ga4EventRows.length === 0) {
@@ -857,14 +880,16 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
         const dims: string[] = (w as any).dimensions || []
         return dims.includes('Event Name') || dims.includes('eventName')
       })
-      if (needsEvents) loadGA4Events()
+      if (needsEvents) loadGA4Events(activeFetchStart ?? undefined, activeFetchEnd ?? undefined)
     }
   }, [widgets, connection, selectedProperty])
 
-  async function loadGA4Events() {
+  async function loadGA4Events(startDate?: string, endDate?: string) {
     if (!connection?.connected || !selectedProperty) return
+    const sd = startDate ?? activeFetchStart ?? dateRange
+    const ed = endDate   ?? activeFetchEnd   ?? 'today'
     try {
-      const res = await fetch(`/api/ga4/custom?client_id=${clientId}&property_id=${selectedProperty}&dimensions=eventName&metrics=eventCount&start_date=30daysAgo&end_date=today`)
+      const res = await fetch(`/api/ga4/custom?client_id=${clientId}&property_id=${selectedProperty}&dimensions=eventName&metrics=eventCount&start_date=${sd}&end_date=${ed}`)
       if (res.ok) {
         const data = await res.json()
         const rows = data.rows || []
@@ -977,27 +1002,31 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     try {
       const res = await fetch(`/api/mapping?client_id=${clientId}`)
       const data = await res.json()
+      let savedStart: string|null = null, savedEnd: string|null = null
+      try { const sv = localStorage.getItem(LS_DATE_KEY); if (sv) { const p=JSON.parse(sv); savedStart=p.start||null; savedEnd=p.end||null } } catch {}
+      if (savedStart && savedEnd) { setActiveFetchStart(savedStart); setActiveFetchEnd(savedEnd) }
       if (data.ga4_property_id) {
         setSelectedProperty(data.ga4_property_id)
         setMappingProp(data.ga4_property_id)
         setMappingPropName(data.ga4_property_name || '')
         setMappingSite(data.gsc_site_url || '')
-        fetchGA4(data.ga4_property_id)
-      } else {
-        fetchGA4()
-      }
+        fetchGA4(data.ga4_property_id, savedStart||undefined, savedEnd||undefined)
+      } else { fetchGA4(undefined, savedStart||undefined, savedEnd||undefined) }
     } catch { fetchGA4() }
   }
 
-  async function fetchGA4(propertyId?: string) {
+  async function fetchGA4(propertyId?: string, startDate?: string, endDate?: string) {
     const pid = propertyId || selectedProperty
     if (!pid) return
     setLoadingData(true)
+    const sd = startDate ?? activeFetchStart ?? dateRange
+    const ed = endDate   ?? activeFetchEnd   ?? 'today'
     try {
-      const res = await fetch(`/api/ga4?client_id=${clientId}&property_id=${pid}&start_date=${dateRange}&end_date=today`)
+      const res = await fetch(`/api/ga4?client_id=${clientId}&property_id=${pid}&start_date=${sd}&end_date=${ed}`)
       const data = await res.json()
       if (data.connected) {
         setGa4Data(data)
+        loadGA4Events(sd, ed)
         const totalsRow = data.timeSeries?.totals?.[0]
         const sessions = parseInt(totalsRow?.metricValues?.[0]?.value || '0')
         const users = parseInt(totalsRow?.metricValues?.[1]?.value || '0')
@@ -2586,10 +2615,20 @@ Alloy Intelligence`)
                     const metrics: string[] = widgetData.metrics || []
 
                     const updateField = (key: string, val: any) => {
-                      const updated = { ...editingWidget, [key]: val } as any
-                      setEditingWidget(updated)
-                      setWidgets(prev => prev.map(w => w.id === updated.id ? updated : w))
-
+                      setEditingWidget(prev => {
+                        if (!prev) return prev
+                        const updated = { ...prev, [key]: val } as any
+                        setWidgets(ws => ws.map(w => w.id === updated.id ? updated : w))
+                        return updated
+                      })
+                    }
+                    const updateMulti = (patch: Record<string, any>) => {
+                      setEditingWidget(prev => {
+                        if (!prev) return prev
+                        const updated = { ...prev, ...patch } as any
+                        setWidgets(ws => ws.map(w => w.id === updated.id ? updated : w))
+                        return updated
+                      })
                     }
 
                     return (
@@ -2887,20 +2926,63 @@ Alloy Intelligence`)
 
                         {/* Default date range filter */}
                         <div style={{ padding:'14px 0', borderBottom:`1px solid ${ALLOY.line}` }}>
-                          <p style={{ fontFamily:ALLOY.fontBody, fontSize:13, fontWeight:700, color:ALLOY.ink, marginBottom:10 }}>Default date range filter</p>
+                          <p style={{ fontFamily:ALLOY.fontLabel, fontSize:9, fontWeight:700, color:ALLOY.mute, textTransform:'uppercase' as const, letterSpacing:'0.1em', marginBottom:10 }}>Default date range filter</p>
                           {[{val:'auto',label:'Auto: Last 28 days (exclude today)'},{val:'custom',label:'Custom'}].map(opt => (
-                            <label key={opt.val} style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8, cursor:'pointer' }}>
-                              <div style={{ width:18, height:18, borderRadius:'50%', border:`2px solid ${(widgetData.dateRangeType||'auto')===opt.val?ALLOY.blue1:ALLOY.line}`, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                            <label key={opt.val} onClick={() => {
+                              updateField('dateRangeType', opt.val)
+                              if (opt.val === 'auto') {
+                                setShowCalendarPicker(false); setActiveFetchStart(null); setActiveFetchEnd(null)
+                                try { localStorage.removeItem(LS_DATE_KEY) } catch {}
+                                fetchGA4()
+                              } else {
+                                const s=(widgetData as any).dateStart||'2026-04-01', e=(widgetData as any).dateEnd||'2026-05-08'
+                                setCalTempStart(s); setCalTempEnd(e); setCalClickCount(0)
+                                const[sy,sm]=s.split('-').map(Number); const[ey,em]=e.split('-').map(Number)
+                                setCalStartView(new Date(sy,sm-1,1)); setCalEndView(new Date(ey,em-1,1))
+                              }
+                            }} style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8, cursor:'pointer' }}>
+                              <div style={{ width:18, height:18, borderRadius:'50%', border:`2px solid ${(widgetData.dateRangeType||'auto')===opt.val?ALLOY.blue1:ALLOY.line}`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
                                 {(widgetData.dateRangeType||'auto')===opt.val && <div style={{ width:8, height:8, borderRadius:'50%', background:ALLOY.blue1 }}/>}
                               </div>
                               <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink }}>{opt.label}</span>
                             </label>
                           ))}
-                          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:4 }}>
-                            <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink }}>Comparison date range</span>
-                            <div style={{ width:36, height:20, borderRadius:2, background:ALLOY.line, position:'relative', cursor:'pointer' }}>
-                              <div style={{ width:16, height:16, borderRadius:'50%', background:ALLOY.white, position:'absolute', top:2, left:2, boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}/>
-                            </div>
+                          {(widgetData as any).dateRangeType === 'custom' && (() => {
+                            const cs=(widgetData as any).dateStart||'2026-04-01', ce=(widgetData as any).dateEnd||'2026-05-08'
+                            const aS=showCalendarPicker?(calTempStart||cs):cs, aE=showCalendarPicker?(calTempEnd||ce):ce
+                            const tIso=new Date().toISOString().split('T')[0]
+                            const fmtIso=(d:Date)=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')
+                            const fmtLbl=(s:string)=>{if(!s)return'';const[y,m,dd]=s.split('-');return['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(m)-1]+' '+parseInt(dd)+', '+y}
+                            const MOS=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
+                            const clickDay=(iso:string)=>{if(calClickCount===0){setCalTempStart(iso);setCalTempEnd('');setCalClickCount(1)}else{const fs=iso<calTempStart?iso:calTempStart;const fe=iso<calTempStart?calTempStart:iso;setCalTempStart(fs);setCalTempEnd(fe);setCalClickCount(2)}}
+                            const renderMon=(view:Date,lbl:string)=>{
+                              const y=view.getFullYear(),m=view.getMonth(),fd=new Date(y,m,1).getDay(),dim=new Date(y,m+1,0).getDate()
+                              const nav=(d:number)=>{if(lbl==='Start Date')setCalStartView(new Date(y,m+d,1));else setCalEndView(new Date(y,m+d,1))}
+                              const cells:React.ReactNode[]=[]
+                              for(let i=0;i<fd;i++)cells.push(<div key={'e'+i} style={{height:34}}/>)
+                              for(let d=1;d<=dim;d++){const t=new Date(y,m,d),iso=fmtIso(t),isSt=iso===aS,isEn=iso===aE&&!!aE,inR=!!aS&&!!aE&&iso>aS&&iso<aE
+                                cells.push(<div key={d} onClick={()=>clickDay(iso)} style={{height:34,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,cursor:'pointer',fontWeight:isSt||isEn?700:400,background:isSt||isEn?ALLOY.blue1:inR?ALLOY.blue4:'none',color:isSt||isEn?ALLOY.white:inR?ALLOY.blue1:ALLOY.ink,border:iso===tIso&&!isSt&&!isEn?`1px solid ${ALLOY.mute}`:'none'}} onMouseEnter={e=>{if(!isSt&&!isEn)(e.currentTarget as HTMLDivElement).style.background=ALLOY.blue4}} onMouseLeave={e=>{if(!isSt&&!isEn)(e.currentTarget as HTMLDivElement).style.background=inR?ALLOY.blue4:'none'}}>{d}</div>)
+                              }
+                              return(<div style={{flex:1}}><p style={{fontFamily:ALLOY.fontBody,fontSize:13,fontWeight:700,color:ALLOY.ink,marginBottom:10,textAlign:'center' as const}}>{lbl}</p><div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}><span style={{fontFamily:ALLOY.fontBody,fontSize:12,fontWeight:700}}>{MOS[m]} {y}</span><div style={{display:'flex'}}><button onClick={()=>nav(-1)} style={{background:'none',border:'none',cursor:'pointer',fontSize:16,color:ALLOY.ink,padding:'2px 6px',lineHeight:1}}>‹</button><button onClick={()=>nav(1)} style={{background:'none',border:'none',cursor:'pointer',fontSize:16,color:ALLOY.ink,padding:'2px 6px',lineHeight:1}}>›</button></div></div><div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',marginBottom:4}}>{['S','M','T','W','T','F','S'].map((d,i)=><div key={i} style={{textAlign:'center' as const,fontSize:11,color:ALLOY.mute,fontWeight:500,paddingBottom:5}}>{d}</div>)}</div><div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',rowGap:2}}>{cells}</div></div>)
+                            }
+                            return(<div style={{marginTop:8}}>
+                              <button onClick={e=>{e.stopPropagation();if(!showCalendarPicker){setCalTempStart(cs);setCalTempEnd(ce);setCalClickCount(0);const[sy,sm]=cs.split('-').map(Number);const[ey,em]=ce.split('-').map(Number);setCalStartView(new Date(sy,sm-1,1));setCalEndView(new Date(ey,em-1,1));const r=(e.currentTarget as HTMLButtonElement).getBoundingClientRect();setCalAnchorRef({top:r.bottom+8,left:r.left})};setShowCalendarPicker(v=>!v)}} style={{width:'100%',display:'flex',alignItems:'center',gap:8,background:ALLOY.white,border:`1px solid ${ALLOY.line}`,borderRadius:2,padding:'8px 12px',cursor:'pointer',fontFamily:ALLOY.fontBody,fontSize:12,color:ALLOY.ink}}>
+                                <span style={{fontSize:14}}>📅</span><span style={{flex:1,textAlign:'left' as const}}>{fmtLbl(cs)} — {fmtLbl(ce)}</span><ChevronDown size={12} style={{color:ALLOY.mute}}/>
+                              </button>
+                              {showCalendarPicker&&(<><div style={{position:'fixed' as const,inset:0,zIndex:1000}} onClick={()=>{setShowCalendarPicker(false);setCalTempStart(cs);setCalTempEnd(ce)}}/><div className="alloy-calendar" style={{position:'fixed' as const,top:calAnchorRef?Math.min(calAnchorRef.top,window.innerHeight-540):200,left:calAnchorRef?Math.max(10,Math.min(calAnchorRef.left,window.innerWidth-640)):200,zIndex:1001,background:ALLOY.white,border:`1px solid ${ALLOY.line}`,borderRadius:4,boxShadow:'0 12px 40px rgba(0,0,0,0.18)',padding:20,width:620}} onClick={e=>e.stopPropagation()}>
+                                <div style={{display:'flex',justifyContent:'flex-end',marginBottom:14}}><div style={{display:'flex',alignItems:'center',gap:6,background:ALLOY.paper,border:`1px solid ${ALLOY.line}`,borderRadius:2,padding:'6px 14px',fontFamily:ALLOY.fontBody,fontSize:12,color:ALLOY.ink,cursor:'pointer'}}>Fixed <ChevronDown size={12} style={{color:ALLOY.mute}}/></div></div>
+                                <p style={{fontFamily:ALLOY.fontBody,fontSize:11,color:ALLOY.mute,textAlign:'center' as const,marginBottom:12}}>{calClickCount===0?'Click a start date':calClickCount===1?'Now click an end date':`${fmtLbl(calTempStart)} — ${fmtLbl(calTempEnd)}`}</p>
+                                <div style={{display:'flex',gap:8}}>{renderMon(calStartView,'Start Date')}<div style={{width:1,background:ALLOY.line,flexShrink:0}}/>{renderMon(calEndView,'End Date')}</div>
+                                <div style={{display:'flex',justifyContent:'flex-end',alignItems:'center',gap:14,borderTop:`1px solid ${ALLOY.line}`,paddingTop:14,marginTop:16}}>
+                                  <button onClick={()=>{setShowCalendarPicker(false);setCalTempStart(cs);setCalTempEnd(ce)}} style={{background:'none',border:'none',color:ALLOY.blue1,cursor:'pointer',fontFamily:ALLOY.fontBody,fontSize:14,fontWeight:600,padding:'6px 12px'}}>Cancel</button>
+                                  <button disabled={calClickCount<2} onClick={()=>{const fs=calTempStart||cs,fe=calTempEnd||ce;updateMulti({dateStart:fs,dateEnd:fe});setActiveFetchStart(fs);setActiveFetchEnd(fe);try{localStorage.setItem(LS_DATE_KEY,JSON.stringify({start:fs,end:fe}))}catch{};setShowCalendarPicker(false);fetchGA4(undefined,fs,fe)}} style={{background:calClickCount<2?ALLOY.line:ALLOY.blue1,border:'none',borderRadius:999,color:calClickCount<2?ALLOY.mute:ALLOY.white,cursor:calClickCount<2?'not-allowed':'pointer',fontFamily:ALLOY.fontBody,fontSize:14,fontWeight:600,padding:'10px 28px',transition:'background 0.15s'}}>Apply</button>
+                                </div>
+                              </div></>)}
+                            </div>)
+                          })()}
+                          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:8}}>
+                            <span style={{fontFamily:ALLOY.fontBody,fontSize:12,color:ALLOY.ink}}>Comparison date range</span>
+                            <div style={{width:36,height:20,borderRadius:2,background:ALLOY.line,position:'relative',cursor:'pointer'}}><div style={{width:16,height:16,borderRadius:'50%',background:ALLOY.white,position:'absolute',top:2,left:2,boxShadow:'0 1px 3px rgba(0,0,0,0.2)'}}/></div>
                           </div>
                         </div>
 
