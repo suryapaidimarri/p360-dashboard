@@ -830,12 +830,14 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     setGa4Data(null)
   }
 
-  async function fetchGA4(propertyId?: string) {
+  async function fetchGA4(propertyId?: string, startOverride?: string, endOverride?: string) {
     const pid = propertyId || selectedProperty
     if (!pid) return
     setLoadingData(true)
     try {
-      const res = await fetch(`/api/ga4?client_id=${clientId}&property_id=${pid}&start_date=${activeFetchStart || dateRange}&end_date=${activeFetchEnd || 'today'}`)
+      const sd = startOverride || activeFetchStart || dateRange
+      const ed = endOverride || activeFetchEnd || 'today'
+      const res = await fetch(`/api/ga4?client_id=${clientId}&property_id=${pid}&start_date=${sd}&end_date=${ed}`)
       const data = await res.json()
       if (data.connected) {
         setGa4Data(data)
@@ -924,6 +926,34 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
         setWidgetSizes(prev => ({ ...data.value, ...prev }))
       }
     } catch {}
+  }
+
+  async function loadGA4Events(startDate?: string, endDate?: string) {
+    if (!connection?.connected || !selectedProperty) return
+    const sd = startDate ?? activeFetchStart ?? dateRange
+    const ed = endDate ?? activeFetchEnd ?? 'today'
+    try {
+      const res = await fetch(`/api/ga4/custom?client_id=${clientId}&property_id=${selectedProperty}&dimensions=eventName&metrics=eventCount&start_date=${sd}&end_date=${ed}`)
+      const data = await res.json()
+      if (data.rows) {
+        setGa4EventRows(data.rows.map((r: any) => ({ d: r.dimensionValues?.[0]?.value, v: parseInt(r.metricValues?.[0]?.value || '0') })))
+        setGa4EventNames(data.rows.map((r: any) => r.dimensionValues?.[0]?.value).filter(Boolean))
+      }
+    } catch {}
+  }
+
+  async function loadGA4Filters() {
+    setLoadingFilters(true)
+    try {
+      if (connection?.connected && selectedProperty) {
+        const res = await fetch(`/api/ga4/custom?client_id=${clientId}&property_id=${selectedProperty}&dimensions=sessionDefaultChannelGroup&metrics=sessions&start_date=${dateRange}&end_date=today`)
+        const data = await res.json()
+        if (data.rows) {
+          setGa4Filters(data.rows.map((r: any) => ({ name: r.dimensionValues?.[0]?.value, type: 'ga4' as const })))
+        }
+      }
+    } catch {}
+    setLoadingFilters(false)
   }
 
   useEffect(() => {
