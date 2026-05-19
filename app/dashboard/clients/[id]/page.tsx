@@ -249,24 +249,45 @@ function DynamicChart({ chartType, data, height = 80, dimensions = ['Date'], met
     )
   }
   if (chartType === 'table') {
-    const dimLabel = dimensions[0] || 'Dimension'
-    const metLabel = metrics[0] || 'Value'
+    const dimLabel   = dimensions[0] || 'Dimension'
+    const showHeader = opts.tableShowHeader !== false
+    const showRowNum = opts.tableRowNumbers === true
+    const tFontSize  = opts.tableFontSize   || '11px'
+    const tFontFam   = opts.tableFontFamily || ALLOY.fontBody
+    const headerBg   = opts.tableHeaderBg   || ALLOY.paper
+    const oddBg      = opts.tableOddRow     || ALLOY.white
+    const evenBg     = opts.tableEvenRow    || ALLOY.paper
+    const cellBorder = opts.tableCellBorder || ALLOY.line
+    const missing    = opts.tableMissingData || 'Show "null"'
+    const dimAligns  = (opts.dimAlign as string[]) || dimensions.map(() => 'left')
+    const fmtVal     = (v: any) => {
+      if (v == null || v === '') return missing === 'Show "0"' ? '0' : missing === 'Hide row' ? null : 'null'
+      return typeof v === 'number' ? v.toLocaleString() : String(v)
+    }
     return (
-      <div style={{ height, overflowY:'auto' }}>
-        <table style={{ width:'100%', fontSize:10, borderCollapse:'collapse', fontFamily:ALLOY.fontBody }}>
-          <thead>
-            <tr style={{ background:ALLOY.paper }}>
-              <th style={{ padding:'5px 8px', textAlign:'left', fontWeight:600, color:ALLOY.mute, borderBottom:`2px solid ${ALLOY.line}` }}>{dimLabel}</th>
-              {metrics.map((m, i) => <th key={i} style={{ padding:'5px 8px', textAlign:'right', fontWeight:600, color:ALLOY.mute, borderBottom:`2px solid ${ALLOY.line}` }}>{m}</th>)}
-            </tr>
-          </thead>
-          <tbody>
-            {data.slice(0, Math.floor(height/22) || 6).map((d:any, i:number) => (
-              <tr key={i} style={{ borderBottom:`1px solid ${ALLOY.line}`, background: i%2===0 ? ALLOY.white : ALLOY.paper }}>
-                <td style={{ padding:'4px 8px', color:'#444', fontWeight:500 }}>{d.d}</td>
-                {metrics.map((_, mi) => <td key={mi} style={{ padding:'4px 8px', textAlign:'right', fontWeight:600, color:ALLOY.ink }}>{d.v?.toLocaleString()}</td>)}
+      <div style={{ height, overflowY:'auto' as const }}>
+        <table style={{ width:'100%', fontSize:tFontSize, borderCollapse:'collapse', fontFamily:tFontFam }}>
+          {showHeader && (
+            <thead>
+              <tr style={{ background:headerBg }}>
+                {showRowNum && <th style={{ padding:'4px 6px', fontWeight:600, color:ALLOY.mute, borderBottom:`2px solid ${cellBorder}`, width:28, textAlign:'center' as const }}>#</th>}
+                <th style={{ padding:'5px 8px', textAlign:(dimAligns[0]||'left') as any, fontWeight:600, color:ALLOY.mute, borderBottom:`2px solid ${cellBorder}` }}>{dimLabel}</th>
+                {metrics.map((m, i) => <th key={i} style={{ padding:'5px 8px', textAlign:'right', fontWeight:600, color:ALLOY.mute, borderBottom:`2px solid ${cellBorder}` }}>{m}</th>)}
               </tr>
-            ))}
+            </thead>
+          )}
+          <tbody>
+            {data.slice(0, Math.floor(height/22) || 6).map((d:any, i:number) => {
+              const fv = fmtVal(d.v)
+              if (fv === null) return null
+              return (
+                <tr key={i} style={{ borderBottom:`1px solid ${cellBorder}`, background: i%2===0 ? oddBg : evenBg }}>
+                  {showRowNum && <td style={{ padding:'4px 6px', color:ALLOY.mute, textAlign:'center' as const, fontSize:'9px' }}>{i+1}</td>}
+                  <td style={{ padding:'4px 8px', color:'#444', fontWeight:500, textAlign:(dimAligns[0]||'left') as any }}>{d.d}</td>
+                  {metrics.map((_, mi) => <td key={mi} style={{ padding:'4px 8px', textAlign:'right', fontWeight:600, color:ALLOY.ink }}>{fv}</td>)}
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
@@ -812,9 +833,14 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
         textColor: w.textColor,
         borderColor: w.borderColor,
         bgHex: w.bgHex,
-        showAnomalies: w.showAnomalies,
-        showForecast: w.showForecast,
-        showIntegIcon: w.showIntegIcon,
+        showAnomalies: w.showAnomalies, showForecast: w.showForecast, showIntegIcon: w.showIntegIcon,
+        showTitle: (w as any).showTitle, chartHeaderMode: (w as any).chartHeaderMode, headerFontColor: (w as any).headerFontColor,
+        borderShadow: (w as any).borderShadow, borderWeight: (w as any).borderWeight, borderStyle: (w as any).borderStyle, borderRadius: (w as any).borderRadius,
+        tableShowHeader: (w as any).tableShowHeader, tableRowNumbers: (w as any).tableRowNumbers, tableWrapText: (w as any).tableWrapText,
+        tableHScroll: (w as any).tableHScroll, tableCompact: (w as any).tableCompact, tableMissingData: (w as any).tableMissingData,
+        tableFontSize: (w as any).tableFontSize, tableFontFamily: (w as any).tableFontFamily,
+        tableHeaderBg: (w as any).tableHeaderBg, tableOddRow: (w as any).tableOddRow, tableEvenRow: (w as any).tableEvenRow, tableCellBorder: (w as any).tableCellBorder,
+        dimAlign: (w as any).dimAlign,
         dimensions: (w as any).dimensions,
         metrics: (w as any).metrics,
         filters: (w as any).filters,
@@ -1602,7 +1628,9 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
           {editControls}
           <ResizeHandle id={w.id}/>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6 }}>
-            <span style={{ fontSize:12, color:ALLOY.mute, fontWeight:500, fontFamily:ALLOY.fontBody }}>{w.title}</span>
+            {(w as any).chartHeaderMode !== 'Never show' && (
+              <span style={{ fontSize:12, color:(w as any).headerFontColor || ALLOY.mute, fontWeight:500, fontFamily:ALLOY.fontBody }}>{w.title}</span>
+            )}
             <div style={{ display:'flex', alignItems:'center', gap:6 }}>
               {w.change && <span style={{ fontSize:10, fontWeight:700, padding:'2px 6px', borderRadius:2, color:w.up?ALLOY.green1:ALLOY.red1, background:w.up?ALLOY.green4:ALLOY.red4, fontFamily:ALLOY.fontLabel }}>{w.up?'▲':'▼'} {w.change}</span>}
               {connection?.connected && <span style={{ fontSize:9, color:ALLOY.green1, fontWeight:600, fontFamily:ALLOY.fontLabel }}>● Live</span>}
@@ -2867,74 +2895,192 @@ Alloy Intelligence`)
                     )
                   })()}
                   {editTab==='Display' && (
-                    <div style={{ padding:'4px 0' }}>
+                    <div style={{ padding:'0' }}>
+                      {/* ── Helper sub-components ── */}
+                      {(() => {
+                        const dw = editingWidget as any
+                        const BG_MAP: Record<string,string> = { white:ALLOY.white, blue:ALLOY.blue1, green:ALLOY.green1, red:ALLOY.red1 }
 
-                      {/* Toggle row helper */}
-                      {[
-                        { key:'showAnomalies',  label:'Show Anomalies' },
-                        { key:'showForecast',   label:'Show Forecast' },
-                        { key:'showIntegIcon',  label:'Show Integration Icon' },
-                      ].map(({ key, label }) => {
-                        const on = !!(editingWidget as any)[key]
-                        return (
-                          <div key={key} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 0', borderBottom:`1px solid ${ALLOY.line}` }}>
-                            <span style={{ fontFamily:ALLOY.fontBody, fontSize:14, fontWeight:500, color:ALLOY.ink }}>{label}</span>
-                            <div
-                              onClick={() => {
-                                const updated = {...editingWidget, [key]: !on } as any
-                                setEditingWidget(updated)
-                                setWidgets(prev => prev.map(w => w.id === updated.id ? updated : w))
-                              }}
-                              style={{ width:44, height:24, borderRadius:2, background: on ? ALLOY.blue1 : ALLOY.line, position:'relative', cursor:'pointer', transition:'background 0.2s', flexShrink:0 }}>
-                              <div style={{ width:20, height:20, borderRadius:'50%', background:ALLOY.white, position:'absolute', top:2, left: on ? 22 : 2, boxShadow:'0 1px 4px rgba(0,0,0,0.2)', transition:'left 0.2s' }}/>
-                            </div>
+                        // Scoped updaters for Display tab
+                        const updateField = (key: string, val: any) => {
+                          setEditingWidget(prev => {
+                            if (!prev) return prev
+                            const updated = { ...prev, [key]: val } as any
+                            setWidgets(ws => ws.map(w => w.id === updated.id ? updated : w))
+                            return updated
+                          })
+                        }
+                        const updateMulti = (patch: Record<string, any>) => {
+                          setEditingWidget(prev => {
+                            if (!prev) return prev
+                            const updated = { ...prev, ...patch } as any
+                            setWidgets(ws => ws.map(w => w.id === updated.id ? updated : w))
+                            return updated
+                          })
+                        }
+
+                        // Reusable row components
+                        const SectionHead = ({ label }: { label: string }) => (
+                          <div style={{ padding:'14px 16px 8px', borderBottom:`1px solid ${ALLOY.line}`, background:ALLOY.paper }}>
+                            <span style={{ fontFamily:ALLOY.fontLabel, fontSize:9, fontWeight:700, color:ALLOY.mute, textTransform:'uppercase' as const, letterSpacing:'0.12em' }}>{label}</span>
                           </div>
                         )
-                      })}
-
-                      {/* Color pickers */}
-                      <div style={{ marginTop:20 }}>
-                        {[
-                          { label:'Text Color',  field:'textColor',  default:ALLOY.ink },
-                          { label:'Background',  field:'color',      default:ALLOY.white },
-                          { label:'Border',      field:'borderColor',default:ALLOY.line },
-                        ].map(({ label, field, default: def }) => {
-                          const BG_OPTIONS: {[key:string]:string} = {
-                            white:ALLOY.white, blue:ALLOY.blue1, green:ALLOY.green1, red:ALLOY.red1
-                          }
-                          const currentVal = field === 'color'
-                            ? ((editingWidget as any).bgHex || BG_OPTIONS[(editingWidget as any).color] || def)
-                            : ((editingWidget as any)[field] || def)
+                        const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
+                          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 16px', borderBottom:`1px solid ${ALLOY.line}` }}>
+                            <span style={{ fontFamily:ALLOY.fontBody, fontSize:13, color:ALLOY.ink }}>{label}</span>
+                            {children}
+                          </div>
+                        )
+                        const Tog = ({ field }: { field: string }) => {
+                          const on = !!dw[field]
                           return (
-                            <div key={field} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 0', borderBottom:`1px solid ${ALLOY.line}` }}>
-                              <span style={{ fontFamily:ALLOY.fontBody, fontSize:14, fontWeight:500, color:ALLOY.ink }}>{label}</span>
-                              <label style={{ position:'relative', cursor:'pointer' }}>
-                                <div style={{ width:36, height:36, borderRadius:2, background: currentVal, border:'1px solid #e0e0e0', cursor:'pointer', overflow:'hidden' }}/>
-                                <input
-                                  type="color"
-                                  value={currentVal}
-                                  onChange={e => {
-                                    let updated: any
-                                    if (field === 'color') {
-                                      const hex = e.target.value
-                                      const key = hex === ALLOY.blue1 ? 'blue' : hex === ALLOY.green1 ? 'green' : hex === ALLOY.red1 ? 'red' : 'white'
-                                      updated = {...editingWidget, color: key, bgHex: hex}
-                                    } else {
-                                      updated = {...editingWidget, [field]: e.target.value}
-                                    }
-                                    setEditingWidget(updated)
-                                    setWidgets(prev => prev.map(w => w.id === updated.id ? updated : w))
-                                  }}
-                                  style={{ position:'absolute', opacity:0, width:'100%', height:'100%', top:0, left:0, cursor:'pointer' }}
-                                />
-                              </label>
+                            <div onClick={() => updateField(field, !on)}
+                              style={{ width:40, height:22, borderRadius:11, background: on ? ALLOY.green1 : ALLOY.line, position:'relative', cursor:'pointer', transition:'background 0.2s', flexShrink:0 }}>
+                              <div style={{ width:18, height:18, borderRadius:'50%', background:ALLOY.white, position:'absolute', top:2, left: on ? 20 : 2, transition:'left 0.2s', boxShadow:'0 1px 3px rgba(0,0,0,0.25)' }}/>
                             </div>
                           )
-                        })}
-                      </div>
+                        }
+                        const ColorPick = ({ field, def }: { field: string; def: string }) => {
+                          const val = field === 'bgColor'
+                            ? (dw.bgHex || BG_MAP[dw.color] || def)
+                            : (dw[field] || def)
+                          return (
+                            <label style={{ cursor:'pointer', position:'relative' as const }}>
+                              <div style={{ width:32, height:32, borderRadius:2, background:val, border:`1px solid ${ALLOY.line}` }}/>
+                              <input type="color" value={val}
+                                onChange={e => {
+                                  if (field === 'bgColor') {
+                                    const hex = e.target.value
+                                    const key = hex === ALLOY.blue1 ? 'blue' : hex === ALLOY.green1 ? 'green' : hex === ALLOY.red1 ? 'red' : 'white'
+                                    updateMulti({ color: key, bgHex: hex })
+                                  } else {
+                                    updateField(field, e.target.value)
+                                  }
+                                }}
+                                style={{ position:'absolute' as const, opacity:0, inset:0, cursor:'pointer' }}/>
+                            </label>
+                          )
+                        }
+                        const Select = ({ field, options, def }: { field: string; options: string[]; def?: string }) => (
+                          <select value={dw[field] || def || options[0]}
+                            onChange={e => updateField(field, e.target.value)}
+                            style={{ background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'5px 8px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, cursor:'pointer' }}>
+                            {options.map(o => <option key={o} value={o}>{o}</option>)}
+                          </select>
+                        )
 
-                      <button onClick={saveWidget} style={{ width:'100%', background:ALLOY.blue1, border:'none', borderRadius:2, padding:'11px', fontFamily:ALLOY.fontBody, fontSize:13, fontWeight:600, color:ALLOY.white, cursor:'pointer', marginTop:24 }}>Save Changes</button>
+                        const dims = (dw.dimensions || []) as string[]
+                        const mets = (dw.metrics || []) as string[]
 
+                        return (
+                          <>
+                            {/* ── Chart title ── */}
+                            <SectionHead label="Chart title"/>
+                            <Row label="Show title"><Tog field="showTitle"/></Row>
+
+                            {/* ── Display toggles ── */}
+                            <SectionHead label="Display"/>
+                            <Row label="Show Anomalies"><Tog field="showAnomalies"/></Row>
+                            <Row label="Show Forecast"><Tog field="showForecast"/></Row>
+                            <Row label="Show Integration Icon"><Tog field="showIntegIcon"/></Row>
+
+                            {/* ── Table style (shown when chartType is table/pivot) ── */}
+                            {(dw.chartType === 'table' || dw.chartType === 'pivot') && (<>
+                              <SectionHead label="Table style"/>
+                              <Row label="Show header"><Tog field="tableShowHeader"/></Row>
+                              <Row label="Row numbers"><Tog field="tableRowNumbers"/></Row>
+                              <Row label="Wrap text"><Tog field="tableWrapText"/></Row>
+                              <Row label="Horizontal scrolling"><Tog field="tableHScroll"/></Row>
+                              <Row label="Compact pagination"><Tog field="tableCompact"/></Row>
+                              <Row label="Missing data">
+                                <Select field="tableMissingData" options={['Show "null"','Show "0"','Hide row']}/>
+                              </Row>
+                              <Row label="Font family">
+                                <Select field="tableFontFamily" options={['DM Sans','Barlow','Inter','Roboto','Montserrat']}/>
+                              </Row>
+                              <Row label="Font size">
+                                <Select field="tableFontSize" options={['10px','11px','12px','13px','14px','16px']} def="12px"/>
+                              </Row>
+
+                              <SectionHead label="Table colors"/>
+                              <Row label="Header background"><ColorPick field="tableHeaderBg" def="#f0f0f0"/></Row>
+                              <Row label="Odd row color"><ColorPick field="tableOddRow" def="#ffffff"/></Row>
+                              <Row label="Even row color"><ColorPick field="tableEvenRow" def="#fafafa"/></Row>
+                              <Row label="Cell border color"><ColorPick field="tableCellBorder" def={ALLOY.line}/></Row>
+
+                              {/* Dimension alignment */}
+                              {dims.length > 0 && (<>
+                                <SectionHead label="Dimensions"/>
+                                {dims.map((d, i) => (
+                                  <div key={i} style={{ padding:'10px 16px', borderBottom:`1px solid ${ALLOY.line}` }}>
+                                    <p style={{ fontFamily:ALLOY.fontBody, fontSize:12, fontWeight:600, color:ALLOY.ink, marginBottom:8 }}>Dimension #{i+1}</p>
+                                    <div style={{ display:'flex', gap:6 }}>
+                                      {(['left','center','right'] as const).map(a => (
+                                        <button key={a} onClick={() => {
+                                          const arr = [...(dw.dimAlign || dims.map(()=>'left'))]
+                                          arr[i] = a
+                                          updateField('dimAlign', arr)
+                                        }} style={{ flex:1, padding:'6px 4px', borderRadius:2, border:`1px solid ${(dw.dimAlign?.[i]||'left')===a?ALLOY.blue1:ALLOY.line}`, background:(dw.dimAlign?.[i]||'left')===a?ALLOY.blue4:ALLOY.white, cursor:'pointer', fontFamily:ALLOY.fontLabel, fontSize:9, color:ALLOY.ink, textAlign:'center' as const }}>
+                                          {a === 'left' ? '⬅' : a === 'center' ? '↔' : '➡'}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ))}
+                              </>)}
+
+                              {/* Metric settings */}
+                              {mets.length > 0 && (<>
+                                <SectionHead label="Metrics"/>
+                                {mets.map((m, i) => (
+                                  <div key={i} style={{ padding:'10px 16px', borderBottom:`1px solid ${ALLOY.line}` }}>
+                                    <p style={{ fontFamily:ALLOY.fontBody, fontSize:12, fontWeight:600, color:ALLOY.ink, marginBottom:8 }}>Metric #{i+1}</p>
+                                    <Row label="Appearance">
+                                      <Select field={`metAppearance_${i}`} options={['Number','Bar','Heatmap']}/>
+                                    </Row>
+                                    <Row label="Compact numbers">
+                                      <Tog field={`metCompact_${i}`}/>
+                                    </Row>
+                                    <Row label="Decimal precision">
+                                      <Select field={`metDecimals_${i}`} options={['auto','0','1','2','3']}/>
+                                    </Row>
+                                  </div>
+                                ))}
+                              </>)}
+                            </>)}
+
+                            {/* ── Background & border ── */}
+                            <SectionHead label="Background & border"/>
+                            <Row label="Background"><ColorPick field="bgColor" def={ALLOY.white}/></Row>
+                            <Row label="Text Color"><ColorPick field="textColor" def={ALLOY.ink}/></Row>
+                            <Row label="Border color"><ColorPick field="borderColor" def={ALLOY.line}/></Row>
+                            <Row label="Border weight">
+                              <Select field="borderWeight" options={['None','1px','2px','3px']}/>
+                            </Row>
+                            <Row label="Border style">
+                              <Select field="borderStyle" options={['Solid','Dashed','Dotted']}/>
+                            </Row>
+                            <Row label="Border radius">
+                              <Select field="borderRadius" options={['0','2px','4px','8px','16px']}/>
+                            </Row>
+                            <Row label="Add border shadow"><Tog field="borderShadow"/></Row>
+
+                            {/* ── Chart header ── */}
+                            <SectionHead label="Chart header"/>
+                            <Row label="Chart header">
+                              <Select field="chartHeaderMode" options={['Always show','Show on hover','Never show']}/>
+                            </Row>
+                            <Row label="Header font color"><ColorPick field="headerFontColor" def={ALLOY.mute}/></Row>
+
+                            <div style={{ padding:16 }}>
+                              <button onClick={saveWidget}
+                                style={{ width:'100%', background:ALLOY.green1, border:'none', borderRadius:2, padding:'10px', fontFamily:ALLOY.fontLabel, fontSize:9, fontWeight:700, color:ALLOY.ink, cursor:'pointer', letterSpacing:'0.06em', textTransform:'uppercase' as const }}>
+                                Save Changes
+                              </button>
+                            </div>
+                          </>
+                        )
+                      })()}
                     </div>
                   )}
                 </div>
