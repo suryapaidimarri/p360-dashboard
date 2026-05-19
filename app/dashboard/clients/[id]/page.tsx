@@ -1386,6 +1386,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
         title: `${resolvedWidget.title} (Copy)`,
       }
       setWidgets(prev => {
+        // Guard: if this cloneId already exists (double-fire), skip
+        if (prev.some(w => w.id === cloneId)) return prev
         const updated = [...prev, cloned]
         try {
           localStorage.setItem(LS_WIDGETS_KEY, JSON.stringify(
@@ -1480,7 +1482,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                 <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:'inherit' }}>Copy</span>
               </div>
               {/* Clone */}
-              <div onClick={handleClone}
+              <div onClick={e => { e.stopPropagation(); handleClone() }}
                 style={{ display:'flex', alignItems:'center', gap:9, padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, cursor:'pointer', userSelect:'none' as const, borderLeft:'2px solid transparent' }}
                 onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.background=ALLOY.green4; el.style.color=ALLOY.green1; el.style.borderLeft=`2px solid ${ALLOY.green1}` }}
                 onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.background='none'; el.style.color=ALLOY.ink; el.style.borderLeft='2px solid transparent' }}>
