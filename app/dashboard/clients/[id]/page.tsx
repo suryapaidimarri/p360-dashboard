@@ -995,25 +995,31 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   // Use a ref so drop handler always reads the latest dragId (no stale closure)
   const dragIdRef = React.useRef<string|null>(null)
   const justDroppedRef = React.useRef(false)  // prevents click-after-drop from selecting widget
-  function handleDragStart(id: string) {
+  function handleDragStart(id: string, e?: React.DragEvent) {
     if (!editMode) return
     dragIdRef.current = id
     setDragId(id)
+    // Must set dataTransfer for drop to fire in all browsers
+    if (e?.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move'
+      e.dataTransfer.setData('text/plain', id)
+    }
   }
   function handleDragEnd() {
-    dragIdRef.current = null
+    // NOTE: Do NOT clear dragIdRef here — onDragEnd fires BEFORE onDrop in all browsers.
+    // dragIdRef is cleared inside handleDrop instead.
     setDragId(null)
     setDragOver(null)
-    justDroppedRef.current = true
-    setTimeout(() => { justDroppedRef.current = false }, 200)
   }
   function handleDrop(e: React.DragEvent, targetId: string) {
     e.preventDefault()
     e.stopPropagation()
-    const srcId = dragIdRef.current
-    dragIdRef.current = null
+    const srcId = dragIdRef.current   // still valid — dragEnd already fired but we didn't clear it
+    dragIdRef.current = null           // clear AFTER reading
     setDragId(null)
     setDragOver(null)
+    justDroppedRef.current = true
+    setTimeout(() => { justDroppedRef.current = false }, 300)
     if (!editMode || !srcId || srcId === targetId) return
     // Build full ordered list
     const kpiIds  = widgets.filter(w => !isWidgetRemoved(w.id)).map(w => w.id)
@@ -2528,7 +2534,7 @@ Alloy Intelligence`)
                 }
 
                 return (
-                  <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:10, alignItems:'start' }}>
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:10, alignItems:'start' }} onDragOver={e => e.preventDefault()}>
                     {preview.map((id: string) => {
                       const isBeingDragged = id === dragId
                       const isDropTarget   = id === dragOver && dragId !== id
@@ -2536,8 +2542,8 @@ Alloy Intelligence`)
                         <div
                           key={id}
                           draggable={editMode}
-                          onDragStart={e => { e.stopPropagation(); handleDragStart(id) }}
-                          onDragOver={e => { e.preventDefault(); e.stopPropagation(); if (editMode && dragIdRef.current !== id) setDragOver(id) }}
+                          onDragStart={e => { e.stopPropagation(); handleDragStart(id, e) }}
+                          onDragOver={e => { e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect = 'move'; if (editMode && dragIdRef.current !== id) setDragOver(id) }}
                           onDragEnter={e => { e.preventDefault(); if (editMode && dragIdRef.current !== id) setDragOver(id) }}
                           onDragEnd={handleDragEnd}
                           onDrop={e => handleDrop(e, id)}
