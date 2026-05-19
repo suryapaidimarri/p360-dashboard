@@ -558,9 +558,9 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [openClauseValueIdx, setOpenClauseValueIdx] = useState<number|null>(null)
   const [ga4EventNames, setGa4EventNames] = useState<string[]>([])
   const [eventSearch, setEventSearch] = useState('')
-  const [selectedEventValues, setSelectedEventValues] = useState<{[idx: number]: string[]}>({})
+  const [selectedEventValues, setSelectedEventValues] = useState({} as {[idx: number]: string[]})
   const [filterSearch, setFilterSearch] = useState('')
-  const [ga4Filters, setGa4Filters] = useState<{name:string; type:'ga4'|'other'}[]>([])
+  const [ga4Filters, setGa4Filters] = useState([] as {name:string; type:string}[])
   const [loadingFilters, setLoadingFilters] = useState(false)
   const [showDimDropdown, setShowDimDropdown] = useState(false)
   const [showMetDropdown, setShowMetDropdown] = useState(false)
@@ -885,7 +885,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   // No cache needed - derive data directly from ga4Data on every render
 
   // Map existing ga4Data to chart points based on dimension + metric selection
-  function getWidgetDataFallback(w: any): Array<{d: string; v: number}> {
+  function getWidgetDataFallback(w: any) {
     const dims: string[] = ((w.dimensions as string[])?.length > 0 ? w.dimensions : null) || ['Date']
     const mets: string[] = ((w.metrics as string[])?.length > 0 ? w.metrics : null) || ['Sessions']
     const appliedFilters: string[] = (w.filters as string[]) || []
@@ -983,7 +983,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   }
 
   // Get chart data — always derive fresh from ga4Data using widget's dimensions/metrics
-  function getWidgetData(w: any): Array<{d: string; v: number}> {
+  function getWidgetData(w: any) {
     return getWidgetDataFallback(w)
   }
   const STATIC_IDS = ['w1','w2','w3','w4','c1','c2','c3','d1','d2','d3','v1','bounce']
