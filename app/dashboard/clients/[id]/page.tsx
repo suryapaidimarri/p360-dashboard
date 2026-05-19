@@ -2432,7 +2432,6 @@ Alloy Intelligence`)
                 </div>
                 <DynamicChart chartType={widgets.find(x=>x.id==='v1')?.chartType || 'area'} data={getWidgetData(widgets.find(x=>x.id==='v1') || {})} height={130} dimensions={(widgets.find(x=>x.id==='v1') as any)?.dimensions} metrics={(widgets.find(x=>x.id==='v1') as any)?.metrics}/>
               </ChartCard>}
-            </div>
 
             {/* Dynamically added / cloned widgets */}
             {dynamicWidgets.filter(w => !isWidgetRemoved(w.id)).length >= 1 && (
@@ -2463,7 +2462,7 @@ Alloy Intelligence`)
                 )})}
               </div>
             )}
-          </div>
+            </div>
           )}
         </div>
 
