@@ -1199,8 +1199,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     }
 
     const menuItemStyle = { display:'flex', alignItems:'center', gap:9, padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, cursor:'pointer', userSelect:'none' as const, borderLeft:'2px solid transparent' }
-    const menuItemHover = (e: React.MouseEvent, color = ALLOY.green1) => { const el = e.currentTarget as HTMLDivElement; el.style.background=color==='red'?ALLOY.red4:ALLOY.green4; el.style.color=color==='red'?ALLOY.red1:ALLOY.green1; el.style.borderLeft=`2px solid ${color==='red'?ALLOY.red1:ALLOY.green1}` }
-    const menuItemLeave = (e: React.MouseEvent, color = ALLOY.ink) => { const el = e.currentTarget as HTMLDivElement; el.style.background='none'; el.style.color=color; el.style.borderLeft='2px solid transparent' }
+    const menuItemHover = (e: React.MouseEvent, color: string = ALLOY.green1) => { const el = e.currentTarget as HTMLDivElement; el.style.background=color==='red'?ALLOY.red4:ALLOY.green4; el.style.color=color==='red'?ALLOY.red1:ALLOY.green1; el.style.borderLeft=`2px solid ${color==='red'?ALLOY.red1:ALLOY.green1}` }
+    const menuItemLeave = (e: React.MouseEvent, color: string = ALLOY.ink) => { const el = e.currentTarget as HTMLDivElement; el.style.background='none'; el.style.color=color; el.style.borderLeft='2px solid transparent' }
 
     return (
       <div style={{ position:'relative', display:'inline-flex' }}>
