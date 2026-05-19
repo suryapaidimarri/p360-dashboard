@@ -1203,7 +1203,6 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       ds.raf = requestAnimationFrame(animLoop)
     }
     dragState.current!.raf = requestAnimationFrame(animLoop)
-  }
 
     const up = () => {
       const ds = dragState.current
