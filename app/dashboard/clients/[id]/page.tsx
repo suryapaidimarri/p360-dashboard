@@ -1320,26 +1320,107 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   }
   function openDrill(w: Widget) { if (!editMode) { setDrillWidget(w); setDrillChannel('All') } }
 
-  function saveWidgetOrder(order: string[]) {
-    setWidgetOrder(order)
-    try { localStorage.setItem(`alloy_widget_order_${clientId}`, JSON.stringify(order)) } catch {}
-  }
+  // Use refs so event listeners always have fresh values (no stale closure)
+  const widgetsRef = React.useRef(widgets)
+  React.useEffect(() => { widgetsRef.current = widgets }, [widgets])
 
   function reorderWidgets(fromId: string, toId: string) {
     if (fromId === toId) return
-    setWidgets(prev => {
-      const ids = widgetOrder.length > 0 ? widgetOrder : prev.map(w => w.id)
-      const ordered = [...ids.filter(id => prev.some(w => w.id === id)), ...prev.filter(w => !ids.includes(w.id)).map(w => w.id)]
-      const fromIdx = ordered.indexOf(fromId)
-      const toIdx = ordered.indexOf(toId)
-      if (fromIdx === -1 || toIdx === -1) return prev
-      const next = [...ordered]
-      next.splice(fromIdx, 1)
-      next.splice(toIdx, 0, fromId)
-      saveWidgetOrder(next)
-      return next.map(id => prev.find(w => w.id === id)!).filter(Boolean)
-    })
+    const prev = widgetsRef.current
+    const ids = prev.map(w => w.id)
+    const fromIdx = ids.indexOf(fromId)
+    const toIdx = ids.indexOf(toId)
+    if (fromIdx === -1 || toIdx === -1) return
+    const next = [...ids]
+    next.splice(fromIdx, 1)
+    next.splice(toIdx, 0, fromId)
+    const reordered = next.map(id => prev.find(w => w.id === id)!).filter(Boolean)
+    setWidgets(reordered)
+    try { localStorage.setItem(`alloy_widget_order_${clientId}`, JSON.stringify(next)) } catch {}
   }
+
+  // Parent-level mousedown handler for all drag handles — stable, no nested component issues
+  React.useEffect(() => {
+    if (!editMode) return
+    const handleMouseDown = (e: MouseEvent) => {
+      const handle = (e.target as HTMLElement).closest('[data-drag-handle]') as HTMLElement | null
+      if (!handle) return
+      const dragId = handle.dataset.dragHandle!
+      const el = handle.closest('[data-widget-id]') as HTMLElement | null
+      if (!el) return
+
+      e.preventDefault()
+      e.stopPropagation()
+
+      const rect = el.getBoundingClientRect()
+      const offsetX = e.clientX - rect.left
+      const offsetY = e.clientY - rect.top
+
+      // Ghost
+      const ghost = document.createElement('div')
+      ghost.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;background:white;border:2.5px solid #20BB71;border-radius:2px;box-shadow:0 16px 40px rgba(0,0,0,0.2);opacity:0.92;pointer-events:none;z-index:99999;transform:rotate(1.5deg) scale(1.02);transition:none;overflow:hidden;`
+      // Add title label inside ghost
+      ghost.innerHTML = `<div style="padding:12px 14px;font-size:13px;font-weight:600;color:#111;font-family:DM Sans,sans-serif;">${el.querySelector('[data-widget-title]')?.textContent || dragId}</div>`
+      document.body.appendChild(ghost)
+
+      el.style.opacity = '0.25'
+
+      let currentOverId: string | null = null
+
+      const onMove = (mv: MouseEvent) => {
+        ghost.style.left = (mv.clientX - offsetX) + 'px'
+        ghost.style.top = (mv.clientY - offsetY) + 'px'
+
+        ghost.style.pointerEvents = 'none'
+        const under = document.elementFromPoint(mv.clientX, mv.clientY) as HTMLElement | null
+        const overEl = under?.closest('[data-widget-id]') as HTMLElement | null
+        const overId = overEl?.dataset?.widgetId || null
+
+        if (overId !== currentOverId) {
+          // Remove highlight from old
+          if (currentOverId) {
+            const old = document.querySelector(`[data-widget-id="${currentOverId}"]`) as HTMLElement | null
+            if (old) { old.style.outline = ''; old.style.background = '' }
+          }
+          // Add highlight to new
+          if (overId && overId !== dragId) {
+            const newEl = document.querySelector(`[data-widget-id="${overId}"]`) as HTMLElement | null
+            if (newEl) { newEl.style.outline = '2.5px dashed #20BB71'; newEl.style.outlineOffset = '2px' }
+          }
+          currentOverId = overId !== dragId ? overId : null
+        }
+      }
+
+      const onUp = (mv: MouseEvent) => {
+        // Cleanup highlight
+        if (currentOverId) {
+          const overEl = document.querySelector(`[data-widget-id="${currentOverId}"]`) as HTMLElement | null
+          if (overEl) { overEl.style.outline = ''; overEl.style.background = '' }
+        }
+
+        ghost.style.pointerEvents = 'none'
+        const under = document.elementFromPoint(mv.clientX, mv.clientY) as HTMLElement | null
+        const overEl = under?.closest('[data-widget-id]') as HTMLElement | null
+        const overId = overEl?.dataset?.widgetId
+
+        if (overId && overId !== dragId) reorderWidgets(dragId, overId)
+
+        el.style.opacity = ''
+        document.body.removeChild(ghost)
+        setDraggingId(null)
+        setDragOverId(null)
+        window.removeEventListener('mousemove', onMove)
+        window.removeEventListener('mouseup', onUp)
+      }
+
+      setDraggingId(dragId)
+      window.addEventListener('mousemove', onMove)
+      window.addEventListener('mouseup', onUp)
+    }
+
+    document.addEventListener('mousedown', handleMouseDown)
+    return () => document.removeEventListener('mousedown', handleMouseDown)
+  }, [editMode, clientId])
   function addWidget(chartType: string, label: string) {
     const newId = `w${Date.now()}`
     const isKpi = chartType === 'scorecard' || chartType === 'sparkline'
@@ -1673,78 +1754,18 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     )
   }
 
-  // ── Drag Handle ─────────────────────────────────────────────────────────────
+  // ── Drag Handle — renders grip icon, actual DnD logic lives at parent level ──
   function DragHandle({ id }: { id: string }) {
     if (!editMode) return null
-    const isDragging = draggingId === id
-
-    const handleMouseDown = (e: React.MouseEvent) => {
-      e.preventDefault()
-      e.stopPropagation()
-
-      const el = (e.currentTarget as HTMLElement).closest('[data-widget-id]') as HTMLElement
-      if (!el) return
-      const rect = el.getBoundingClientRect()
-
-      // Create ghost clone
-      const ghost = el.cloneNode(true) as HTMLElement
-      ghost.id = 'dnd-ghost'
-      ghost.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;opacity:0.85;pointer-events:none;z-index:99999;transform:rotate(1.5deg) scale(1.02);box-shadow:0 16px 40px rgba(0,0,0,0.18);transition:none;border:2px solid ${ALLOY.green1};border-radius:2px;`
-      document.body.appendChild(ghost)
-
-      // Dim original
-      el.style.opacity = '0.3'
-      el.style.transition = 'none'
-
-      setDraggingId(id)
-
-      const offsetX = e.clientX - rect.left
-      const offsetY = e.clientY - rect.top
-
-      const onMove = (mv: MouseEvent) => {
-        ghost.style.left = (mv.clientX - offsetX) + 'px'
-        ghost.style.top = (mv.clientY - offsetY) + 'px'
-
-        // Find which widget we're hovering over
-        ghost.style.display = 'none'
-        const under = document.elementFromPoint(mv.clientX, mv.clientY)
-        ghost.style.display = ''
-        const overEl = under?.closest('[data-widget-id]') as HTMLElement | null
-        const overId = overEl?.dataset.widgetId || null
-        setDragOverId(overId !== id ? overId : null)
-      }
-
-      const onUp = (mv: MouseEvent) => {
-        ghost.style.display = 'none'
-        const under = document.elementFromPoint(mv.clientX, mv.clientY)
-        ghost.style.display = ''
-        const overEl = under?.closest('[data-widget-id]') as HTMLElement | null
-        const overId = overEl?.dataset.widgetId
-
-        if (overId && overId !== id) reorderWidgets(id, overId)
-
-        el.style.opacity = ''
-        el.style.transition = ''
-        document.body.removeChild(ghost)
-        setDraggingId(null)
-        setDragOverId(null)
-        window.removeEventListener('mousemove', onMove)
-        window.removeEventListener('mouseup', onUp)
-      }
-
-      window.addEventListener('mousemove', onMove)
-      window.addEventListener('mouseup', onUp)
-    }
-
     return (
       <div
-        onMouseDown={handleMouseDown}
+        data-drag-handle={id}
         title="Drag to reorder"
-        style={{ position:'absolute', top:6, left:6, cursor: isDragging ? 'grabbing' : 'grab', zIndex:5, opacity: isDragging ? 1 : 0, transition:'opacity 0.15s', padding:2 }}
+        style={{ position:'absolute', top:0, left:0, width:32, height:32, cursor:'grab', zIndex:20, display:'flex', alignItems:'center', justifyContent:'center', opacity:0, transition:'opacity 0.15s' }}
         onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = '1'}
-        onMouseLeave={e => { if (draggingId !== id) (e.currentTarget as HTMLElement).style.opacity = '0' }}
+        onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = '0'}
       >
-        <Grip size={13} style={{ color: isDragging ? ALLOY.green1 : ALLOY.mute }}/>
+        <Grip size={14} style={{ color: ALLOY.mute, pointerEvents:'none' }}/>
       </div>
     )
   }
