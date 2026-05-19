@@ -1414,7 +1414,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
           <MoreHorizontal size={13} style={{ color:ALLOY.ink }}/>
         </button>
         {isOpen && (
-            <div style={{ position:'absolute', right:0, top:'calc(100% + 4px)', background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, boxShadow:'0 4px 16px rgba(0,0,0,0.10)', padding:'4px 0', minWidth:168, zIndex:999 }}
+            <div className="alloy-dropdown" style={{ position:'absolute', right:0, top:'calc(100% + 4px)', background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, boxShadow:'0 4px 16px rgba(0,0,0,0.10)', padding:'4px 0', minWidth:168, zIndex:999 }}
               onClick={e => e.stopPropagation()}>
               {/* Edit */}
               <div onClick={handleEdit}
@@ -1621,7 +1621,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
           onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
           style={{ background:ALLOY.white, borderRadius:2, padding:12, position:'relative', minHeight: widgetSizes[w.id]?.h || 130, cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, border:`2px solid ${borderCol}`, ...selectedRing, ...(widgetSizes[w.id] ? { width: widgetSizes[w.id].w, minWidth: widgetSizes[w.id].w, flex: '0 0 auto' } : { flex: '1 1 220px' }) }}>
           {isSelected && editMode && (
-            <div style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
+            <div className="alloy-editing-badge" style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
               ✦ Editing
             </div>
           )}
@@ -1660,11 +1660,11 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       : '—'
 
     return (
-      <div data-widget-id={w.id}
+      <div data-widget-id={w.id} className={editMode ? '' : 'alloy-card-hover'}
         onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
         style={{ background:bgColor, borderRadius:2, padding:16, position:'relative', minHeight: widgetSizes[w.id]?.h || 110, cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, border:`2px solid ${borderCol}`, ...selectedRing, ...(widgetSizes[w.id] ? { width: widgetSizes[w.id].w, minWidth: widgetSizes[w.id].w, flex: '0 0 auto' } : { flex: '1 1 180px' }) }}>
         {isSelected && editMode && (
-          <div style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
+          <div className="alloy-editing-badge" style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
             ✦ Editing
           </div>
         )}
@@ -1694,7 +1694,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
         onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
         style={{ background:ALLOY.white, borderRadius:2, padding:16, position:'relative', cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, ...(isSelected && editMode ? { border:`2.5px solid ${ALLOY.green1}`, boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` } : { border:`2px solid ${ALLOY.line}` }), ...(sz ? { width: sz.w, minWidth: sz.w, minHeight: sz.h, flex: '0 0 auto' } : { flex: '1 1 260px' }) }}>
         {isSelected && editMode && (
-          <div style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
+          <div className="alloy-editing-badge" style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
             ✦ Editing
           </div>
         )}
@@ -1714,6 +1714,69 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   }
 
   return (
+    <>
+    <style>{`
+      /* ── Alloy animation system ── */
+      @keyframes alloy-fadein    { from { opacity:0 } to { opacity:1 } }
+      @keyframes alloy-slideup   { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:translateY(0) } }
+      @keyframes alloy-slidedown { from { opacity:0; transform:translateY(-6px) } to { opacity:1; transform:translateY(0) } }
+      @keyframes alloy-slidein-right { from { opacity:0; transform:translateX(18px) } to { opacity:1; transform:translateX(0) } }
+      @keyframes alloy-slidein-left  { from { opacity:0; transform:translateX(-18px) } to { opacity:1; transform:translateX(0) } }
+      @keyframes alloy-scalein   { from { opacity:0; transform:scale(0.96) } to { opacity:1; transform:scale(1) } }
+      @keyframes alloy-toast     { from { opacity:0; transform:translateX(-50%) translateY(12px) } to { opacity:1; transform:translateX(-50%) translateY(0) } }
+      @keyframes alloy-spin      { to { transform:rotate(360deg) } }
+
+      .alloy-fadein       { animation: alloy-fadein       0.18s ease both }
+      .alloy-slideup      { animation: alloy-slideup      0.22s cubic-bezier(0.16,1,0.3,1) both }
+      .alloy-slidedown    { animation: alloy-slidedown    0.18s ease both }
+      .alloy-slidein-r    { animation: alloy-slidein-right 0.22s cubic-bezier(0.16,1,0.3,1) both }
+      .alloy-slidein-l    { animation: alloy-slidein-left  0.20s cubic-bezier(0.16,1,0.3,1) both }
+      .alloy-scalein      { animation: alloy-scalein      0.18s cubic-bezier(0.16,1,0.3,1) both }
+      .alloy-toast-in     { animation: alloy-toast        0.28s cubic-bezier(0.16,1,0.3,1) both }
+
+      /* Hover lift on all clickable widget cards */
+      .alloy-card-hover { transition: box-shadow 0.18s ease, transform 0.18s ease, opacity 0.18s ease, border-color 0.15s ease !important }
+      .alloy-card-hover:hover:not([data-editing]) { box-shadow: 0 4px 16px rgba(0,0,0,0.10) !important; transform: translateY(-1px) }
+
+      /* Smooth nav items */
+      .alloy-nav-item { transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease !important }
+      .alloy-nav-item:hover { background: var(--alloy-green-4) !important; color: var(--alloy-green-1) !important }
+
+      /* Button press feel */
+      .alloy-btn { transition: background 0.15s ease, opacity 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease !important }
+      .alloy-btn:active { transform: scale(0.97) !important }
+
+      /* Smooth right panel slide */
+      .alloy-panel-slide { animation: alloy-slidein-right 0.24s cubic-bezier(0.16,1,0.3,1) both }
+
+      /* Tab underline slide */
+      .alloy-tab { transition: color 0.15s ease, border-bottom-color 0.15s ease !important }
+
+      /* Dropdown menus */
+      .alloy-dropdown { animation: alloy-slidedown 0.16s cubic-bezier(0.16,1,0.3,1) both }
+
+      /* Modal backdrop fade */
+      .alloy-modal-bg { animation: alloy-fadein 0.18s ease both }
+      .alloy-modal-card { animation: alloy-scalein 0.22s cubic-bezier(0.16,1,0.3,1) both }
+
+      /* Editing badge pulse on first appear */
+      .alloy-editing-badge { animation: alloy-scalein 0.2s cubic-bezier(0.16,1,0.3,1) both }
+
+      /* Chart hover title */
+      .alloy-hover-title { opacity:0; transition: opacity 0.18s ease !important }
+      [data-widget-id]:hover .alloy-hover-title { opacity:1 !important }
+
+      /* Smooth toggle */
+      .alloy-toggle-track { transition: background 0.2s ease !important }
+      .alloy-toggle-thumb { transition: left 0.2s cubic-bezier(0.16,1,0.3,1) !important }
+
+      /* Loading pulse */
+      @keyframes alloy-pulse { 0%,100%{opacity:1} 50%{opacity:0.45} }
+      .alloy-loading { animation: alloy-pulse 1.2s ease-in-out infinite }
+
+      /* Spin */
+      .alloy-spin { animation: alloy-spin 0.8s linear infinite }
+    `}</style>
     <div style={{ display:'flex', flexDirection:'column', height:'100%', overflow:'hidden', background:ALLOY.white, fontFamily:ALLOY.fontBody }}
       onClick={() => { if (openMenu) setOpenMenu(null); if (dashMenu) setDashMenu(null) }}>
 
@@ -1824,7 +1887,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
           </div>
           <div style={{ display:'flex', alignItems:'center' }}>
             {TABS.map(tab => (
-              <button key={tab} onClick={() => setActiveTab(tab)} style={{ padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, fontWeight:500, cursor:'pointer', background:'none', border:'none', color:activeTab===tab?ALLOY.blue1:ALLOY.mute, borderBottom:activeTab===tab?`2px solid ${ALLOY.blue1}`:'2px solid transparent' }}>{tab}</button>
+              <button key={tab} onClick={() => setActiveTab(tab)} className="alloy-tab" style={{ padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, fontWeight:500, cursor:'pointer', background:'none', border:'none', color:activeTab===tab?ALLOY.blue1:ALLOY.mute, borderBottom:activeTab===tab?`2px solid ${ALLOY.blue1}`:'2px solid transparent' }}>{tab}</button>
             ))}
             <div style={{ marginLeft:'auto', display:'flex', gap:8, alignItems:'center' }}>
               {connection?.connected && connection.ga4_properties?.length > 0 && (
@@ -1864,7 +1927,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                 {showShareMenu && (
                   <>
                     <div style={{ position:'fixed' as const, inset:0, zIndex:1000 }} onClick={() => { setShowShareMenu(false); setShareSubmenu(null) }}/>
-                    <div
+                    <div className="alloy-dropdown"
                       style={{ position:'absolute' as const, right:0, top:'calc(100% + 3px)', zIndex:1001, background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, boxShadow:'0 2px 12px rgba(0,0,0,0.08)', minWidth:260, overflow:'hidden' }}
                       onClick={e => e.stopPropagation()}>
 
@@ -2326,7 +2389,7 @@ Alloy Intelligence`)
                     onClick={e => { e.stopPropagation(); if (editMode) startEdit(w) }}
                     style={{ background:ALLOY.white, borderRadius:2, padding:14, position:'relative', cursor: editMode ? 'pointer' : 'default', minHeight:140, transition:'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isDynSelected ? 0.45 : 1, ...(isDynSelected ? { border:`2.5px solid ${ALLOY.green1}`, boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` } : { border:`2px solid ${ALLOY.line}` }) }}>
                     {isDynSelected && (
-                      <div style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
+                      <div className="alloy-editing-badge" style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
                         ✦ Editing
                       </div>
                     )}
@@ -3270,7 +3333,7 @@ Alloy Intelligence`)
               {RIGHT_PANEL_ITEMS.map(item => (
                 <button key={item.id}
                   onClick={() => { setActiveRightPanel(activeRightPanel===item.id ? null : item.id); setEditingWidget(null) }}
-                  style={{ width:68, padding:'10px 4px', display:'flex', flexDirection:'column', alignItems:'center', gap:5, border:'none', cursor:'pointer', borderRadius:2, transition:'background 0.1s', background:activeRightPanel===item.id?ALLOY.paper:'none' }}>
+                  style={{ width:68, padding:'10px 4px', display:'flex', flexDirection:'column', alignItems:'center', gap:5, border:'none', cursor:'pointer', borderRadius:2, transition:'background 0.18s ease, transform 0.12s ease', background:activeRightPanel===item.id?ALLOY.paper:'none' }}>
                   <span style={{ fontFamily:ALLOY.fontBody, fontSize:18, lineHeight:1 }}>{item.icon}</span>
                   <span style={{ fontFamily:ALLOY.fontBody, fontSize:9, color:activeRightPanel===item.id?ALLOY.ink:ALLOY.mute, textAlign:'center', lineHeight:1.3, whiteSpace:'pre-line', fontWeight:activeRightPanel===item.id?600:400 }}>{item.label}</span>
                 </button>
@@ -3283,9 +3346,9 @@ Alloy Intelligence`)
       {/* Drill-down panel */}
       {/* Fullscreen widget overlay — works in both edit AND view mode */}
       {fullscreenWidget && (
-        <div style={{ position:'fixed' as const, inset:0, background:'rgba(0,0,0,0.75)', zIndex:2000, display:'flex', alignItems:'center', justifyContent:'center', padding:24 }}
+        <div className="alloy-modal-bg" style={{ position:'fixed' as const, inset:0, background:'rgba(0,0,0,0.75)', zIndex:2000, display:'flex', alignItems:'center', justifyContent:'center', padding:24 }}
           onClick={() => setFullscreenWidget(null)}>
-          <div style={{ background:ALLOY.white, borderRadius:2, width:'92vw', maxWidth:1200, maxHeight:'92vh', overflow:'hidden', display:'flex', flexDirection:'column' as const, boxShadow:'0 24px 80px rgba(0,0,0,0.35)' }}
+          <div className="alloy-modal-card" style={{ background:ALLOY.white, borderRadius:2, width:'92vw', maxWidth:1200, maxHeight:'92vh', overflow:'hidden', display:'flex', flexDirection:'column' as const, boxShadow:'0 24px 80px rgba(0,0,0,0.35)' }}
             onClick={e => e.stopPropagation()}>
             {/* Header */}
             <div style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 24px', borderBottom:`1px solid ${ALLOY.line}`, background:ALLOY.white, flexShrink:0 }}>
@@ -3668,7 +3731,7 @@ Alloy Intelligence`)
       {shareCapture && (
         <div style={{ position:'fixed' as const, inset:0, background:'rgba(0,0,0,0.6)', zIndex:3000, display:'flex', alignItems:'center', justifyContent:'center', padding:24 }}
           onClick={() => setShareCapture(null)}>
-          <div style={{ background:ALLOY.white, borderRadius:2, boxShadow:'0 20px 60px rgba(0,0,0,0.3)', overflow:'hidden', maxWidth:520, width:'100%' }}
+          <div className="alloy-modal-card" style={{ background:ALLOY.white, borderRadius:2, boxShadow:'0 20px 60px rgba(0,0,0,0.3)', overflow:'hidden', maxWidth:520, width:'100%' }}
             onClick={e => e.stopPropagation()}>
             {/* Header */}
             <div style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 16px', borderBottom:`1px solid ${ALLOY.line}`, background:ALLOY.paper }}>
@@ -3749,7 +3812,7 @@ Alloy Intelligence`)
 
       {/* ── Toast — works in both edit and view mode ── */}
       {shareToast && (
-        <div style={{ position:'fixed' as const, bottom:28, left:'50%', transform:'translateX(-50%)', zIndex:9999, background:ALLOY.ink, color:ALLOY.white, fontFamily:ALLOY.fontBody, fontSize:12, fontWeight:500, padding:'11px 22px', borderRadius:2, boxShadow:'0 4px 20px rgba(0,0,0,0.25)', display:'flex', alignItems:'center', gap:10, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
+        <div className="alloy-toast-in" style={{ position:'fixed' as const, bottom:28, left:'50%', transform:'translateX(-50%)', zIndex:9999, background:ALLOY.ink, color:ALLOY.white, fontFamily:ALLOY.fontBody, fontSize:12, fontWeight:500, padding:'11px 22px', borderRadius:2, boxShadow:'0 4px 20px rgba(0,0,0,0.25)', display:'flex', alignItems:'center', gap:10, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
           <span style={{ color:ALLOY.green1, fontSize:15, lineHeight:1 }}>✓</span>
           {shareToast}
         </div>
@@ -3812,5 +3875,6 @@ Alloy Intelligence`)
         </div>
       )}
     </div>
+    </>
   )
 }
