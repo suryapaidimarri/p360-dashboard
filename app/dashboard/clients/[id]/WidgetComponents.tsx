@@ -628,7 +628,7 @@ export function KPICard({ w, _ctx }: { w: Widget; _ctx: any }) {
           <button style={{ background:isWhite?'rgba(0,0,0,0.05)':'rgba(255,255,255,0.15)', border:'none', borderRadius:2, padding:'3px 5px', cursor:'pointer', display:'flex' }}>
             <Maximize2 size={10} style={{ color:isWhite?ALLOY.mute:'rgba(255,255,255,0.7)' }}/>
           </button>
-          <WidgetDot wid={w.id} onEdit={() => startEdit(w)} widget={w}/>
+          <WidgetDot wid={w.id} onEdit={() => startEdit(w)} widget={w} _ctx={_ctx}/>
         </div>
       )}
     </>
@@ -726,7 +726,7 @@ export function ChartCard({ id, children, _ctx }: { id: string; children: React.
           <button style={{ background:'rgba(0,0,0,0.04)', border:'none', borderRadius:2, padding:'3px 5px', cursor:'pointer', display:'flex' }}>
             <Maximize2 size={10} style={{ color:ALLOY.mute }}/>
           </button>
-          <WidgetDot wid={'static__' + id} onEdit={() => startEdit(w)} widget={w}/>
+          <WidgetDot wid={'static__' + id} onEdit={() => startEdit(w)} widget={w} _ctx={_ctx}/>
         </div>
       )}
       <ResizeHandle id={id} _ctx={_rhCtx}/>
