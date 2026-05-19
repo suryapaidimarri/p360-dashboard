@@ -1262,6 +1262,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const STATIC_IDS = ['w1','w2','w3','w4','c1','c2','c3','d1','d2','d3','v1','bounce']
   const dynamicWidgets = widgets.filter(w => !STATIC_IDS.includes(w.id))
 
+  const cloningRef = React.useRef(false)
+
   function startEdit(w: Widget) {
     setEditingWidget({...w})
     setEditTab('General')
@@ -1377,6 +1379,9 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     }
 
     const handleClone = () => {
+      if (cloningRef.current) return
+      cloningRef.current = true
+      setTimeout(() => { cloningRef.current = false }, 500)
       setOpenMenu(null)
       if (!resolvedWidget) return
       const cloneId = `w${Date.now()}`
