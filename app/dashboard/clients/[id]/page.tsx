@@ -1044,6 +1044,37 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     return () => document.removeEventListener('mousedown', onDown)
   }, [])
 
+  // ── Core widget constants and helpers ───────────────────────────────────
+  const STATIC_IDS = ['w1','w2','w3','w4','c1','c2','c3','d1','d2','d3','v1','bounce']
+  const dynamicWidgets = widgets.filter(w => !STATIC_IDS.includes(w.id))
+  const cloningRef = React.useRef(false)
+
+  function startEdit(w: Widget) {
+    setEditingWidget({...w})
+    setEditTab('General')
+    setOpenMenu(null)
+    setActiveRightPanel(null)
+  }
+  function openDrill(w: Widget) { if (!editMode) { setDrillWidget(w); setDrillChannel('All') } }
+
+  function cloneWidget(resolvedWidget: Widget) {
+    if (cloningRef.current) return
+    cloningRef.current = true
+    setTimeout(() => { cloningRef.current = false }, 500)
+    const cloneId = `w${Date.now()}`
+    const cloned: Widget = { ...resolvedWidget, id: cloneId, title: `${resolvedWidget.title} (Copy)` }
+    setWidgets(prev => {
+      if (prev.some(w => w.id === cloneId)) return prev
+      const updated = [...prev, cloned]
+      try { localStorage.setItem(LS_WIDGETS_KEY, JSON.stringify(updated.map(w => ({ ...w, value: undefined, change: undefined, up: undefined })))) } catch {}
+      return updated
+    })
+    setOpenMenu(null)
+    setShareToast(`"${resolvedWidget.title}" cloned`)
+    setTimeout(() => setShareToast(null), 2500)
+    setTimeout(() => startEdit(cloned), 50)
+  }
+
   // ── Drag & Drop reorder ──────────────────────────────────────────────────
   // ── Drag & Drop ──────────────────────────────────────────────────────────
   const dragState = React.useRef<{
