@@ -1264,6 +1264,32 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
   const cloningRef = React.useRef(false)
 
+  function cloneWidget(resolvedWidget: Widget) {
+    if (cloningRef.current) return
+    cloningRef.current = true
+    setTimeout(() => { cloningRef.current = false }, 500)
+    const cloneId = `w${Date.now()}`
+    const cloned: Widget = {
+      ...resolvedWidget,
+      id: cloneId,
+      title: `${resolvedWidget.title} (Copy)`,
+    }
+    setWidgets(prev => {
+      if (prev.some(w => w.id === cloneId)) return prev
+      const updated = [...prev, cloned]
+      try {
+        localStorage.setItem(LS_WIDGETS_KEY, JSON.stringify(
+          updated.map(w => ({ ...w, value: undefined, change: undefined, up: undefined }))
+        ))
+      } catch {}
+      return updated
+    })
+    setOpenMenu(null)
+    setShareToast(`"${resolvedWidget.title}" cloned`)
+    setTimeout(() => setShareToast(null), 2500)
+    setTimeout(() => startEdit(cloned), 50)
+  }
+
   function startEdit(w: Widget) {
     setEditingWidget({...w})
     setEditTab('General')
@@ -1324,7 +1350,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     setEditingWidget(null)
   }
 
-  function WidgetDot({ wid, onEdit, widget }: { wid: string; onEdit: () => void; widget?: Widget }) {
+  function WidgetDot({ wid, onEdit, onClone, widget }: { wid: string; onEdit: () => void; onClone: () => void; widget?: Widget }) {
     const isOpen = openMenu === wid
 
     // ── Resolve the actual Widget object from wid ──────────────────────────
@@ -1378,34 +1404,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       }
     }
 
-    const handleClone = () => {
-      if (cloningRef.current) return
-      cloningRef.current = true
-      setTimeout(() => { cloningRef.current = false }, 500)
-      setOpenMenu(null)
-      if (!resolvedWidget) return
-      const cloneId = `w${Date.now()}`
-      const cloned: Widget = {
-        ...resolvedWidget,
-        id: cloneId,
-        title: `${resolvedWidget.title} (Copy)`,
-      }
-      setWidgets(prev => {
-        // Guard: if this cloneId already exists (double-fire), skip
-        if (prev.some(w => w.id === cloneId)) return prev
-        const updated = [...prev, cloned]
-        try {
-          localStorage.setItem(LS_WIDGETS_KEY, JSON.stringify(
-            updated.map(w => ({ ...w, value: undefined, change: undefined, up: undefined }))
-          ))
-        } catch {}
-        return updated
-      })
-      setShareToast(`"${resolvedWidget.title}" cloned`)
-      setTimeout(() => setShareToast(null), 2500)
-      // Start editing the clone immediately
-      setTimeout(() => startEdit(cloned), 50)
-    }
+    const handleClone = () => { onClone() }
 
     const handleShare = () => {
       setOpenMenu(null)
@@ -1653,7 +1652,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
             <button style={{ background:isWhite?'rgba(0,0,0,0.05)':'rgba(255,255,255,0.15)', border:'none', borderRadius:2, padding:'3px 5px', cursor:'pointer', display:'flex' }}>
               <Maximize2 size={10} style={{ color:isWhite?ALLOY.mute:'rgba(255,255,255,0.7)' }}/>
             </button>
-            <WidgetDot wid={w.id} onEdit={() => startEdit(w)} widget={w}/>
+            <WidgetDot wid={w.id} onEdit={() => startEdit(w)} onClone={() => cloneWidget(w)} widget={w}/>
           </div>
         )}
       </>
@@ -1750,7 +1749,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
             <button style={{ background:'rgba(0,0,0,0.04)', border:'none', borderRadius:2, padding:'3px 5px', cursor:'pointer', display:'flex' }}>
               <Maximize2 size={10} style={{ color:ALLOY.mute }}/>
             </button>
-            <WidgetDot wid={`static__${id}`} onEdit={() => startEdit(w)} widget={w}/>
+            <WidgetDot wid={`static__${id}`} onEdit={() => startEdit(w)} onClone={() => cloneWidget(w)} widget={w}/>
           </div>
         )}
         <ResizeHandle id={w.id}/>
@@ -2373,7 +2372,7 @@ Alloy Intelligence`)
                     {editMode && (
                       <div onClick={e => e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', gap:4 }}>
                         <button style={{ background:'rgba(255,255,255,0.2)', border:'none', borderRadius:2, padding:'3px 5px', cursor:'pointer', display:'flex' }}><Maximize2 size={10} style={{ color:'rgba(255,255,255,0.8)' }}/></button>
-                        <WidgetDot wid="bounce" onEdit={() => startEdit(widgets[3])} widget={widgets[3]}/>
+                        <WidgetDot wid="bounce" onEdit={() => startEdit(widgets[3])} onClone={() => cloneWidget(widgets[3])} widget={widgets[3]}/>
                       </div>
                     )}
                     <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}><span style={{ fontSize:11, color:'rgba(255,255,255,0.85)', fontFamily:ALLOY.fontBody }}>Bounce Rate</span><span style={{ fontFamily:ALLOY.fontBody, fontSize:10, fontWeight:700, color:'rgba(255,255,255,0.95)', background:'rgba(255,255,255,0.18)', padding:'2px 6px', borderRadius:2 }}>▲ 6.84%</span></div>
@@ -2442,7 +2441,7 @@ Alloy Intelligence`)
                     {editMode && <div style={{ position:'absolute', top:6, left:6, cursor:'grab', color:ALLOY.line }}><Grip size={13}/></div>}
                     {editMode && (
                       <div onClick={e => e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', gap:4 }}>
-                        <WidgetDot wid={w.id} onEdit={() => startEdit(w)} widget={w}/>
+                        <WidgetDot wid={w.id} onEdit={() => startEdit(w)} onClone={() => cloneWidget(w)} widget={w}/>
                       </div>
                     )}
                     <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
