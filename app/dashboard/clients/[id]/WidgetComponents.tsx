@@ -2,7 +2,6 @@
 import React from 'react'
 import { ChevronRight, Sparkles, Settings, Calendar, ChevronDown, Plus, MoreHorizontal, Maximize2, X, Grip, RotateCcw, RotateCw, Monitor, Smartphone, ChevronLeft, RefreshCw, CheckCircle2, Download, Mail, Link2, LayoutGrid, Edit, Copy, Trash2 } from 'lucide-react'
 import { BarChart, Bar, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ScatterChart, Scatter as ScatterPlot, ZAxis } from 'recharts'
-import { Widget } from '@/types'
 
 // ── Alloy Design System tokens (JS constants for inline styles) ─────────────
 export const ALLOY = {
@@ -160,7 +159,7 @@ export const KPI_BG: {[key:string]:{bg:string;border:string;text:string;sub:stri
   red:{bg:ALLOY.red1,border:ALLOY.red1,text:ALLOY.white,sub:'rgba(255,255,255,0.85)'},
 }
 
-interface Widget { id:string; title:string; dataSource:string; chartType:string; tooltip:string; color:string; value:string; change:string; up:boolean; textColor?:string; borderColor?:string; bgHex?:string; showAnomalies?:boolean; showForecast?:boolean; showIntegIcon?:boolean; metrics?:string[]; dimensions?:string[]; filters?:string[] }
+export interface Widget { id:string; title:string; dataSource:string; chartType:string; tooltip:string; color:string; value:string; change:string; up:boolean; textColor?:string; borderColor?:string; bgHex?:string; showAnomalies?:boolean; showForecast?:boolean; showIntegIcon?:boolean; metrics?:string[]; dimensions?:string[]; filters?:string[] }
 
 function formatNum(n: number) {
   if (n>=1000000) return (n/1000000).toFixed(1)+'M'
@@ -648,7 +647,7 @@ export function KPICard({ w, _ctx }: { w: Widget; _ctx: any }) {
           </div>
         )}
         {editControls}
-        <ResizeHandle id={w.id}_ctx={_rhCtx}/>
+        <ResizeHandle id={w.id} _ctx={_rhCtx}/>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6 }}>
           {(w as any).chartHeaderMode !== 'Never show' && (
             <span style={{ fontSize:12, color:(w as any).headerFontColor || ALLOY.mute, fontWeight:500, fontFamily:ALLOY.fontBody }}>{w.title}</span>
@@ -691,7 +690,7 @@ export function KPICard({ w, _ctx }: { w: Widget; _ctx: any }) {
         </div>
       )}
       {editControls}
-      <ResizeHandle id={w.id}_ctx={_rhCtx}/>
+      <ResizeHandle id={w.id} _ctx={_rhCtx}/>
       <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:10 }}>
         <span style={{ fontSize:12, color:c.sub, fontWeight:500, fontFamily:ALLOY.fontBody }}>{w.title}</span>
         {w.change && <span style={{ fontSize:10, fontWeight:700, marginLeft:8, padding:'2px 6px', borderRadius:2, fontFamily:ALLOY.fontLabel, color:isWhite?(w.up?ALLOY.green1:ALLOY.red1):'rgba(255,255,255,0.95)', background:isWhite?(w.up?ALLOY.green4:ALLOY.red4):'rgba(255,255,255,0.18)' }}>{w.up?'▲':'▼'} {w.change}</span>}
@@ -730,7 +729,7 @@ export function ChartCard({ id, children, _ctx }: { id: string; children: React.
           <WidgetDot wid={'static__' + id} onEdit={() => startEdit(w)} widget={w}/>
         </div>
       )}
-      <ResizeHandle id={id}_ctx={_rhCtx}/>
+      <ResizeHandle id={id} _ctx={_rhCtx}/>
       {children}
     </div>
   )
