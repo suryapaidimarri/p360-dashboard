@@ -2986,27 +2986,75 @@ Alloy Intelligence`)
 
                             {/* ── Table style (shown when chartType is table/pivot) ── */}
                             {(dw.chartType === 'table' || dw.chartType === 'pivot') && (<>
+
+                              {/* Conditional formatting */}
+                              <SectionHead label="Conditional formatting"/>
+                              <div style={{ padding:'10px 16px', borderBottom:`1px solid ${ALLOY.line}` }}>
+                                <div onClick={() => updateField('condFormatRules', [...(dw.condFormatRules||[]), { field:'', condition:'>',value:'',color:'#ea4335' }])}
+                                  style={{ display:'flex', alignItems:'center', gap:8, background:ALLOY.blue4, border:`1px dashed ${ALLOY.blue1}`, borderRadius:2, padding:'8px 14px', cursor:'pointer' }}>
+                                  <Plus size={13} style={{ color:ALLOY.blue1 }}/><span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.blue1, fontWeight:500 }}>Add formatting rule</span>
+                                </div>
+                                {((dw.condFormatRules||[]) as any[]).map((rule: any, ri: number) => (
+                                  <div key={ri} style={{ display:'flex', alignItems:'center', gap:6, marginTop:8, background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'6px 10px' }}>
+                                    <select value={rule.condition} onChange={e => { const r=[...(dw.condFormatRules||[])]; r[ri]={...r[ri],condition:e.target.value}; updateField('condFormatRules',r) }} style={{ fontFamily:ALLOY.fontBody, fontSize:11, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'3px 6px', background:ALLOY.white }}>
+                                      {['>','<','=','≠','≥','≤'].map(o=><option key={o}>{o}</option>)}
+                                    </select>
+                                    <input type="number" value={rule.value} onChange={e=>{const r=[...(dw.condFormatRules||[])];r[ri]={...r[ri],value:e.target.value};updateField('condFormatRules',r)}} style={{ width:60, fontFamily:ALLOY.fontBody, fontSize:11, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'3px 6px', fontWeight:400 }} placeholder="value"/>
+                                    <label style={{ position:'relative' as const, cursor:'pointer', flexShrink:0 }}>
+                                      <div style={{ width:22, height:22, borderRadius:2, background:rule.color||'#ea4335', border:`1px solid ${ALLOY.line}` }}/>
+                                      <input type="color" value={rule.color||'#ea4335'} onChange={e=>{const r=[...(dw.condFormatRules||[])];r[ri]={...r[ri],color:e.target.value};updateField('condFormatRules',r)}} style={{ position:'absolute' as const, opacity:0, inset:0 }}/>
+                                    </label>
+                                    <button onClick={()=>updateField('condFormatRules',(dw.condFormatRules||[]).filter((_:any,j:number)=>j!==ri))} style={{ background:'none', border:'none', cursor:'pointer', color:ALLOY.mute, marginLeft:'auto', padding:0 }}><X size={12}/></button>
+                                  </div>
+                                ))}
+                              </div>
+
+                              {/* Table style */}
                               <SectionHead label="Table style"/>
                               <Row label="Show header"><Tog field="tableShowHeader"/></Row>
-                              <Row label="Row numbers"><Tog field="tableRowNumbers"/></Row>
-                              <Row label="Wrap text"><Tog field="tableWrapText"/></Row>
-                              <Row label="Horizontal scrolling"><Tog field="tableHScroll"/></Row>
-                              <Row label="Compact pagination"><Tog field="tableCompact"/></Row>
-                              <Row label="Missing data">
-                                <Select field="tableMissingData" options={['Show "null"','Show "0"','Hide row']}/>
-                              </Row>
+                              <Row label="Show field descriptions"><Tog field="tableShowFieldDesc"/></Row>
                               <Row label="Font family">
                                 <Select field="tableFontFamily" options={['DM Sans','Barlow','Inter','Roboto','Montserrat']}/>
                               </Row>
                               <Row label="Font size">
                                 <Select field="tableFontSize" options={['10px','11px','12px','13px','14px','16px']} def="12px"/>
                               </Row>
+                              <Row label="Font color"><ColorPick field="tableFontColor" def={ALLOY.ink}/></Row>
+                              <Row label="Wrap text"><Tog field="tableWrapText"/></Row>
 
+                              {/* Table colors */}
                               <SectionHead label="Table colors"/>
                               <Row label="Header background"><ColorPick field="tableHeaderBg" def="#f0f0f0"/></Row>
+                              <Row label="Cell border color"><ColorPick field="tableCellBorder" def={ALLOY.line}/></Row>
                               <Row label="Odd row color"><ColorPick field="tableOddRow" def="#ffffff"/></Row>
                               <Row label="Even row color"><ColorPick field="tableEvenRow" def="#fafafa"/></Row>
-                              <Row label="Cell border color"><ColorPick field="tableCellBorder" def={ALLOY.line}/></Row>
+
+                              {/* Table body */}
+                              <SectionHead label="Table body"/>
+                              <Row label="Row numbers"><Tog field="tableRowNumbers"/></Row>
+                              <Row label="Auto-height"><Tog field="tableAutoHeight"/></Row>
+                              <Row label="Wrap text"><Tog field="tableWrapText"/></Row>
+                              <Row label="Horizontal scrolling"><Tog field="tableHScroll"/></Row>
+                              <Row label="Freeze columns up to">
+                                <Select field="tableFreezeCol" options={['None','1','2','3','4','5']}/>
+                              </Row>
+                              <Row label="Tooltip position">
+                                <Select field="tableTooltipPos" options={['Left','Right','Top','Bottom']}/>
+                              </Row>
+                              <Row label="Missing data">
+                                <Select field="tableMissingData" options={['Show "null"','Show "0"','Hide row']}/>
+                              </Row>
+
+                              {/* Table footer */}
+                              <SectionHead label="Table footer"/>
+                              <Row label="Footer border color"><ColorPick field="tableFooterBorderColor" def={ALLOY.line}/></Row>
+                              <Row label="Footer border weight">
+                                <Select field="tableFooterBorderWeight" options={['None','1px','2px','3px']}/>
+                              </Row>
+                              <Row label="Footer border style">
+                                <Select field="tableFooterBorderStyle" options={['Solid','Dashed','Dotted']}/>
+                              </Row>
+                              <Row label="Compact pagination"><Tog field="tableCompact"/></Row>
 
                               {/* Dimension alignment */}
                               {dims.length > 0 && (<>
@@ -3015,13 +3063,13 @@ Alloy Intelligence`)
                                   <div key={i} style={{ padding:'10px 16px', borderBottom:`1px solid ${ALLOY.line}` }}>
                                     <p style={{ fontFamily:ALLOY.fontBody, fontSize:12, fontWeight:600, color:ALLOY.ink, marginBottom:8 }}>Dimension #{i+1}</p>
                                     <div style={{ display:'flex', gap:6 }}>
-                                      {(['left','center','right'] as const).map(a => (
+                                      {(['left','center','right','auto'] as const).map(a => (
                                         <button key={a} onClick={() => {
                                           const arr = [...(dw.dimAlign || dims.map(()=>'left'))]
                                           arr[i] = a
                                           updateField('dimAlign', arr)
-                                        }} style={{ flex:1, padding:'6px 4px', borderRadius:2, border:`1px solid ${(dw.dimAlign?.[i]||'left')===a?ALLOY.blue1:ALLOY.line}`, background:(dw.dimAlign?.[i]||'left')===a?ALLOY.blue4:ALLOY.white, cursor:'pointer', fontFamily:ALLOY.fontLabel, fontSize:9, color:ALLOY.ink, textAlign:'center' as const }}>
-                                          {a === 'left' ? '⬅' : a === 'center' ? '↔' : '➡'}
+                                        }} style={{ flex:1, padding:'7px 4px', borderRadius:2, border:`1px solid ${(dw.dimAlign?.[i]||'left')===a?ALLOY.blue1:ALLOY.line}`, background:(dw.dimAlign?.[i]||'left')===a?ALLOY.blue4:ALLOY.white, cursor:'pointer', fontFamily:ALLOY.fontLabel, fontSize:8, color:(dw.dimAlign?.[i]||'left')===a?ALLOY.blue1:ALLOY.ink, textAlign:'center' as const }}>
+                                          {a === 'left' ? '≡←' : a === 'center' ? '≡↔' : a === 'right' ? '≡→' : '✦'}
                                         </button>
                                       ))}
                                     </div>
@@ -3034,7 +3082,7 @@ Alloy Intelligence`)
                                 <SectionHead label="Metrics"/>
                                 {mets.map((m, i) => (
                                   <div key={i} style={{ padding:'10px 16px', borderBottom:`1px solid ${ALLOY.line}` }}>
-                                    <p style={{ fontFamily:ALLOY.fontBody, fontSize:12, fontWeight:600, color:ALLOY.ink, marginBottom:8 }}>Metric #{i+1}</p>
+                                    <p style={{ fontFamily:ALLOY.fontBody, fontSize:12, fontWeight:600, color:ALLOY.ink, marginBottom:8 }}>Metric #{i+1}: <span style={{ color:ALLOY.mute, fontWeight:400 }}>{m}</span></p>
                                     <Row label="Appearance">
                                       <Select field={`metAppearance_${i}`} options={['Number','Bar','Heatmap']}/>
                                     </Row>
