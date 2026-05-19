@@ -1685,7 +1685,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       return (
         <div data-widget-id={w.id}
           onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
-          style={{ background:ALLOY.white, borderRadius:2, padding:12, position:'relative', minHeight: widgetSizes[w.id]?.h || 130, cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, border: chartBorder, ...(isSelected && editMode ? { boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` } : {}), ...(widgetSizes[w.id] ? { width: widgetSizes[w.id].w, minWidth: widgetSizes[w.id].w, flex: '0 0 auto' } : { flex: '1 1 220px' }) }}>
+          style={{ background:ALLOY.white, borderRadius:2, padding:12, position:'relative', minHeight: widgetSizes[w.id]?.h || 130, cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, border: chartBorder, ...(isSelected && editMode ? { boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` } : {}), ...(widgetSizes[w.id] ? { width: widgetSizes[w.id].w, minWidth: widgetSizes[w.id].w } : {}) }}>
           {isSelected && editMode && (
             <div className="alloy-editing-badge" style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
               ✦ Editing
@@ -1728,7 +1728,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     return (
       <div data-widget-id={w.id} className={editMode ? '' : 'alloy-card-hover'}
         onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
-        style={{ background:bgColor, borderRadius:2, padding:16, position:'relative', minHeight: widgetSizes[w.id]?.h || 110, cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, border: editMode ? `2px solid ${borderCol}` : isWhite ? `1px solid ${ALLOY.line}` : '2px solid transparent', ...selectedRing, ...(widgetSizes[w.id] ? { width: widgetSizes[w.id].w, minWidth: widgetSizes[w.id].w, flex: '0 0 auto' } : { flex: '1 1 180px' }) }}>
+        style={{ background:bgColor, borderRadius:2, padding:16, position:'relative', minHeight: widgetSizes[w.id]?.h || 110, cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, border: editMode ? `2px solid ${borderCol}` : isWhite ? `1px solid ${ALLOY.line}` : '2px solid transparent', ...selectedRing, ...(widgetSizes[w.id] ? { width: widgetSizes[w.id].w, minWidth: widgetSizes[w.id].w } : {}) }}>
         {isSelected && editMode && (
           <div className="alloy-editing-badge" style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
             ✦ Editing
@@ -1758,7 +1758,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     return (
       <div data-widget-id={w.id}
         onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
-        style={{ background:ALLOY.white, borderRadius:2, padding:16, position:'relative', cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, ...(isSelected && editMode ? { border:`2.5px solid ${ALLOY.green1}`, boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` } : { border:`2px solid ${ALLOY.line}` }), ...(sz ? { width: sz.w, minWidth: sz.w, minHeight: sz.h, flex: '0 0 auto' } : { flex: '1 1 260px' }) }}>
+        style={{ background:ALLOY.white, borderRadius:2, padding:16, position:'relative', cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, ...(isSelected && editMode ? { border:`2.5px solid ${ALLOY.green1}`, boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` } : { border:`2px solid ${ALLOY.line}` }), ...(sz ? { width: sz.w, minWidth: sz.w, minHeight: sz.h } : {}) }}>
         {isSelected && editMode && (
           <div className="alloy-editing-badge" style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
             ✦ Editing
@@ -2361,10 +2361,10 @@ Alloy Intelligence`)
                 <h2 style={{ fontSize:20, fontWeight:700, color:ALLOY.white, fontFamily:ALLOY.fontDisplay }}>{activeDash}</h2>
                 {connection?.connected && <p style={{ fontSize:11, color:ALLOY.mute, marginTop:4, fontFamily:ALLOY.fontLabel, letterSpacing:'0.04em' }}>REAL-TIME DATA · {connection.email}</p>}
               </div>
-              <div style={{ display:'flex', flexWrap:'wrap' as const, gap:10, marginBottom:10 }}>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(180px, 1fr))', gap:10, marginBottom:10, alignItems:'start' }}>
                 {widgets.filter(w => !isWidgetRemoved(w.id) && STATIC_IDS.includes(w.id)).map(w => <KPICard key={w.id} w={w}/>)}
               </div>
-              <div style={{ display:'flex', flexWrap:'wrap' as const, gap:10, marginBottom:10, alignItems:'flex-start' }}>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(220px, 1fr))', gap:10, marginBottom:10, alignItems:'start' }}>
                 {!isWidgetRemoved('c1') && <ChartCard id="c1">
                   <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
                     <span style={{ fontSize:11, color:ALLOY.mute, fontWeight:500, fontFamily:ALLOY.fontBody }}>{widgets.find(x=>x.id==='c1')?.title || 'Sessions Over Time'}</span>
@@ -2404,7 +2404,7 @@ Alloy Intelligence`)
                   </div>}
                 </div>
               </div>
-              <div style={{ display:'flex', flexWrap:'wrap' as const, gap:10, marginBottom:10, alignItems:'flex-start' }}>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(220px, 1fr))', gap:10, marginBottom:10, alignItems:'start' }}>
                 {!isWidgetRemoved('d1') && <ChartCard id="d1">
                   <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
                     <span style={{ fontSize:11, fontWeight:600, fontFamily:ALLOY.fontBody }}>{widgets.find(x=>x.id==='d1')?.title || 'Users By Device'}</span>
