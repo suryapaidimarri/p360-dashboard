@@ -1553,6 +1553,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   // ── Resize handle ──────────────────────────────────────────────────────────
   function ResizeHandle({ id }: { id: string }) {
     if (!editMode) return null
+    const isResizing = resizingId === id
 
     const handleMouseDown = (e: React.MouseEvent) => {
       e.preventDefault()
@@ -1566,54 +1567,51 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       const startW = rect.width
       const startH = rect.height
 
-      // Show a transparent global overlay to block all mouse events during drag
-      const globalOverlay = document.createElement('div')
-      globalOverlay.style.cssText = 'position:fixed;inset:0;z-index:99999;cursor:se-resize;user-select:none;'
-      document.body.appendChild(globalOverlay)
+      // Full-screen overlay to capture all mouse events cleanly
+      const overlay = document.createElement('div')
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;cursor:se-resize;user-select:none;'
+      document.body.appendChild(overlay)
 
-      // Live ghost overlay showing new size
+      // Ghost preview with live dimensions label
       const ghost = document.createElement('div')
-      ghost.style.cssText = `position:fixed;border:2px solid #20BB71;background:rgba(32,187,113,0.06);border-radius:2px;pointer-events:none;z-index:99998;box-shadow:0 0 0 1px rgba(32,187,113,0.2);`
-      ghost.innerHTML = '<div style="position:absolute;bottom:6px;right:8px;font-size:10px;font-weight:700;color:#20BB71;background:rgba(255,255,255,0.95);padding:2px 6px;border-radius:2px;font-family:Barlow,sans-serif;letter-spacing:0.05em;"></div>'
+      ghost.style.cssText = `position:fixed;border:2px dashed ${ALLOY.green1};background:rgba(32,187,113,0.05);border-radius:2px;pointer-events:none;z-index:99998;transition:none;`
+      ghost.innerHTML = `<div id="rz-label" style="position:absolute;bottom:8px;right:8px;font-size:10px;font-weight:700;color:${ALLOY.green1};background:rgba(255,255,255,0.96);padding:3px 7px;border-radius:2px;font-family:Barlow,sans-serif;letter-spacing:0.06em;box-shadow:0 1px 4px rgba(0,0,0,0.1);white-space:nowrap;"></div>`
       document.body.appendChild(ghost)
 
-      const updateGhost = (mx: number, my: number) => {
-        const nw = Math.max(160, startW + mx - startX)
-        const nh = Math.max(100, startH + my - startY)
+      const MIN_W = 180, MIN_H = 100
+
+      const update = (mx: number, my: number) => {
+        const nw = Math.max(MIN_W, startW + mx - startX)
+        const nh = Math.max(MIN_H, startH + my - startY)
+        // Update ghost
         ghost.style.left = rect.left + 'px'
         ghost.style.top = rect.top + 'px'
         ghost.style.width = nw + 'px'
         ghost.style.height = nh + 'px'
-        const label = ghost.querySelector('div')
-        if (label) label.textContent = `${Math.round(nw)} × ${Math.round(nh)}`
-      }
-      updateGhost(startX, startY)
-
-      setResizingId(id)
-
-      const onMove = (mv: MouseEvent) => {
-        updateGhost(mv.clientX, mv.clientY)
-        // Also update the actual element live for instant feedback
-        const nw = Math.max(160, startW + mv.clientX - startX)
-        const nh = Math.max(100, startH + mv.clientY - startY)
+        const lbl = ghost.querySelector('#rz-label') as HTMLElement
+        if (lbl) lbl.textContent = `${Math.round(nw)}w × ${Math.round(nh)}h`
+        // Update actual element live
         el.style.width = nw + 'px'
         el.style.minWidth = nw + 'px'
         el.style.height = nh + 'px'
         el.style.minHeight = nh + 'px'
         el.style.flex = '0 0 auto'
       }
+      update(startX, startY)
+      setResizingId(id)
+
+      const onMove = (mv: MouseEvent) => update(mv.clientX, mv.clientY)
 
       const onUp = (mv: MouseEvent) => {
-        const nw = Math.max(160, startW + mv.clientX - startX)
-        const nh = Math.max(100, startH + mv.clientY - startY)
-        // Save to state and localStorage
+        const nw = Math.max(MIN_W, startW + mv.clientX - startX)
+        const nh = Math.max(MIN_H, startH + mv.clientY - startY)
         setWidgetSizes(prev => {
           const next = { ...prev, [id]: { w: nw, h: nh } }
           saveSizesToDB(next)
           return next
         })
         setResizingId(null)
-        document.body.removeChild(globalOverlay)
+        document.body.removeChild(overlay)
         document.body.removeChild(ghost)
         window.removeEventListener('mousemove', onMove)
         window.removeEventListener('mouseup', onUp)
@@ -1623,28 +1621,26 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       window.addEventListener('mouseup', onUp)
     }
 
-    const isResizing = resizingId === id
-
     return (
       <div
         onMouseDown={handleMouseDown}
+        title="Drag to resize"
         style={{
           position: 'absolute', bottom: 0, right: 0,
-          width: 20, height: 20,
+          width: 28, height: 28,
           cursor: 'se-resize', zIndex: 30,
           display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end',
-          padding: '3px',
-          opacity: isResizing ? 1 : 0.35,
+          padding: '5px',
+          opacity: isResizing ? 1 : 0,
           transition: 'opacity 0.15s',
         }}
         onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = '1'}
-        onMouseLeave={e => { if (resizingId !== id) (e.currentTarget as HTMLElement).style.opacity = '0.35' }}
-        title="Drag to resize"
+        onMouseLeave={e => { if (resizingId !== id) (e.currentTarget as HTMLElement).style.opacity = '0' }}
       >
-        <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-          <path d="M2 10 L10 2" stroke={isResizing ? '#1a73e8' : ALLOY.mute} strokeWidth="1.5" strokeLinecap="round"/>
-          <path d="M5.5 10 L10 5.5" stroke={isResizing ? '#1a73e8' : ALLOY.mute} strokeWidth="1.5" strokeLinecap="round"/>
-          <path d="M9 10 L10 9" stroke={isResizing ? '#1a73e8' : ALLOY.mute} strokeWidth="1.5" strokeLinecap="round"/>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M1 11 L11 1" stroke={isResizing ? ALLOY.green1 : ALLOY.mute} strokeWidth="1.5" strokeLinecap="round"/>
+          <path d="M5 11 L11 5" stroke={isResizing ? ALLOY.green1 : ALLOY.mute} strokeWidth="1.5" strokeLinecap="round"/>
+          <path d="M9 11 L11 9" stroke={isResizing ? ALLOY.green1 : ALLOY.mute} strokeWidth="1.5" strokeLinecap="round"/>
         </svg>
       </div>
     )
@@ -1843,6 +1839,10 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       /* Loading pulse */
       @keyframes alloy-pulse { 0%,100%{opacity:1} 50%{opacity:0.45} }
       .alloy-loading { animation: alloy-pulse 1.2s ease-in-out infinite }
+
+      /* Show resize handle on card hover in edit mode */
+      [data-widget-id]:hover > div[title="Drag to resize"] { opacity: 0.6 !important }
+      [data-widget-id]:hover > div[title="Drag to resize"]:hover { opacity: 1 !important }
 
       /* Spin */
       .alloy-spin { animation: alloy-spin 0.8s linear infinite }
