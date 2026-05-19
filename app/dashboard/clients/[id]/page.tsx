@@ -606,6 +606,136 @@ function ChartThumbSvg({ id, active }: { id: string; active: boolean }) {
 }
 
 // ── Main page ────────────────────────────────────────────────────────────────
+function KPICard({ w, _ctx }: { w: Widget; _ctx: any }) {
+  const { editMode, editingWidget, widgetSizes, resizingId, connection, justDroppedRef, openDrill, startEdit, getWidgetData } = _ctx
+  const c = KPI_BG[w.color] || KPI_BG.white
+  const isWhite = w.color === 'white'
+  const isSelected = editingWidget?.id === w.id
+  const bgColor = w.bgHex || c.bg
+  const borderCol = isSelected && editMode ? ALLOY.green1 : (w.borderColor || c.border)
+  const selectedRing = isSelected && editMode
+    ? { border:`2.5px solid ${ALLOY.green1}`, boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` }
+    : {}
+  const textCol = w.textColor || c.text
+
+  // KPI types — show number scorecard layout
+  const isKpiType = !w.chartType || w.chartType === 'scorecard' || w.chartType === 'sparkline'
+
+  const editControls = (
+    <>
+      {editMode && <div style={{ position:'absolute', top:6, left:6, cursor:'grab', color:isWhite?ALLOY.line:'rgba(255,255,255,0.35)', zIndex:5 }}><Grip size={13}/></div>}
+      {editMode && (
+        <div onClick={e => e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', alignItems:'center', gap:4 }}>
+          <button style={{ background:isWhite?'rgba(0,0,0,0.05)':'rgba(255,255,255,0.15)', border:'none', borderRadius:2, padding:'3px 5px', cursor:'pointer', display:'flex' }}>
+            <Maximize2 size={10} style={{ color:isWhite?ALLOY.mute:'rgba(255,255,255,0.7)' }}/>
+          </button>
+          <WidgetDot wid={w.id} onEdit={() => startEdit(w)} widget={w}/>
+        </div>
+      )}
+    </>
+  )
+
+  if (!isKpiType) {
+    // ── Full chart mode: replaces entire card with chart ──
+    const activeFilters: string[] = (w as any).filters || []
+    return (
+      <div data-widget-id={w.id}
+        onClick={e => { e.stopPropagation(); if (justDroppedRef.current) return; if (editMode) startEdit(w); else openDrill(w) }}
+        style={{ background:ALLOY.white, borderRadius:2, padding:12, position:'relative', minHeight: widgetSizes[w.id]?.h || 130, cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, border:`2px solid ${borderCol}`, ...selectedRing, ...(widgetSizes[w.id] ? { width: widgetSizes[w.id].w, minWidth: widgetSizes[w.id].w, flex: '0 0 auto' } : { flex: '1 1 220px' }) }}>
+        {isSelected && editMode && (
+          <div className="alloy-editing-badge" style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
+            ✦ Editing
+          </div>
+        )}
+        {editControls}
+        <ResizeHandle id={w.id}/>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6 }}>
+          {(w as any).chartHeaderMode !== 'Never show' && (
+            <span style={{ fontSize:12, color:(w as any).headerFontColor || ALLOY.mute, fontWeight:500, fontFamily:ALLOY.fontBody }}>{w.title}</span>
+          )}
+          <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+            {w.change && <span style={{ fontSize:10, fontWeight:700, padding:'2px 6px', borderRadius:2, color:w.up?ALLOY.green1:ALLOY.red1, background:w.up?ALLOY.green4:ALLOY.red4, fontFamily:ALLOY.fontLabel }}>{w.up?'▲':'▼'} {w.change}</span>}
+            {connection?.connected && <span style={{ fontSize:9, color:ALLOY.green1, fontWeight:600, fontFamily:ALLOY.fontLabel }}>● Live</span>}
+          </div>
+        </div>
+        {activeFilters.length > 0 && (
+          <div style={{ display:'flex', flexWrap:'wrap' as const, gap:4, marginBottom:6 }}>
+            {activeFilters.map((f: string, i: number) => (
+              <span key={i} style={{ fontSize:9, background:ALLOY.yellow4, color:ALLOY.yellow1, border:'1px solid #ffe0b2', borderRadius:999, padding:'2px 8px', display:'flex', alignItems:'center', gap:4, fontFamily:ALLOY.fontLabel }}>
+                <span>≡</span> {f}
+              </span>
+            ))}
+          </div>
+        )}
+        <DynamicChart chartType={w.chartType} data={getWidgetData(w)} height={activeFilters.length > 0 ? 80 : 90} dimensions={(w as any).dimensions} metrics={(w as any).metrics}/>
+      </div>
+    )
+  }
+
+  // ── KPI scorecard mode — compute value from selected metric if available ──
+  const wData = getWidgetData(w as any)
+  const computedValue = wData.length > 0
+    ? wData.reduce((sum: number, d: any) => sum + (d.v || 0), 0)
+    : null
+  const displayValue = w.value && w.value !== '—' ? w.value
+    : computedValue !== null ? (computedValue >= 1000000 ? (computedValue/1000000).toFixed(1)+'M' : computedValue >= 1000 ? (computedValue/1000).toFixed(1)+'K' : computedValue.toFixed(0))
+    : '—'
+
+  return (
+    <div data-widget-id={w.id} className={editMode ? '' : 'alloy-card-hover'}
+      onClick={e => { e.stopPropagation(); if (justDroppedRef.current) return; if (editMode) startEdit(w); else openDrill(w) }}
+      style={{ background:bgColor, borderRadius:2, padding:16, position:'relative', minHeight: widgetSizes[w.id]?.h || 110, cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, border:`2px solid ${borderCol}`, ...selectedRing, ...(widgetSizes[w.id] ? { width: widgetSizes[w.id].w, minWidth: widgetSizes[w.id].w, flex: '0 0 auto' } : { flex: '1 1 180px' }) }}>
+      {isSelected && editMode && (
+        <div className="alloy-editing-badge" style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
+          ✦ Editing
+        </div>
+      )}
+      {editControls}
+      <ResizeHandle id={w.id}/>
+      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:10 }}>
+        <span style={{ fontSize:12, color:c.sub, fontWeight:500, fontFamily:ALLOY.fontBody }}>{w.title}</span>
+        {w.change && <span style={{ fontSize:10, fontWeight:700, marginLeft:8, padding:'2px 6px', borderRadius:2, fontFamily:ALLOY.fontLabel, color:isWhite?(w.up?ALLOY.green1:ALLOY.red1):'rgba(255,255,255,0.95)', background:isWhite?(w.up?ALLOY.green4:ALLOY.red4):'rgba(255,255,255,0.18)' }}>{w.up?'▲':'▼'} {w.change}</span>}
+      </div>
+      <p style={{ fontSize:30, fontWeight:700, color:textCol, letterSpacing:'-0.5px', lineHeight:1, fontFamily:ALLOY.fontDisplay }}>{displayValue}</p>
+      {connection?.connected && <p style={{ fontSize:9, color:isWhite?ALLOY.green1:'rgba(255,255,255,0.7)', marginTop:4, fontFamily:ALLOY.fontLabel }}>● Live</p>}
+      {w.chartType === 'sparkline' && (
+        <div style={{ marginTop:6 }}>
+          <DynamicChart chartType="sparkline" data={getWidgetData(w)} height={35} dimensions={(w as any).dimensions} metrics={(w as any).metrics}/>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ChartCard({ id, children, _ctx }: { id: string; children: React.ReactNode; _ctx: any }) {
+  const { editMode, editingWidget, widgetSizes, resizingId, justDroppedRef, openDrill, startEdit, widgets } = _ctx
+  const w = widgets.find((x:Widget) => x.id === id) || widgets[0]
+  const isSelected = editingWidget?.id === w.id
+  const sz = widgetSizes[id]
+  return (
+    <div data-widget-id={id}
+      onClick={e => { e.stopPropagation(); if (justDroppedRef.current) return; if (editMode) startEdit(w); else openDrill(w) }}
+      style={{ background:ALLOY.white, borderRadius:2, padding:16, position:'relative', cursor: editMode ? 'pointer' : 'default', transition: resizingId === id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, ...(isSelected && editMode ? { border:`2.5px solid ${ALLOY.green1}`, boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` } : { border:`2px solid ${ALLOY.line}` }), ...(sz ? { width: sz.w, minWidth: sz.w, minHeight: sz.h, flex: '0 0 auto' } : { flex: '1 1 260px' }) }}>
+      {isSelected && editMode && (
+        <div className="alloy-editing-badge" style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
+          ✦ Editing
+        </div>
+      )}
+      {editMode && <div style={{ position:'absolute', top:6, left:6, cursor:'grab', color:ALLOY.line }}><Grip size={13}/></div>}
+      {editMode && (
+        <div onClick={e => e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', alignItems:'center', gap:4 }}>
+          <button style={{ background:'rgba(0,0,0,0.04)', border:'none', borderRadius:2, padding:'3px 5px', cursor:'pointer', display:'flex' }}>
+            <Maximize2 size={10} style={{ color:ALLOY.mute }}/>
+          </button>
+          <WidgetDot wid={'static__' + id} onEdit={() => startEdit(w)} widget={w}/>
+        </div>
+      )}
+      <ResizeHandle id={id}/>
+      {children}
+    </div>
+  )
+}
+
 export default function ClientWorkspace({ params }: { params: { id: string } }) {
   const clientId = params.id
   const [activeTab, setActiveTab] = useState('Dashboards')
@@ -1697,132 +1827,15 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     )
   }
 
-  function KPICard({ w }: { w: Widget }) {
-    const c = KPI_BG[w.color] || KPI_BG.white
-    const isWhite = w.color === 'white'
-    const isSelected = editingWidget?.id === w.id
-    const bgColor = w.bgHex || c.bg
-    const borderCol = isSelected && editMode ? ALLOY.green1 : (w.borderColor || c.border)
-    const selectedRing = isSelected && editMode
-      ? { border:`2.5px solid ${ALLOY.green1}`, boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` }
-      : {}
-    const textCol = w.textColor || c.text
-
-    // KPI types — show number scorecard layout
-    const isKpiType = !w.chartType || w.chartType === 'scorecard' || w.chartType === 'sparkline'
-
-    const editControls = (
-      <>
-        {editMode && <div style={{ position:'absolute', top:6, left:6, cursor:'grab', color:isWhite?ALLOY.line:'rgba(255,255,255,0.35)', zIndex:5 }}><Grip size={13}/></div>}
-        {editMode && (
-          <div onClick={e => e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', alignItems:'center', gap:4 }}>
-            <button style={{ background:isWhite?'rgba(0,0,0,0.05)':'rgba(255,255,255,0.15)', border:'none', borderRadius:2, padding:'3px 5px', cursor:'pointer', display:'flex' }}>
-              <Maximize2 size={10} style={{ color:isWhite?ALLOY.mute:'rgba(255,255,255,0.7)' }}/>
-            </button>
-            <WidgetDot wid={w.id} onEdit={() => startEdit(w)} widget={w}/>
-          </div>
-        )}
-      </>
-    )
-
-    if (!isKpiType) {
-      // ── Full chart mode: replaces entire card with chart ──
-      const activeFilters: string[] = (w as any).filters || []
-      return (
-        <div data-widget-id={w.id}
-          onClick={e => { e.stopPropagation(); if (justDroppedRef.current) return; if (editMode) startEdit(w); else openDrill(w) }}
-          style={{ background:ALLOY.white, borderRadius:2, padding:12, position:'relative', minHeight: widgetSizes[w.id]?.h || 130, cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, border:`2px solid ${borderCol}`, ...selectedRing, ...(widgetSizes[w.id] ? { width: widgetSizes[w.id].w, minWidth: widgetSizes[w.id].w, flex: '0 0 auto' } : { flex: '1 1 220px' }) }}>
-          {isSelected && editMode && (
-            <div className="alloy-editing-badge" style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
-              ✦ Editing
-            </div>
-          )}
-          {editControls}
-          <ResizeHandle id={w.id}/>
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6 }}>
-            {(w as any).chartHeaderMode !== 'Never show' && (
-              <span style={{ fontSize:12, color:(w as any).headerFontColor || ALLOY.mute, fontWeight:500, fontFamily:ALLOY.fontBody }}>{w.title}</span>
-            )}
-            <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-              {w.change && <span style={{ fontSize:10, fontWeight:700, padding:'2px 6px', borderRadius:2, color:w.up?ALLOY.green1:ALLOY.red1, background:w.up?ALLOY.green4:ALLOY.red4, fontFamily:ALLOY.fontLabel }}>{w.up?'▲':'▼'} {w.change}</span>}
-              {connection?.connected && <span style={{ fontSize:9, color:ALLOY.green1, fontWeight:600, fontFamily:ALLOY.fontLabel }}>● Live</span>}
-            </div>
-          </div>
-          {activeFilters.length > 0 && (
-            <div style={{ display:'flex', flexWrap:'wrap' as const, gap:4, marginBottom:6 }}>
-              {activeFilters.map((f: string, i: number) => (
-                <span key={i} style={{ fontSize:9, background:ALLOY.yellow4, color:ALLOY.yellow1, border:'1px solid #ffe0b2', borderRadius:999, padding:'2px 8px', display:'flex', alignItems:'center', gap:4, fontFamily:ALLOY.fontLabel }}>
-                  <span>≡</span> {f}
-                </span>
-              ))}
-            </div>
-          )}
-          <DynamicChart chartType={w.chartType} data={getWidgetData(w)} height={activeFilters.length > 0 ? 80 : 90} dimensions={(w as any).dimensions} metrics={(w as any).metrics}/>
-        </div>
-      )
-    }
-
-    // ── KPI scorecard mode — compute value from selected metric if available ──
-    const wData = getWidgetData(w as any)
-    const computedValue = wData.length > 0
-      ? wData.reduce((sum: number, d: any) => sum + (d.v || 0), 0)
-      : null
-    const displayValue = w.value && w.value !== '—' ? w.value
-      : computedValue !== null ? (computedValue >= 1000000 ? (computedValue/1000000).toFixed(1)+'M' : computedValue >= 1000 ? (computedValue/1000).toFixed(1)+'K' : computedValue.toFixed(0))
-      : '—'
-
-    return (
-      <div data-widget-id={w.id} className={editMode ? '' : 'alloy-card-hover'}
-        onClick={e => { e.stopPropagation(); if (justDroppedRef.current) return; if (editMode) startEdit(w); else openDrill(w) }}
-        style={{ background:bgColor, borderRadius:2, padding:16, position:'relative', minHeight: widgetSizes[w.id]?.h || 110, cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, border:`2px solid ${borderCol}`, ...selectedRing, ...(widgetSizes[w.id] ? { width: widgetSizes[w.id].w, minWidth: widgetSizes[w.id].w, flex: '0 0 auto' } : { flex: '1 1 180px' }) }}>
-        {isSelected && editMode && (
-          <div className="alloy-editing-badge" style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
-            ✦ Editing
-          </div>
-        )}
-        {editControls}
-        <ResizeHandle id={w.id}/>
-        <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:10 }}>
-          <span style={{ fontSize:12, color:c.sub, fontWeight:500, fontFamily:ALLOY.fontBody }}>{w.title}</span>
-          {w.change && <span style={{ fontSize:10, fontWeight:700, marginLeft:8, padding:'2px 6px', borderRadius:2, fontFamily:ALLOY.fontLabel, color:isWhite?(w.up?ALLOY.green1:ALLOY.red1):'rgba(255,255,255,0.95)', background:isWhite?(w.up?ALLOY.green4:ALLOY.red4):'rgba(255,255,255,0.18)' }}>{w.up?'▲':'▼'} {w.change}</span>}
-        </div>
-        <p style={{ fontSize:30, fontWeight:700, color:textCol, letterSpacing:'-0.5px', lineHeight:1, fontFamily:ALLOY.fontDisplay }}>{displayValue}</p>
-        {connection?.connected && <p style={{ fontSize:9, color:isWhite?ALLOY.green1:'rgba(255,255,255,0.7)', marginTop:4, fontFamily:ALLOY.fontLabel }}>● Live</p>}
-        {w.chartType === 'sparkline' && (
-          <div style={{ marginTop:6 }}>
-            <DynamicChart chartType="sparkline" data={getWidgetData(w)} height={35} dimensions={(w as any).dimensions} metrics={(w as any).metrics}/>
-          </div>
-        )}
-      </div>
-    )
+  function KPICardWrap({ w }: { w: Widget }) {
+    const _ctx = { editMode, editingWidget, widgetSizes, resizingId, connection, justDroppedRef, openDrill, startEdit, getWidgetData }
+    return <KPICard w={w} _ctx={_ctx}/>
   }
 
-  function ChartCard({ id, children }: { id: string; children: React.ReactNode }) {
-    const w = widgets.find(x => x.id === id) || widgets[0]
-    const isSelected = editingWidget?.id === w.id
-    const sz = widgetSizes[id]
-    return (
-      <div data-widget-id={id}
-        onClick={e => { e.stopPropagation(); if (justDroppedRef.current) return; if (editMode) startEdit(w); else openDrill(w) }}
-        style={{ background:ALLOY.white, borderRadius:2, padding:16, position:'relative', cursor: editMode ? 'pointer' : 'default', transition: resizingId === id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, ...(isSelected && editMode ? { border:`2.5px solid ${ALLOY.green1}`, boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` } : { border:`2px solid ${ALLOY.line}` }), ...(sz ? { width: sz.w, minWidth: sz.w, minHeight: sz.h, flex: '0 0 auto' } : { flex: '1 1 260px' }) }}>
-        {isSelected && editMode && (
-          <div className="alloy-editing-badge" style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
-            ✦ Editing
-          </div>
-        )}
-        {editMode && <div style={{ position:'absolute', top:6, left:6, cursor:'grab', color:ALLOY.line }}><Grip size={13}/></div>}
-        {editMode && (
-          <div onClick={e => e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', alignItems:'center', gap:4 }}>
-            <button style={{ background:'rgba(0,0,0,0.04)', border:'none', borderRadius:2, padding:'3px 5px', cursor:'pointer', display:'flex' }}>
-              <Maximize2 size={10} style={{ color:ALLOY.mute }}/>
-            </button>
-            <WidgetDot wid={'static__' + id} onEdit={() => startEdit(w)} widget={w}/>
-          </div>
-        )}
-        <ResizeHandle id={id}/>
-        {children}
-      </div>
-    )
+
+  function ChartCardWrap({ id, children }: { id: string; children: React.ReactNode }) {
+    const _ctx = { editMode, editingWidget, widgetSizes, resizingId, justDroppedRef, openDrill, startEdit, widgets }
+    return <ChartCard id={id} _ctx={_ctx}>{children}</ChartCard>
   }
 
   return (
@@ -2366,20 +2379,20 @@ Alloy Intelligence`)
                 const renderWidgetContent = (id: string) => {
                   // KPI cards
                   const kpiW = widgets.find(w => w.id === id && !STATIC_IDS.includes(w.id))
-                  if (kpiW) return <KPICard w={kpiW}/>
+                  if (kpiW) return <KPICardWrap w={kpiW}/>
 
                   // Static charts
                   if (id === 'c1') return (
-                    <ChartCard id="c1">
+                    <ChartCardWrap id="c1">
                       <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
                         <span style={{ fontSize:11, color:ALLOY.mute, fontWeight:500, fontFamily:ALLOY.fontBody }}>{widgets.find(x=>x.id==='c1')?.title||'Sessions Over Time'}</span>
                         {connection?.connected && <span style={{ fontSize:9, color:ALLOY.green1, fontWeight:600, fontFamily:ALLOY.fontLabel }}>● Live</span>}
                       </div>
                       <DynamicChart chartType={widgets.find(x=>x.id==='c1')?.chartType||'line'} data={getWidgetData(widgets.find(x=>x.id==='c1')||{})} height={80} dimensions={(widgets.find(x=>x.id==='c1') as any)?.dimensions} metrics={(widgets.find(x=>x.id==='c1') as any)?.metrics} opts={widgets.find(x=>x.id==='c1') as any}/>
-                    </ChartCard>
+                    </ChartCardWrap>
                   )
                   if (id === 'c2') return (
-                    <ChartCard id="c2">
+                    <ChartCardWrap id="c2">
                       <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:110 }}>
                         <div style={{ position:'relative', width:90, height:90 }}>
                           <ResponsiveContainer width="100%" height="100%">
@@ -2388,16 +2401,16 @@ Alloy Intelligence`)
                           <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center' }}><span style={{ fontSize:18, fontWeight:700, fontFamily:ALLOY.fontDisplay }}>44</span></div>
                         </div>
                       </div>
-                    </ChartCard>
+                    </ChartCardWrap>
                   )
                   if (id === 'c3') return (
-                    <ChartCard id="c3">
+                    <ChartCardWrap id="c3">
                       <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
                         <span style={{ fontSize:11, color:ALLOY.mute, fontFamily:ALLOY.fontBody }}>Conversion Rate</span>
                         <span style={{ fontSize:10, fontWeight:700, color:ALLOY.red1, background:ALLOY.red4, padding:'2px 5px', borderRadius:2, fontFamily:ALLOY.fontLabel }}>▼ 34%</span>
                       </div>
                       <span style={{ fontSize:24, fontWeight:700, color:ALLOY.ink, fontFamily:ALLOY.fontDisplay }}>3%</span>
-                    </ChartCard>
+                    </ChartCardWrap>
                   )
                   if (id === 'bounce') return (
                     <div onClick={e => { e.stopPropagation(); if (editMode) startEdit(widgets[3]) }}
@@ -2415,16 +2428,16 @@ Alloy Intelligence`)
                     </div>
                   )
                   if (id === 'd1') return (
-                    <ChartCard id="d1">
+                    <ChartCardWrap id="d1">
                       <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
                         <span style={{ fontSize:11, fontWeight:600, fontFamily:ALLOY.fontBody }}>{widgets.find(x=>x.id==='d1')?.title||'Users By Device'}</span>
                         {connection?.connected && <span style={{ fontSize:9, color:ALLOY.green1, fontWeight:600, fontFamily:ALLOY.fontLabel }}>● Live</span>}
                       </div>
                       <DynamicChart chartType={widgets.find(x=>x.id==='d1')?.chartType||'column'} data={getWidgetData(widgets.find(x=>x.id==='d1')||{})} height={110} dimensions={(widgets.find(x=>x.id==='d1') as any)?.dimensions} metrics={(widgets.find(x=>x.id==='d1') as any)?.metrics} opts={widgets.find(x=>x.id==='d1') as any}/>
-                    </ChartCard>
+                    </ChartCardWrap>
                   )
                   if (id === 'd2') return (
-                    <ChartCard id="d2">
+                    <ChartCardWrap id="d2">
                       <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
                         <span style={{ fontSize:11, fontWeight:600, fontFamily:ALLOY.fontBody }}>Top Referral Sources</span>
                         {connection?.connected && <span style={{ fontSize:9, color:ALLOY.green1, fontWeight:600, fontFamily:ALLOY.fontLabel }}>● Live</span>}
@@ -2436,10 +2449,10 @@ Alloy Intelligence`)
                         </div>
                         <div style={{ flex:1 }}>{sourceData.slice(0,4).map((d:any,i:number)=><div key={d.name} style={{ display:'flex', alignItems:'center', gap:4, marginBottom:3 }}><div style={{ width:6, height:6, borderRadius:'50%', background:['#2196f3','#64b5f6',ALLOY.blue3,'#bbdefb'][i%4], flexShrink:0 }}/><span style={{ fontSize:9, color:ALLOY.mute, flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', fontFamily:ALLOY.fontBody }}>{d.name}</span><span style={{ fontSize:9, fontWeight:600, fontFamily:ALLOY.fontBody }}>{d.value?.toLocaleString()}</span></div>)}</div>
                       </div>
-                    </ChartCard>
+                    </ChartCardWrap>
                   )
                   if (id === 'd3') return (
-                    <ChartCard id="d3">
+                    <ChartCardWrap id="d3">
                       <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
                         <span style={{ fontSize:12, fontWeight:600, fontFamily:ALLOY.fontBody }}>Traffic by Cities</span>
                         {connection?.connected && <span style={{ fontSize:9, color:ALLOY.green1, fontWeight:600, fontFamily:ALLOY.fontLabel }}>● Live</span>}
@@ -2450,16 +2463,16 @@ Alloy Intelligence`)
                           <div style={{ height:4, background:ALLOY.line, borderRadius:2, overflow:'hidden' }}><div style={{ height:'100%', width:`${(c.val/maxCity)*100}%`, background:ALLOY.green1, borderRadius:2 }}/></div>
                         </div>
                       ))}
-                    </ChartCard>
+                    </ChartCardWrap>
                   )
                   if (id === 'v1') return (
-                    <ChartCard id="v1">
+                    <ChartCardWrap id="v1">
                       <div style={{ display:'flex', justifyContent:'space-between', marginBottom:10 }}>
                         <span style={{ fontSize:12, fontWeight:600, fontFamily:ALLOY.fontBody }}>{widgets.find(x=>x.id==='v1')?.title||'Website Views'}</span>
                         {connection?.connected && <span style={{ fontSize:9, color:ALLOY.green1, fontWeight:600, fontFamily:ALLOY.fontLabel }}>● Live GA4</span>}
                       </div>
                       <DynamicChart chartType={widgets.find(x=>x.id==='v1')?.chartType||'area'} data={getWidgetData(widgets.find(x=>x.id==='v1')||{})} height={130} dimensions={(widgets.find(x=>x.id==='v1') as any)?.dimensions} metrics={(widgets.find(x=>x.id==='v1') as any)?.metrics} opts={widgets.find(x=>x.id==='v1') as any}/>
-                    </ChartCard>
+                    </ChartCardWrap>
                   )
                   // Dynamic widgets
                   const dynW = dynamicWidgets.find(w => w.id === id)
