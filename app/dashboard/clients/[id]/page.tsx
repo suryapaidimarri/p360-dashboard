@@ -1825,70 +1825,46 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     )
   }
 
+  const ANIMATION_CSS = [
+    "@keyframes alloy-fadein    { from { opacity:0 } to { opacity:1 } }",
+    "@keyframes alloy-slideup   { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:translateY(0) } }",
+    "@keyframes alloy-slidedown { from { opacity:0; transform:translateY(-6px) } to { opacity:1; transform:translateY(0) } }",
+    "@keyframes alloy-slidein-right { from { opacity:0; transform:translateX(18px) } to { opacity:1; transform:translateX(0) } }",
+    "@keyframes alloy-slidein-left  { from { opacity:0; transform:translateX(-18px) } to { opacity:1; transform:translateX(0) } }",
+    "@keyframes alloy-scalein   { from { opacity:0; transform:scale(0.96) } to { opacity:1; transform:scale(1) } }",
+    "@keyframes alloy-toast     { from { opacity:0; transform:translateX(-50%) translateY(12px) } to { opacity:1; transform:translateX(-50%) translateY(0) } }",
+    "@keyframes alloy-spin      { to { transform:rotate(360deg) } }",
+    ".alloy-fadein { animation: alloy-fadein 0.18s ease both }",
+    ".alloy-slideup { animation: alloy-slideup 0.22s cubic-bezier(0.16,1,0.3,1) both }",
+    ".alloy-slidedown { animation: alloy-slidedown 0.18s ease both }",
+    ".alloy-slidein-r { animation: alloy-slidein-right 0.22s cubic-bezier(0.16,1,0.3,1) both }",
+    ".alloy-slidein-l { animation: alloy-slidein-left 0.20s cubic-bezier(0.16,1,0.3,1) both }",
+    ".alloy-scalein { animation: alloy-scalein 0.18s cubic-bezier(0.16,1,0.3,1) both }",
+    ".alloy-toast-in { animation: alloy-toast 0.28s cubic-bezier(0.16,1,0.3,1) both }",
+    ".alloy-fadein { animation: alloy-fadein 0.18s ease both }",
+    ".alloy-card-hover { transition: box-shadow 0.18s ease, transform 0.18s ease, opacity 0.18s ease, border-color 0.15s ease !important }",
+    ".alloy-card-hover:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10) !important; transform: translateY(-1px) }",
+    ".alloy-nav-item { transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease !important }",
+    ".alloy-btn { transition: background 0.15s ease, opacity 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease !important }",
+    ".alloy-btn:active { transform: scale(0.97) !important }",
+    ".alloy-panel-slide { animation: alloy-slidein-right 0.24s cubic-bezier(0.16,1,0.3,1) both }",
+    ".alloy-tab { transition: color 0.15s ease, border-bottom-color 0.15s ease !important }",
+    ".alloy-dropdown { animation: alloy-slidedown 0.16s cubic-bezier(0.16,1,0.3,1) both }",
+    ".alloy-modal-bg { animation: alloy-fadein 0.18s ease both }",
+    ".alloy-modal-card { animation: alloy-scalein 0.22s cubic-bezier(0.16,1,0.3,1) both }",
+    ".alloy-editing-badge { animation: alloy-scalein 0.2s cubic-bezier(0.16,1,0.3,1) both }",
+    ".alloy-hover-title { opacity:0; transition: opacity 0.18s ease !important }",
+    "[data-widget-id]:hover .alloy-hover-title { opacity:1 !important }",
+    ".alloy-toggle-track { transition: background 0.2s ease !important }",
+    ".alloy-toggle-thumb { transition: left 0.2s cubic-bezier(0.16,1,0.3,1) !important }",
+    "@keyframes alloy-pulse { 0%,100%{opacity:1} 50%{opacity:0.45} }",
+    ".alloy-loading { animation: alloy-pulse 1.2s ease-in-out infinite }",
+    ".alloy-spin { animation: alloy-spin 0.8s linear infinite }",
+  ].join("\n")
+
   return (
     <>
-    <style>{`
-      /* ── Alloy animation system ── */
-      @keyframes alloy-fadein    { from { opacity:0 } to { opacity:1 } }
-      @keyframes alloy-slideup   { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:translateY(0) } }
-      @keyframes alloy-slidedown { from { opacity:0; transform:translateY(-6px) } to { opacity:1; transform:translateY(0) } }
-      @keyframes alloy-slidein-right { from { opacity:0; transform:translateX(18px) } to { opacity:1; transform:translateX(0) } }
-      @keyframes alloy-slidein-left  { from { opacity:0; transform:translateX(-18px) } to { opacity:1; transform:translateX(0) } }
-      @keyframes alloy-scalein   { from { opacity:0; transform:scale(0.96) } to { opacity:1; transform:scale(1) } }
-      @keyframes alloy-toast     { from { opacity:0; transform:translateX(-50%) translateY(12px) } to { opacity:1; transform:translateX(-50%) translateY(0) } }
-      @keyframes alloy-spin      { to { transform:rotate(360deg) } }
-
-      .alloy-fadein       { animation: alloy-fadein       0.18s ease both }
-      .alloy-slideup      { animation: alloy-slideup      0.22s cubic-bezier(0.16,1,0.3,1) both }
-      .alloy-slidedown    { animation: alloy-slidedown    0.18s ease both }
-      .alloy-slidein-r    { animation: alloy-slidein-right 0.22s cubic-bezier(0.16,1,0.3,1) both }
-      .alloy-slidein-l    { animation: alloy-slidein-left  0.20s cubic-bezier(0.16,1,0.3,1) both }
-      .alloy-scalein      { animation: alloy-scalein      0.18s cubic-bezier(0.16,1,0.3,1) both }
-      .alloy-toast-in     { animation: alloy-toast        0.28s cubic-bezier(0.16,1,0.3,1) both }
-
-      /* Hover lift on all clickable widget cards */
-      .alloy-card-hover { transition: box-shadow 0.18s ease, transform 0.18s ease, opacity 0.18s ease, border-color 0.15s ease !important }
-      .alloy-card-hover:hover:not([data-editing]) { box-shadow: 0 4px 16px rgba(0,0,0,0.10) !important; transform: translateY(-1px) }
-
-      /* Smooth nav items */
-      .alloy-nav-item { transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease !important }
-      .alloy-nav-item:hover { background: var(--alloy-green-4) !important; color: var(--alloy-green-1) !important }
-
-      /* Button press feel */
-      .alloy-btn { transition: background 0.15s ease, opacity 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease !important }
-      .alloy-btn:active { transform: scale(0.97) !important }
-
-      /* Smooth right panel slide */
-      .alloy-panel-slide { animation: alloy-slidein-right 0.24s cubic-bezier(0.16,1,0.3,1) both }
-
-      /* Tab underline slide */
-      .alloy-tab { transition: color 0.15s ease, border-bottom-color 0.15s ease !important }
-
-      /* Dropdown menus */
-      .alloy-dropdown { animation: alloy-slidedown 0.16s cubic-bezier(0.16,1,0.3,1) both }
-
-      /* Modal backdrop fade */
-      .alloy-modal-bg { animation: alloy-fadein 0.18s ease both }
-      .alloy-modal-card { animation: alloy-scalein 0.22s cubic-bezier(0.16,1,0.3,1) both }
-
-      /* Editing badge pulse on first appear */
-      .alloy-editing-badge { animation: alloy-scalein 0.2s cubic-bezier(0.16,1,0.3,1) both }
-
-      /* Chart hover title */
-      .alloy-hover-title { opacity:0; transition: opacity 0.18s ease !important }
-      [data-widget-id]:hover .alloy-hover-title { opacity:1 !important }
-
-      /* Smooth toggle */
-      .alloy-toggle-track { transition: background 0.2s ease !important }
-      .alloy-toggle-thumb { transition: left 0.2s cubic-bezier(0.16,1,0.3,1) !important }
-
-      /* Loading pulse */
-      @keyframes alloy-pulse { 0%,100%{opacity:1} 50%{opacity:0.45} }
-      .alloy-loading { animation: alloy-pulse 1.2s ease-in-out infinite }
-
-      /* Spin */
-      .alloy-spin { animation: alloy-spin 0.8s linear infinite }
-    `}</style>
+    <style dangerouslySetInnerHTML={{ __html: ANIMATION_CSS }}/>
     <div style={{ display:'flex', flexDirection:'column', height:'100%', overflow:'hidden', background:ALLOY.white, fontFamily:ALLOY.fontBody }}
       onClick={() => { if (openMenu) setOpenMenu(null); if (dashMenu) setDashMenu(null) }}>
 
