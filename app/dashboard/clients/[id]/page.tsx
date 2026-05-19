@@ -648,7 +648,7 @@ function KPICard({ w, _ctx }: { w: Widget; _ctx: any }) {
           </div>
         )}
         {editControls}
-        <ResizeHandle id={w.id}/>
+        <ResizeHandle id={w.id}_ctx={_rhCtx}/>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6 }}>
           {(w as any).chartHeaderMode !== 'Never show' && (
             <span style={{ fontSize:12, color:(w as any).headerFontColor || ALLOY.mute, fontWeight:500, fontFamily:ALLOY.fontBody }}>{w.title}</span>
@@ -691,7 +691,7 @@ function KPICard({ w, _ctx }: { w: Widget; _ctx: any }) {
         </div>
       )}
       {editControls}
-      <ResizeHandle id={w.id}/>
+      <ResizeHandle id={w.id}_ctx={_rhCtx}/>
       <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:10 }}>
         <span style={{ fontSize:12, color:c.sub, fontWeight:500, fontFamily:ALLOY.fontBody }}>{w.title}</span>
         {w.change && <span style={{ fontSize:10, fontWeight:700, marginLeft:8, padding:'2px 6px', borderRadius:2, fontFamily:ALLOY.fontLabel, color:isWhite?(w.up?ALLOY.green1:ALLOY.red1):'rgba(255,255,255,0.95)', background:isWhite?(w.up?ALLOY.green4:ALLOY.red4):'rgba(255,255,255,0.18)' }}>{w.up?'▲':'▼'} {w.change}</span>}
@@ -730,8 +730,331 @@ function ChartCard({ id, children, _ctx }: { id: string; children: React.ReactNo
           <WidgetDot wid={'static__' + id} onEdit={() => startEdit(w)} widget={w}/>
         </div>
       )}
-      <ResizeHandle id={id}/>
+      <ResizeHandle id={id}_ctx={_rhCtx}/>
       {children}
+    </div>
+  )
+}
+
+function WidgetDot({ wid, onEdit, widget, _ctx }: { wid: string; onEdit: () => void; widget?: Widget; _ctx: any }) {
+  const { openMenu, setOpenMenu, editMode, widgets, STATIC_IDS, setWidgets, setEditingWidget, startEdit,
+    setFullscreenWidget, setDrillWidget, setDrillChannel, setShareCapture, setShareToast,
+    setRemovedWidgetIds, LS_REMOVED_KEY, dragIdRef, justDroppedRef, resizingId,
+    setWidgetSizes, LS_SIZES_KEY, LS_WIDGETS_KEY, dynamicWidgets, isWidgetRemoved, ALLOY, widgetSizes } = _ctx
+  const isOpen = openMenu === wid
+
+  // ── Resolve the actual Widget object from wid ──────────────────────────
+  // wid is either 'static__c1' or a dynamic widget id like 'w1234567'
+  const resolvedWidget: Widget | undefined = widget || (() => {
+    const rawId = wid.startsWith('static__') ? wid.replace('static__', '') : wid
+    return widgets.find(w => w.id === rawId)
+  })()
+
+  // ── Actions ──────────────────────────────────────────────────────────────
+  const handleEdit = () => { onEdit(); setOpenMenu(null) }
+
+  const handleFullScreen = () => {
+    setOpenMenu(null)
+    if (resolvedWidget) setFullscreenWidget(resolvedWidget)
+  }
+
+  const handleCopy = () => {
+    if (!resolvedWidget) return
+    const text = JSON.stringify({
+      title: resolvedWidget.title, chartType: resolvedWidget.chartType,
+      dataSource: resolvedWidget.dataSource, color: resolvedWidget.color,
+      dimensions: (resolvedWidget as any).dimensions,
+      metrics: (resolvedWidget as any).metrics,
+      filters: (resolvedWidget as any).filters,
+    }, null, 2)
+    const widgetTitle = resolvedWidget.title
+
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(() => {
+        setOpenMenu(null)
+        setShareToast(`"${widgetTitle}" config copied`)
+        setTimeout(() => setShareToast(null), 2500)
+      }).catch(() => legacyCopy())
+    } else {
+      legacyCopy()
+    }
+
+    function legacyCopy() {
+      const ta = document.createElement('textarea')
+      ta.value = text
+      ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0'
+      document.body.appendChild(ta)
+      ta.focus(); ta.select(); ta.setSelectionRange(0, 99999)
+      let ok = false
+      try { ok = document.execCommand('copy') } catch {}
+      ta.remove()
+      setOpenMenu(null)
+      setShareToast(ok ? `"${widgetTitle}" config copied` : 'Copy failed — try again')
+      setTimeout(() => setShareToast(null), 2500)
+    }
+  }
+
+  const handleClone = () => {
+    setOpenMenu(null)
+    if (!resolvedWidget) return
+    const cloneId = `w${Date.now()}`
+    const cloned: Widget = {
+      ...resolvedWidget,
+      id: cloneId,
+      title: `${resolvedWidget.title} (Copy)`,
+    }
+    setWidgets(prev => {
+      const updated = [...prev, cloned]
+      try {
+        localStorage.setItem(LS_WIDGETS_KEY, JSON.stringify(
+          updated.map(w => ({ ...w, value: undefined, change: undefined, up: undefined }))
+        ))
+      } catch {}
+      return updated
+    })
+    setShareToast(`"${resolvedWidget.title}" cloned`)
+    setTimeout(() => setShareToast(null), 2500)
+    // Start editing the clone immediately
+    setTimeout(() => startEdit(cloned), 50)
+  }
+
+  const handleShare = () => {
+    setOpenMenu(null)
+    if (!resolvedWidget) return
+    const rawId = wid.startsWith('static__') ? wid.replace('static__', '') : wid
+    // Open share modal — no external library needed
+    setShareCapture({ wid: rawId, title: resolvedWidget.title })
+  }
+
+  const handleResetSize = () => {
+    setOpenMenu(null)
+    if (!resolvedWidget) return
+    const rawId = wid.startsWith('static__') ? wid.replace('static__', '') : wid
+    setWidgetSizes(prev => {
+      const next = { ...prev }
+      delete next[rawId]
+      try { localStorage.setItem(LS_SIZES_KEY, JSON.stringify(next)) } catch {}
+      return next
+    })
+    const el = document.querySelector('[data-widget-id="' + rawId + '"]') as HTMLElement | null
+    if (el) { el.style.width=''; el.style.minWidth=''; el.style.height=''; el.style.minHeight=''; el.style.flex='' }
+    setShareToast('"' + resolvedWidget.title + '" size reset')
+    setTimeout(() => setShareToast(null), 2000)
+  }
+
+  const handleRemove = () => {
+    setOpenMenu(null)
+    if (!resolvedWidget) return
+    const rawId = wid.startsWith('static__') ? wid.replace('static__', '') : wid
+    const isStatic = STATIC_IDS.includes(rawId)
+
+    if (isStatic) {
+      // Static widgets: add to removed set + persist
+      setRemovedWidgetIds(prev => {
+        const next = new Set(Array.from(prev).concat(rawId))
+        try { localStorage.setItem(LS_REMOVED_KEY, JSON.stringify(Array.from(next))) } catch {}
+        return next
+      })
+    } else {
+      // Dynamic widgets: remove from array + persist
+      setWidgets(prev => {
+        const updated = prev.filter(w => w.id !== rawId)
+        try {
+          localStorage.setItem(LS_WIDGETS_KEY, JSON.stringify(
+            updated.map(w => ({ ...w, value: undefined, change: undefined, up: undefined }))
+          ))
+        } catch {}
+        return updated
+      })
+    }
+    if (editingWidget?.id === rawId) setEditingWidget(null)
+    setShareToast(`"${resolvedWidget.title}" removed`)
+    setTimeout(() => setShareToast(null), 2500)
+  }
+
+  return (
+    <div style={{ position:'relative', display:'inline-flex' }}>
+      <button onClick={e => { e.stopPropagation(); setOpenMenu(isOpen ? null : wid) }}
+        style={{ background:'rgba(255,255,255,0.92)', border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'2px 6px', cursor:'pointer', display:'flex', alignItems:'center' }}>
+        <MoreHorizontal size={13} style={{ color:ALLOY.ink }}/>
+      </button>
+      {isOpen && (
+          <div className="alloy-dropdown" style={{ position:'absolute', right:0, top:'calc(100% + 4px)', background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, boxShadow:'0 4px 16px rgba(0,0,0,0.10)', padding:'4px 0', minWidth:168, zIndex:999 }}
+            onClick={e => e.stopPropagation()}>
+            {/* Edit */}
+            <div onClick={handleEdit}
+              style={{ display:'flex', alignItems:'center', gap:9, padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, cursor:'pointer', userSelect:'none' as const, borderLeft:'2px solid transparent' }}
+              onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.background=ALLOY.green4; el.style.color=ALLOY.green1; el.style.borderLeft=`2px solid ${ALLOY.green1}` }}
+              onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.background='none'; el.style.color=ALLOY.ink; el.style.borderLeft='2px solid transparent' }}>
+              <Edit size={12} strokeWidth={1.5} style={{ color:'inherit', flexShrink:0 }}/>
+              <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:'inherit' }}>Edit</span>
+            </div>
+            {/* Full Screen */}
+            <div onClick={handleFullScreen}
+              style={{ display:'flex', alignItems:'center', gap:9, padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, cursor:'pointer', userSelect:'none' as const, borderLeft:'2px solid transparent' }}
+              onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.background=ALLOY.green4; el.style.color=ALLOY.green1; el.style.borderLeft=`2px solid ${ALLOY.green1}` }}
+              onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.background='none'; el.style.color=ALLOY.ink; el.style.borderLeft='2px solid transparent' }}>
+              <Maximize2 size={12} strokeWidth={1.5} style={{ color:'inherit', flexShrink:0 }}/>
+              <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:'inherit' }}>Full Screen</span>
+            </div>
+            {/* Copy */}
+            <div onClick={handleCopy}
+              style={{ display:'flex', alignItems:'center', gap:9, padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, cursor:'pointer', userSelect:'none' as const, borderLeft:'2px solid transparent' }}
+              onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.background=ALLOY.green4; el.style.color=ALLOY.green1; el.style.borderLeft=`2px solid ${ALLOY.green1}` }}
+              onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.background='none'; el.style.color=ALLOY.ink; el.style.borderLeft='2px solid transparent' }}>
+              <Copy size={12} strokeWidth={1.5} style={{ color:'inherit', flexShrink:0 }}/>
+              <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:'inherit' }}>Copy</span>
+            </div>
+            {/* Clone */}
+            <div onClick={handleClone}
+              style={{ display:'flex', alignItems:'center', gap:9, padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, cursor:'pointer', userSelect:'none' as const, borderLeft:'2px solid transparent' }}
+              onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.background=ALLOY.green4; el.style.color=ALLOY.green1; el.style.borderLeft=`2px solid ${ALLOY.green1}` }}
+              onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.background='none'; el.style.color=ALLOY.ink; el.style.borderLeft='2px solid transparent' }}>
+              <LayoutGrid size={12} strokeWidth={1.5} style={{ color:'inherit', flexShrink:0 }}/>
+              <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:'inherit' }}>Clone</span>
+            </div>
+            {/* Reset Size */}
+            <div onClick={handleResetSize}
+              style={{ display:'flex', alignItems:'center', gap:9, padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, cursor:'pointer', userSelect:'none' as const, borderLeft:'2px solid transparent' }}
+              onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.background=ALLOY.green4; el.style.color=ALLOY.green1; el.style.borderLeft=`2px solid ${ALLOY.green1}` }}
+              onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.background='none'; el.style.color=ALLOY.ink; el.style.borderLeft='2px solid transparent' }}>
+              <Maximize2 size={12} strokeWidth={1.5} style={{ color:'inherit', flexShrink:0 }}/>
+              <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:'inherit' }}>Reset Size</span>
+            </div>
+            {/* Share */}
+            <div onClick={handleShare}
+              style={{ display:'flex', alignItems:'center', gap:9, padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, cursor:'pointer', userSelect:'none' as const, borderLeft:'2px solid transparent' }}
+              onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.background=ALLOY.green4; el.style.color=ALLOY.green1; el.style.borderLeft=`2px solid ${ALLOY.green1}` }}
+              onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.background='none'; el.style.color=ALLOY.ink; el.style.borderLeft='2px solid transparent' }}>
+              <Link2 size={12} strokeWidth={1.5} style={{ color:'inherit', flexShrink:0 }}/>
+              <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:'inherit' }}>Share</span>
+            </div>
+            {/* Divider */}
+            <div style={{ height:1, background:ALLOY.line, margin:'4px 0' }}/>
+            {/* Remove */}
+            <div onClick={handleRemove}
+              style={{ display:'flex', alignItems:'center', gap:9, padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.red1, cursor:'pointer', userSelect:'none' as const, borderLeft:'2px solid transparent' }}
+              onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.background=ALLOY.red4; el.style.borderLeft=`2px solid ${ALLOY.red1}` }}
+              onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.background='none'; el.style.borderLeft='2px solid transparent' }}>
+              <Trash2 size={12} strokeWidth={1.5} style={{ color:ALLOY.red1, flexShrink:0 }}/>
+              <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.red1 }}>Remove</span>
+            </div>
+          </div>
+      )}
+    </div>
+  )
+}
+
+function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label?: string }) {
+  return (
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:10 }}>
+      {label && <span style={{ fontSize:12, color:ALLOY.ink, fontFamily:ALLOY.fontBody }}>{label}</span>}
+      <div onClick={() => onChange(!on)}
+        style={{ width:36, height:20, borderRadius:999, background: on ? ALLOY.green1 : ALLOY.line, position:'relative', cursor:'pointer', transition:'background 0.2s', flexShrink:0 }}>
+        <div style={{ width:16, height:16, borderRadius:'50%', background:ALLOY.white, position:'absolute', top:2, left: on ? 18 : 2, transition:'left 0.2s', boxShadow:'0 1px 3px rgba(0,0,0,0.25)' }}/>
+      </div>
+    </div>
+  )
+}
+
+function ResizeHandle({ id, _ctx }: { id: string; _ctx: any }) {
+  const { editMode, resizingId, setResizingId, setWidgetSizes, saveSizesToDB, LS_SIZES_KEY, ALLOY } = _ctx
+  if (!editMode) return null
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const el = (e.currentTarget as HTMLElement).closest('[data-widget-id]') as HTMLElement
+    if (!el) return
+
+    const rect = el.getBoundingClientRect()
+    const startX = e.clientX
+    const startY = e.clientY
+    const startW = rect.width
+    const startH = rect.height
+
+    // Show a transparent global overlay to block all mouse events during drag
+    const globalOverlay = document.createElement('div')
+    globalOverlay.style.cssText = 'position:fixed;inset:0;z-index:99999;cursor:se-resize;user-select:none;'
+    document.body.appendChild(globalOverlay)
+
+    // Live ghost overlay showing new size
+    const ghost = document.createElement('div')
+    ghost.style.cssText = `position:fixed;border:2px solid #20BB71;background:rgba(32,187,113,0.06);border-radius:2px;pointer-events:none;z-index:99998;box-shadow:0 0 0 1px rgba(32,187,113,0.2);`
+    ghost.innerHTML = '<div style="position:absolute;bottom:6px;right:8px;font-size:10px;font-weight:700;color:#20BB71;background:rgba(255,255,255,0.95);padding:2px 6px;border-radius:2px;font-family:Barlow,sans-serif;letter-spacing:0.05em;"></div>'
+    document.body.appendChild(ghost)
+
+    const updateGhost = (mx: number, my: number) => {
+      const nw = Math.max(160, startW + mx - startX)
+      const nh = Math.max(100, startH + my - startY)
+      ghost.style.left = rect.left + 'px'
+      ghost.style.top = rect.top + 'px'
+      ghost.style.width = nw + 'px'
+      ghost.style.height = nh + 'px'
+      const label = ghost.querySelector('div')
+      if (label) label.textContent = `${Math.round(nw)} × ${Math.round(nh)}`
+    }
+    updateGhost(startX, startY)
+
+    setResizingId(id)
+
+    const onMove = (mv: MouseEvent) => {
+      updateGhost(mv.clientX, mv.clientY)
+      // Also update the actual element live for instant feedback
+      const nw = Math.max(160, startW + mv.clientX - startX)
+      const nh = Math.max(100, startH + mv.clientY - startY)
+      el.style.width = nw + 'px'
+      el.style.minWidth = nw + 'px'
+      el.style.height = nh + 'px'
+      el.style.minHeight = nh + 'px'
+      el.style.flex = '0 0 auto'
+    }
+
+    const onUp = (mv: MouseEvent) => {
+      const nw = Math.max(160, startW + mv.clientX - startX)
+      const nh = Math.max(100, startH + mv.clientY - startY)
+      // Save to state and localStorage
+      setWidgetSizes(prev => {
+        const next = { ...prev, [id]: { w: nw, h: nh } }
+        saveSizesToDB(next)
+        return next
+      })
+      setResizingId(null)
+      document.body.removeChild(globalOverlay)
+      document.body.removeChild(ghost)
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
+
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+  }
+
+  const isResizing = resizingId === id
+
+  return (
+    <div
+      onMouseDown={handleMouseDown}
+      draggable={false}
+      onDragStart={e => { e.preventDefault(); e.stopPropagation() }}
+      style={{
+        position: 'absolute', bottom: 0, right: 0,
+        width: 20, height: 20,
+        cursor: 'se-resize', zIndex: 30,
+        display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end',
+        padding: '3px',
+        opacity: isResizing ? 1 : 0.35,
+        transition: 'opacity 0.15s',
+      }}
+      onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = '1'}
+      onMouseLeave={e => { if (resizingId !== id) (e.currentTarget as HTMLElement).style.opacity = '0.35' }}
+      title="Drag to resize"
+    >
+      <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+        <path d="M2 10 L10 2" stroke={isResizing ? '#1a73e8' : ALLOY.mute} strokeWidth="1.5" strokeLinecap="round"/>
+        <path d="M5.5 10 L10 5.5" stroke={isResizing ? '#1a73e8' : ALLOY.mute} strokeWidth="1.5" strokeLinecap="round"/>
+        <path d="M9 10 L10 9" stroke={isResizing ? '#1a73e8' : ALLOY.mute} strokeWidth="1.5" strokeLinecap="round"/>
+      </svg>
     </div>
   )
 }
@@ -1507,336 +1830,18 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     setEditingWidget(null)
   }
 
-  function WidgetDot({ wid, onEdit, widget }: { wid: string; onEdit: () => void; widget?: Widget }) {
-    const isOpen = openMenu === wid
-
-    // ── Resolve the actual Widget object from wid ──────────────────────────
-    // wid is either 'static__c1' or a dynamic widget id like 'w1234567'
-    const resolvedWidget: Widget | undefined = widget || (() => {
-      const rawId = wid.startsWith('static__') ? wid.replace('static__', '') : wid
-      return widgets.find(w => w.id === rawId)
-    })()
-
-    // ── Actions ──────────────────────────────────────────────────────────────
-    const handleEdit = () => { onEdit(); setOpenMenu(null) }
-
-    const handleFullScreen = () => {
-      setOpenMenu(null)
-      if (resolvedWidget) setFullscreenWidget(resolvedWidget)
-    }
-
-    const handleCopy = () => {
-      if (!resolvedWidget) return
-      const text = JSON.stringify({
-        title: resolvedWidget.title, chartType: resolvedWidget.chartType,
-        dataSource: resolvedWidget.dataSource, color: resolvedWidget.color,
-        dimensions: (resolvedWidget as any).dimensions,
-        metrics: (resolvedWidget as any).metrics,
-        filters: (resolvedWidget as any).filters,
-      }, null, 2)
-      const widgetTitle = resolvedWidget.title
-
-      if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(text).then(() => {
-          setOpenMenu(null)
-          setShareToast(`"${widgetTitle}" config copied`)
-          setTimeout(() => setShareToast(null), 2500)
-        }).catch(() => legacyCopy())
-      } else {
-        legacyCopy()
-      }
-
-      function legacyCopy() {
-        const ta = document.createElement('textarea')
-        ta.value = text
-        ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0'
-        document.body.appendChild(ta)
-        ta.focus(); ta.select(); ta.setSelectionRange(0, 99999)
-        let ok = false
-        try { ok = document.execCommand('copy') } catch {}
-        ta.remove()
-        setOpenMenu(null)
-        setShareToast(ok ? `"${widgetTitle}" config copied` : 'Copy failed — try again')
-        setTimeout(() => setShareToast(null), 2500)
-      }
-    }
-
-    const handleClone = () => {
-      setOpenMenu(null)
-      if (!resolvedWidget) return
-      const cloneId = `w${Date.now()}`
-      const cloned: Widget = {
-        ...resolvedWidget,
-        id: cloneId,
-        title: `${resolvedWidget.title} (Copy)`,
-      }
-      setWidgets(prev => {
-        const updated = [...prev, cloned]
-        try {
-          localStorage.setItem(LS_WIDGETS_KEY, JSON.stringify(
-            updated.map(w => ({ ...w, value: undefined, change: undefined, up: undefined }))
-          ))
-        } catch {}
-        return updated
-      })
-      setShareToast(`"${resolvedWidget.title}" cloned`)
-      setTimeout(() => setShareToast(null), 2500)
-      // Start editing the clone immediately
-      setTimeout(() => startEdit(cloned), 50)
-    }
-
-    const handleShare = () => {
-      setOpenMenu(null)
-      if (!resolvedWidget) return
-      const rawId = wid.startsWith('static__') ? wid.replace('static__', '') : wid
-      // Open share modal — no external library needed
-      setShareCapture({ wid: rawId, title: resolvedWidget.title })
-    }
-
-    const handleResetSize = () => {
-      setOpenMenu(null)
-      if (!resolvedWidget) return
-      const rawId = wid.startsWith('static__') ? wid.replace('static__', '') : wid
-      setWidgetSizes(prev => {
-        const next = { ...prev }
-        delete next[rawId]
-        try { localStorage.setItem(LS_SIZES_KEY, JSON.stringify(next)) } catch {}
-        return next
-      })
-      const el = document.querySelector('[data-widget-id="' + rawId + '"]') as HTMLElement | null
-      if (el) { el.style.width=''; el.style.minWidth=''; el.style.height=''; el.style.minHeight=''; el.style.flex='' }
-      setShareToast('"' + resolvedWidget.title + '" size reset')
-      setTimeout(() => setShareToast(null), 2000)
-    }
-
-    const handleRemove = () => {
-      setOpenMenu(null)
-      if (!resolvedWidget) return
-      const rawId = wid.startsWith('static__') ? wid.replace('static__', '') : wid
-      const isStatic = STATIC_IDS.includes(rawId)
-
-      if (isStatic) {
-        // Static widgets: add to removed set + persist
-        setRemovedWidgetIds(prev => {
-          const next = new Set(Array.from(prev).concat(rawId))
-          try { localStorage.setItem(LS_REMOVED_KEY, JSON.stringify(Array.from(next))) } catch {}
-          return next
-        })
-      } else {
-        // Dynamic widgets: remove from array + persist
-        setWidgets(prev => {
-          const updated = prev.filter(w => w.id !== rawId)
-          try {
-            localStorage.setItem(LS_WIDGETS_KEY, JSON.stringify(
-              updated.map(w => ({ ...w, value: undefined, change: undefined, up: undefined }))
-            ))
-          } catch {}
-          return updated
-        })
-      }
-      if (editingWidget?.id === rawId) setEditingWidget(null)
-      setShareToast(`"${resolvedWidget.title}" removed`)
-      setTimeout(() => setShareToast(null), 2500)
-    }
-
-    return (
-      <div style={{ position:'relative', display:'inline-flex' }}>
-        <button onClick={e => { e.stopPropagation(); setOpenMenu(isOpen ? null : wid) }}
-          style={{ background:'rgba(255,255,255,0.92)', border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'2px 6px', cursor:'pointer', display:'flex', alignItems:'center' }}>
-          <MoreHorizontal size={13} style={{ color:ALLOY.ink }}/>
-        </button>
-        {isOpen && (
-            <div className="alloy-dropdown" style={{ position:'absolute', right:0, top:'calc(100% + 4px)', background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, boxShadow:'0 4px 16px rgba(0,0,0,0.10)', padding:'4px 0', minWidth:168, zIndex:999 }}
-              onClick={e => e.stopPropagation()}>
-              {/* Edit */}
-              <div onClick={handleEdit}
-                style={{ display:'flex', alignItems:'center', gap:9, padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, cursor:'pointer', userSelect:'none' as const, borderLeft:'2px solid transparent' }}
-                onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.background=ALLOY.green4; el.style.color=ALLOY.green1; el.style.borderLeft=`2px solid ${ALLOY.green1}` }}
-                onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.background='none'; el.style.color=ALLOY.ink; el.style.borderLeft='2px solid transparent' }}>
-                <Edit size={12} strokeWidth={1.5} style={{ color:'inherit', flexShrink:0 }}/>
-                <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:'inherit' }}>Edit</span>
-              </div>
-              {/* Full Screen */}
-              <div onClick={handleFullScreen}
-                style={{ display:'flex', alignItems:'center', gap:9, padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, cursor:'pointer', userSelect:'none' as const, borderLeft:'2px solid transparent' }}
-                onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.background=ALLOY.green4; el.style.color=ALLOY.green1; el.style.borderLeft=`2px solid ${ALLOY.green1}` }}
-                onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.background='none'; el.style.color=ALLOY.ink; el.style.borderLeft='2px solid transparent' }}>
-                <Maximize2 size={12} strokeWidth={1.5} style={{ color:'inherit', flexShrink:0 }}/>
-                <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:'inherit' }}>Full Screen</span>
-              </div>
-              {/* Copy */}
-              <div onClick={handleCopy}
-                style={{ display:'flex', alignItems:'center', gap:9, padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, cursor:'pointer', userSelect:'none' as const, borderLeft:'2px solid transparent' }}
-                onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.background=ALLOY.green4; el.style.color=ALLOY.green1; el.style.borderLeft=`2px solid ${ALLOY.green1}` }}
-                onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.background='none'; el.style.color=ALLOY.ink; el.style.borderLeft='2px solid transparent' }}>
-                <Copy size={12} strokeWidth={1.5} style={{ color:'inherit', flexShrink:0 }}/>
-                <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:'inherit' }}>Copy</span>
-              </div>
-              {/* Clone */}
-              <div onClick={handleClone}
-                style={{ display:'flex', alignItems:'center', gap:9, padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, cursor:'pointer', userSelect:'none' as const, borderLeft:'2px solid transparent' }}
-                onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.background=ALLOY.green4; el.style.color=ALLOY.green1; el.style.borderLeft=`2px solid ${ALLOY.green1}` }}
-                onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.background='none'; el.style.color=ALLOY.ink; el.style.borderLeft='2px solid transparent' }}>
-                <LayoutGrid size={12} strokeWidth={1.5} style={{ color:'inherit', flexShrink:0 }}/>
-                <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:'inherit' }}>Clone</span>
-              </div>
-              {/* Reset Size */}
-              <div onClick={handleResetSize}
-                style={{ display:'flex', alignItems:'center', gap:9, padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, cursor:'pointer', userSelect:'none' as const, borderLeft:'2px solid transparent' }}
-                onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.background=ALLOY.green4; el.style.color=ALLOY.green1; el.style.borderLeft=`2px solid ${ALLOY.green1}` }}
-                onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.background='none'; el.style.color=ALLOY.ink; el.style.borderLeft='2px solid transparent' }}>
-                <Maximize2 size={12} strokeWidth={1.5} style={{ color:'inherit', flexShrink:0 }}/>
-                <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:'inherit' }}>Reset Size</span>
-              </div>
-              {/* Share */}
-              <div onClick={handleShare}
-                style={{ display:'flex', alignItems:'center', gap:9, padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, cursor:'pointer', userSelect:'none' as const, borderLeft:'2px solid transparent' }}
-                onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.background=ALLOY.green4; el.style.color=ALLOY.green1; el.style.borderLeft=`2px solid ${ALLOY.green1}` }}
-                onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.background='none'; el.style.color=ALLOY.ink; el.style.borderLeft='2px solid transparent' }}>
-                <Link2 size={12} strokeWidth={1.5} style={{ color:'inherit', flexShrink:0 }}/>
-                <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:'inherit' }}>Share</span>
-              </div>
-              {/* Divider */}
-              <div style={{ height:1, background:ALLOY.line, margin:'4px 0' }}/>
-              {/* Remove */}
-              <div onClick={handleRemove}
-                style={{ display:'flex', alignItems:'center', gap:9, padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.red1, cursor:'pointer', userSelect:'none' as const, borderLeft:'2px solid transparent' }}
-                onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.background=ALLOY.red4; el.style.borderLeft=`2px solid ${ALLOY.red1}` }}
-                onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.background='none'; el.style.borderLeft='2px solid transparent' }}>
-                <Trash2 size={12} strokeWidth={1.5} style={{ color:ALLOY.red1, flexShrink:0 }}/>
-                <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.red1 }}>Remove</span>
-              </div>
-            </div>
-        )}
-      </div>
-    )
-  }
-
   // ── Toggle component ──────────────────────────────────────────────────────
-  function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label?: string }) {
-    return (
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:10 }}>
-        {label && <span style={{ fontSize:12, color:ALLOY.ink, fontFamily:ALLOY.fontBody }}>{label}</span>}
-        <div onClick={() => onChange(!on)}
-          style={{ width:36, height:20, borderRadius:999, background: on ? ALLOY.green1 : ALLOY.line, position:'relative', cursor:'pointer', transition:'background 0.2s', flexShrink:0 }}>
-          <div style={{ width:16, height:16, borderRadius:'50%', background:ALLOY.white, position:'absolute', top:2, left: on ? 18 : 2, transition:'left 0.2s', boxShadow:'0 1px 3px rgba(0,0,0,0.25)' }}/>
-        </div>
-      </div>
-    )
-  }
-
   // ── Resize handle ──────────────────────────────────────────────────────────
-  function ResizeHandle({ id }: { id: string }) {
-    if (!editMode) return null
 
-    const handleMouseDown = (e: React.MouseEvent) => {
-      e.preventDefault()
-      e.stopPropagation()
-      const el = (e.currentTarget as HTMLElement).closest('[data-widget-id]') as HTMLElement
-      if (!el) return
+  // ── Context objects for top-level component functions ──────────────────
+  const _wdCtx = { openMenu, setOpenMenu, editMode, widgets, STATIC_IDS, setWidgets, setEditingWidget, startEdit,
+    setFullscreenWidget, setDrillWidget, setDrillChannel, setShareCapture, setShareToast,
+    setRemovedWidgetIds, LS_REMOVED_KEY, dragIdRef, justDroppedRef, resizingId,
+    setWidgetSizes, LS_SIZES_KEY, LS_WIDGETS_KEY, dynamicWidgets, isWidgetRemoved, ALLOY, widgetSizes }
+  const _kpiCtx = { editMode, editingWidget, widgetSizes, resizingId, connection, justDroppedRef, openDrill, startEdit, getWidgetData, ALLOY }
+  const _ccCtx  = { editMode, editingWidget, widgetSizes, resizingId, justDroppedRef, openDrill, startEdit, widgets, ALLOY }
+  const _rhCtx  = { editMode, resizingId, setResizingId, setWidgetSizes, saveSizesToDB, LS_SIZES_KEY, ALLOY }
 
-      const rect = el.getBoundingClientRect()
-      const startX = e.clientX
-      const startY = e.clientY
-      const startW = rect.width
-      const startH = rect.height
-
-      // Show a transparent global overlay to block all mouse events during drag
-      const globalOverlay = document.createElement('div')
-      globalOverlay.style.cssText = 'position:fixed;inset:0;z-index:99999;cursor:se-resize;user-select:none;'
-      document.body.appendChild(globalOverlay)
-
-      // Live ghost overlay showing new size
-      const ghost = document.createElement('div')
-      ghost.style.cssText = `position:fixed;border:2px solid #20BB71;background:rgba(32,187,113,0.06);border-radius:2px;pointer-events:none;z-index:99998;box-shadow:0 0 0 1px rgba(32,187,113,0.2);`
-      ghost.innerHTML = '<div style="position:absolute;bottom:6px;right:8px;font-size:10px;font-weight:700;color:#20BB71;background:rgba(255,255,255,0.95);padding:2px 6px;border-radius:2px;font-family:Barlow,sans-serif;letter-spacing:0.05em;"></div>'
-      document.body.appendChild(ghost)
-
-      const updateGhost = (mx: number, my: number) => {
-        const nw = Math.max(160, startW + mx - startX)
-        const nh = Math.max(100, startH + my - startY)
-        ghost.style.left = rect.left + 'px'
-        ghost.style.top = rect.top + 'px'
-        ghost.style.width = nw + 'px'
-        ghost.style.height = nh + 'px'
-        const label = ghost.querySelector('div')
-        if (label) label.textContent = `${Math.round(nw)} × ${Math.round(nh)}`
-      }
-      updateGhost(startX, startY)
-
-      setResizingId(id)
-
-      const onMove = (mv: MouseEvent) => {
-        updateGhost(mv.clientX, mv.clientY)
-        // Also update the actual element live for instant feedback
-        const nw = Math.max(160, startW + mv.clientX - startX)
-        const nh = Math.max(100, startH + mv.clientY - startY)
-        el.style.width = nw + 'px'
-        el.style.minWidth = nw + 'px'
-        el.style.height = nh + 'px'
-        el.style.minHeight = nh + 'px'
-        el.style.flex = '0 0 auto'
-      }
-
-      const onUp = (mv: MouseEvent) => {
-        const nw = Math.max(160, startW + mv.clientX - startX)
-        const nh = Math.max(100, startH + mv.clientY - startY)
-        // Save to state and localStorage
-        setWidgetSizes(prev => {
-          const next = { ...prev, [id]: { w: nw, h: nh } }
-          saveSizesToDB(next)
-          return next
-        })
-        setResizingId(null)
-        document.body.removeChild(globalOverlay)
-        document.body.removeChild(ghost)
-        window.removeEventListener('mousemove', onMove)
-        window.removeEventListener('mouseup', onUp)
-      }
-
-      window.addEventListener('mousemove', onMove)
-      window.addEventListener('mouseup', onUp)
-    }
-
-    const isResizing = resizingId === id
-
-    return (
-      <div
-        onMouseDown={handleMouseDown}
-        draggable={false}
-        onDragStart={e => { e.preventDefault(); e.stopPropagation() }}
-        style={{
-          position: 'absolute', bottom: 0, right: 0,
-          width: 20, height: 20,
-          cursor: 'se-resize', zIndex: 30,
-          display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end',
-          padding: '3px',
-          opacity: isResizing ? 1 : 0.35,
-          transition: 'opacity 0.15s',
-        }}
-        onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = '1'}
-        onMouseLeave={e => { if (resizingId !== id) (e.currentTarget as HTMLElement).style.opacity = '0.35' }}
-        title="Drag to resize"
-      >
-        <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-          <path d="M2 10 L10 2" stroke={isResizing ? '#1a73e8' : ALLOY.mute} strokeWidth="1.5" strokeLinecap="round"/>
-          <path d="M5.5 10 L10 5.5" stroke={isResizing ? '#1a73e8' : ALLOY.mute} strokeWidth="1.5" strokeLinecap="round"/>
-          <path d="M9 10 L10 9" stroke={isResizing ? '#1a73e8' : ALLOY.mute} strokeWidth="1.5" strokeLinecap="round"/>
-        </svg>
-      </div>
-    )
-  }
-
-  function KPICardWrap({ w }: { w: Widget }) {
-    const _ctx = { editMode, editingWidget, widgetSizes, resizingId, connection, justDroppedRef, openDrill, startEdit, getWidgetData }
-    return <KPICard w={w} _ctx={_ctx}/>
-  }
-
-
-  function ChartCardWrap({ id, children }: { id: string; children: React.ReactNode }) {
-    const _ctx = { editMode, editingWidget, widgetSizes, resizingId, justDroppedRef, openDrill, startEdit, widgets }
-    return <ChartCard id={id} _ctx={_ctx}>{children}</ChartCard>
-  }
 
   return (
     <div style={{ display:'flex', flexDirection:'column', height:'100%', overflow:'hidden', background:ALLOY.white, fontFamily:ALLOY.fontBody }}
@@ -2379,20 +2384,20 @@ Alloy Intelligence`)
                 const renderWidgetContent = (id: string) => {
                   // KPI cards
                   const kpiW = widgets.find(w => w.id === id && !STATIC_IDS.includes(w.id))
-                  if (kpiW) return <KPICardWrap w={kpiW}/>
+                  if (kpiW) return <KPICard w={kpiW}_ctx={_kpiCtx}/>
 
                   // Static charts
                   if (id === 'c1') return (
-                    <ChartCardWrap id="c1">
+                    <ChartCard id="c1"_ctx={_ccCtx}>
                       <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
                         <span style={{ fontSize:11, color:ALLOY.mute, fontWeight:500, fontFamily:ALLOY.fontBody }}>{widgets.find(x=>x.id==='c1')?.title||'Sessions Over Time'}</span>
                         {connection?.connected && <span style={{ fontSize:9, color:ALLOY.green1, fontWeight:600, fontFamily:ALLOY.fontLabel }}>● Live</span>}
                       </div>
                       <DynamicChart chartType={widgets.find(x=>x.id==='c1')?.chartType||'line'} data={getWidgetData(widgets.find(x=>x.id==='c1')||{})} height={80} dimensions={(widgets.find(x=>x.id==='c1') as any)?.dimensions} metrics={(widgets.find(x=>x.id==='c1') as any)?.metrics} opts={widgets.find(x=>x.id==='c1') as any}/>
-                    </ChartCardWrap>
+                    </ChartCard>
                   )
                   if (id === 'c2') return (
-                    <ChartCardWrap id="c2">
+                    <ChartCard id="c2"_ctx={_ccCtx}>
                       <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:110 }}>
                         <div style={{ position:'relative', width:90, height:90 }}>
                           <ResponsiveContainer width="100%" height="100%">
@@ -2401,16 +2406,16 @@ Alloy Intelligence`)
                           <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center' }}><span style={{ fontSize:18, fontWeight:700, fontFamily:ALLOY.fontDisplay }}>44</span></div>
                         </div>
                       </div>
-                    </ChartCardWrap>
+                    </ChartCard>
                   )
                   if (id === 'c3') return (
-                    <ChartCardWrap id="c3">
+                    <ChartCard id="c3"_ctx={_ccCtx}>
                       <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
                         <span style={{ fontSize:11, color:ALLOY.mute, fontFamily:ALLOY.fontBody }}>Conversion Rate</span>
                         <span style={{ fontSize:10, fontWeight:700, color:ALLOY.red1, background:ALLOY.red4, padding:'2px 5px', borderRadius:2, fontFamily:ALLOY.fontLabel }}>▼ 34%</span>
                       </div>
                       <span style={{ fontSize:24, fontWeight:700, color:ALLOY.ink, fontFamily:ALLOY.fontDisplay }}>3%</span>
-                    </ChartCardWrap>
+                    </ChartCard>
                   )
                   if (id === 'bounce') return (
                     <div onClick={e => { e.stopPropagation(); if (editMode) startEdit(widgets[3]) }}
@@ -2418,7 +2423,7 @@ Alloy Intelligence`)
                       {editMode && <div style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const, display: editingWidget?.id==='bounce'?'block':'none' }}>✦ Editing</div>}
                       {editMode && <div style={{ position:'absolute', top:6, left:6, cursor:'grab', color:'rgba(255,255,255,0.35)' }}><Grip size={13}/></div>}
                       {editMode && <div onClick={e=>e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', gap:4 }}>
-                        <WidgetDot wid="bounce" onEdit={() => startEdit(widgets[3])} widget={widgets[3]}/>
+                        <WidgetDot wid="bounce" onEdit={() => startEdit(widgets[3])} widget={widgets[3]} _ctx={_wdCtx}/>
                       </div>}
                       <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
                         <span style={{ fontSize:11, color:'rgba(255,255,255,0.85)', fontFamily:ALLOY.fontBody }}>Bounce Rate</span>
@@ -2428,16 +2433,16 @@ Alloy Intelligence`)
                     </div>
                   )
                   if (id === 'd1') return (
-                    <ChartCardWrap id="d1">
+                    <ChartCard id="d1"_ctx={_ccCtx}>
                       <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
                         <span style={{ fontSize:11, fontWeight:600, fontFamily:ALLOY.fontBody }}>{widgets.find(x=>x.id==='d1')?.title||'Users By Device'}</span>
                         {connection?.connected && <span style={{ fontSize:9, color:ALLOY.green1, fontWeight:600, fontFamily:ALLOY.fontLabel }}>● Live</span>}
                       </div>
                       <DynamicChart chartType={widgets.find(x=>x.id==='d1')?.chartType||'column'} data={getWidgetData(widgets.find(x=>x.id==='d1')||{})} height={110} dimensions={(widgets.find(x=>x.id==='d1') as any)?.dimensions} metrics={(widgets.find(x=>x.id==='d1') as any)?.metrics} opts={widgets.find(x=>x.id==='d1') as any}/>
-                    </ChartCardWrap>
+                    </ChartCard>
                   )
                   if (id === 'd2') return (
-                    <ChartCardWrap id="d2">
+                    <ChartCard id="d2"_ctx={_ccCtx}>
                       <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
                         <span style={{ fontSize:11, fontWeight:600, fontFamily:ALLOY.fontBody }}>Top Referral Sources</span>
                         {connection?.connected && <span style={{ fontSize:9, color:ALLOY.green1, fontWeight:600, fontFamily:ALLOY.fontLabel }}>● Live</span>}
@@ -2449,10 +2454,10 @@ Alloy Intelligence`)
                         </div>
                         <div style={{ flex:1 }}>{sourceData.slice(0,4).map((d:any,i:number)=><div key={d.name} style={{ display:'flex', alignItems:'center', gap:4, marginBottom:3 }}><div style={{ width:6, height:6, borderRadius:'50%', background:['#2196f3','#64b5f6',ALLOY.blue3,'#bbdefb'][i%4], flexShrink:0 }}/><span style={{ fontSize:9, color:ALLOY.mute, flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', fontFamily:ALLOY.fontBody }}>{d.name}</span><span style={{ fontSize:9, fontWeight:600, fontFamily:ALLOY.fontBody }}>{d.value?.toLocaleString()}</span></div>)}</div>
                       </div>
-                    </ChartCardWrap>
+                    </ChartCard>
                   )
                   if (id === 'd3') return (
-                    <ChartCardWrap id="d3">
+                    <ChartCard id="d3"_ctx={_ccCtx}>
                       <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
                         <span style={{ fontSize:12, fontWeight:600, fontFamily:ALLOY.fontBody }}>Traffic by Cities</span>
                         {connection?.connected && <span style={{ fontSize:9, color:ALLOY.green1, fontWeight:600, fontFamily:ALLOY.fontLabel }}>● Live</span>}
@@ -2463,16 +2468,16 @@ Alloy Intelligence`)
                           <div style={{ height:4, background:ALLOY.line, borderRadius:2, overflow:'hidden' }}><div style={{ height:'100%', width:`${(c.val/maxCity)*100}%`, background:ALLOY.green1, borderRadius:2 }}/></div>
                         </div>
                       ))}
-                    </ChartCardWrap>
+                    </ChartCard>
                   )
                   if (id === 'v1') return (
-                    <ChartCardWrap id="v1">
+                    <ChartCard id="v1"_ctx={_ccCtx}>
                       <div style={{ display:'flex', justifyContent:'space-between', marginBottom:10 }}>
                         <span style={{ fontSize:12, fontWeight:600, fontFamily:ALLOY.fontBody }}>{widgets.find(x=>x.id==='v1')?.title||'Website Views'}</span>
                         {connection?.connected && <span style={{ fontSize:9, color:ALLOY.green1, fontWeight:600, fontFamily:ALLOY.fontLabel }}>● Live GA4</span>}
                       </div>
                       <DynamicChart chartType={widgets.find(x=>x.id==='v1')?.chartType||'area'} data={getWidgetData(widgets.find(x=>x.id==='v1')||{})} height={130} dimensions={(widgets.find(x=>x.id==='v1') as any)?.dimensions} metrics={(widgets.find(x=>x.id==='v1') as any)?.metrics} opts={widgets.find(x=>x.id==='v1') as any}/>
-                    </ChartCardWrap>
+                    </ChartCard>
                   )
                   // Dynamic widgets
                   const dynW = dynamicWidgets.find(w => w.id === id)
@@ -2484,7 +2489,7 @@ Alloy Intelligence`)
                         {isDynSelected && <div className="alloy-editing-badge" style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>✦ Editing</div>}
                         {editMode && <div style={{ position:'absolute', top:6, left:6, cursor:'grab', color:ALLOY.line }}><Grip size={13}/></div>}
                         {editMode && <div onClick={e=>e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', gap:4 }}>
-                          <WidgetDot wid={dynW.id} onEdit={() => startEdit(dynW)} widget={dynW}/>
+                          <WidgetDot wid={dynW.id} onEdit={() => startEdit(dynW)} widget={dynW} _ctx={_wdCtx}/>
                         </div>}
                         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
                           <span style={{ fontSize:12, fontWeight:600, color:ALLOY.ink, fontFamily:ALLOY.fontBody }}>{dynW.title}</span>
