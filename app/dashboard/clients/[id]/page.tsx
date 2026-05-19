@@ -504,13 +504,16 @@ function DynamicChart({ chartType, data, height = 80, dimensions = ['Date'], met
 // ── Empty canvas shown for any dashboard not in REAL_DASHBOARDS ──────────────
 function NewDashCanvas({ onClone, onTemplate }: { onClone: () => void; onTemplate: () => void }) {
   return (
-    <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', background:ALLOY.paper }}>
+    <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', background:ALLOY.paper }}
+      onClick={e => e.stopPropagation()}
+      onMouseDown={e => e.stopPropagation()}>
       <p style={{ fontSize:15, color:ALLOY.ink, marginBottom:2, fontFamily:ALLOY.fontDisplay }}>Start building by dragging widgets</p>
       <p style={{ fontSize:13, color:ALLOY.mute, marginBottom:20, fontFamily:ALLOY.fontBody }}>or</p>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, width:520 }}>
 
         {/* Add a page template */}
         <button
+          data-action="open-template"
           onMouseDown={e => { e.preventDefault(); e.stopPropagation(); }}
           onClick={e => { e.preventDefault(); e.stopPropagation(); onTemplate(); }}
           style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:14, padding:'30px 24px', background:ALLOY.white, border:'1px solid #e8e8e8', borderRadius:2, cursor:'pointer', textAlign:'center' as const }}>
@@ -1060,6 +1063,24 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     setTemplateSelected(null)
     setTemplateName('')
     setTemplateSearch('')
+  }, [])
+
+  // Fallback: catch template button click at document level in case React event is blocked
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      const btn = (e.target as HTMLElement).closest('[data-action="open-template"]')
+      if (btn) {
+        e.preventDefault()
+        e.stopPropagation()
+        setShowTemplateModal(true)
+        setTemplateStep(1)
+        setTemplateSelected(null)
+        setTemplateName('')
+        setTemplateSearch('')
+      }
+    }
+    document.addEventListener('click', onDocClick, true) // capture phase
+    return () => document.removeEventListener('click', onDocClick, true)
   }, [])
 
   // ── Core widget constants and helpers ───────────────────────────────────
