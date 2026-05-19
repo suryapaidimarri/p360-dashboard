@@ -1,7 +1,8 @@
 'use client'
 import React from 'react'
-import { ChevronRight, Sparkles, Settings, Calendar, ChevronDown, Plus, MoreHorizontal, Maximize2, X, Grip, RotateCcw, RotateCw, Monitor, Smartphone, ChevronLeft, RefreshCw, CheckCircle2, Download, Mail, Link2, LayoutGrid, Edit, Copy, Trash2 } from 'lucide-react'
+import { MoreHorizontal, Maximize2, X, Grip, Plus, Edit, Copy, Trash2, Link2, LayoutGrid } from 'lucide-react'
 import { BarChart, Bar, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ScatterChart, Scatter as ScatterPlot, ZAxis } from 'recharts'
+
 
 // ── Alloy Design System tokens (JS constants for inline styles) ─────────────
 export const ALLOY = {
@@ -178,9 +179,9 @@ export function DynamicChart({ chartType, data, height = 80, dimensions = ['Date
     return (
       <ResponsiveContainer width="100%" height={height}>
         <LineChart data={data}>
-          <XAxis dataKey="d" hide={chartType === 'sparkline'} axisLine={false} tickLine={false} tick={{ fontSize:9, fill:ALLOY.mute, fontFamily:ALLOY.fontBody }}/>
+          <XAxis dataKey="d" hide={chartType === 'sparkline'} axisLine={false} tickLine={false} tick={{ fontSize:9, fill:ALLOY.mute }}/>
           <Line type="monotone" dataKey="v" stroke={c} strokeWidth={2} dot={false} name={metLabel}/>
-          <Tooltip contentStyle={{ fontSize:10, borderRadius:2, fontFamily:ALLOY.fontBody }} formatter={(v:number) => [v.toLocaleString(), metLabel]}/>
+          <Tooltip contentStyle={{ fontSize:10, borderRadius:2 }} formatter={(v:number) => [v.toLocaleString(), metLabel]}/>
         </LineChart>
       </ResponsiveContainer>
     )
@@ -191,9 +192,9 @@ export function DynamicChart({ chartType, data, height = 80, dimensions = ['Date
       <ResponsiveContainer width="100%" height={height}>
         <AreaChart data={data}>
           <defs><linearGradient id="dcg" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={c} stopOpacity={0.3}/><stop offset="95%" stopColor={c} stopOpacity={0}/></linearGradient></defs>
-          <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:ALLOY.mute, fontFamily:ALLOY.fontBody }}/>
+          <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:ALLOY.mute }}/>
           <Area type={chartType === 'steparea' ? 'step' : 'monotone'} dataKey="v" stroke={c} fill="url(#dcg)" strokeWidth={2} dot={false} name={metLabel}/>
-          <Tooltip contentStyle={{ fontSize:10, borderRadius:2, fontFamily:ALLOY.fontBody }} formatter={(v:number) => [v.toLocaleString(), metLabel]}/>
+          <Tooltip contentStyle={{ fontSize:10, borderRadius:2 }} formatter={(v:number) => [v.toLocaleString(), metLabel]}/>
         </AreaChart>
       </ResponsiveContainer>
     )
@@ -203,9 +204,9 @@ export function DynamicChart({ chartType, data, height = 80, dimensions = ['Date
     return (
       <ResponsiveContainer width="100%" height={height}>
         <BarChart data={data} barSize={18}>
-          <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:ALLOY.mute, fontFamily:ALLOY.fontBody }}/>
+          <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:ALLOY.mute }}/>
           <YAxis hide/>
-          <Tooltip contentStyle={{ fontSize:10, borderRadius:2, fontFamily:ALLOY.fontBody }} formatter={(v:number) => [v.toLocaleString(), metLabel]}/>
+          <Tooltip contentStyle={{ fontSize:10, borderRadius:2 }} formatter={(v:number) => [v.toLocaleString(), metLabel]}/>
           <Bar dataKey="v" radius={[3,3,0,0]} name={metLabel}>
             {data.map((_:any, i:number) => <Cell key={i} fill={colors[i % colors.length]}/>)}
           </Bar>
@@ -220,7 +221,7 @@ export function DynamicChart({ chartType, data, height = 80, dimensions = ['Date
           <Pie data={data} dataKey="v" cx="50%" cy="50%" outerRadius={height/2 - 8}>
             {data.map((_:any, i:number) => <Cell key={i} fill={colors[i % colors.length]}/>)}
           </Pie>
-          <Tooltip contentStyle={{ fontSize:10, borderRadius:2, fontFamily:ALLOY.fontBody }}/>
+          <Tooltip contentStyle={{ fontSize:10, borderRadius:2 }}/>
         </PieChart>
       </ResponsiveContainer>
     )
@@ -232,7 +233,7 @@ export function DynamicChart({ chartType, data, height = 80, dimensions = ['Date
           <Pie data={data} dataKey="v" cx="50%" cy="50%" innerRadius={height/4 - 4} outerRadius={height/2 - 8}>
             {data.map((_:any, i:number) => <Cell key={i} fill={colors[i % colors.length]}/>)}
           </Pie>
-          <Tooltip contentStyle={{ fontSize:10, borderRadius:2, fontFamily:ALLOY.fontBody }}/>
+          <Tooltip contentStyle={{ fontSize:10, borderRadius:2 }}/>
         </PieChart>
       </ResponsiveContainer>
     )
@@ -241,52 +242,31 @@ export function DynamicChart({ chartType, data, height = 80, dimensions = ['Date
     const total = data.reduce((s:number, d:any) => s + (d.v || 0), 0)
     return (
       <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height }}>
-        <span style={{ fontSize:32, fontWeight:700, color:c, letterSpacing:'-1px', fontFamily:ALLOY.fontDisplay }}>
+        <span style={{ fontSize:32, fontWeight:700, color:c, letterSpacing:'-1px' }}>
           {total >= 1000000 ? (total/1000000).toFixed(1)+'M' : total >= 1000 ? (total/1000).toFixed(1)+'K' : total}
         </span>
       </div>
     )
   }
   if (chartType === 'table') {
-    const dimLabel   = dimensions[0] || 'Dimension'
-    const showHeader = opts.tableShowHeader !== false
-    const showRowNum = opts.tableRowNumbers === true
-    const tFontSize  = opts.tableFontSize   || '11px'
-    const tFontFam   = opts.tableFontFamily || ALLOY.fontBody
-    const headerBg   = opts.tableHeaderBg   || ALLOY.paper
-    const oddBg      = opts.tableOddRow     || ALLOY.white
-    const evenBg     = opts.tableEvenRow    || ALLOY.paper
-    const cellBorder = opts.tableCellBorder || ALLOY.line
-    const missing    = opts.tableMissingData || 'Show "null"'
-    const dimAligns  = (opts.dimAlign as string[]) || dimensions.map(() => 'left')
-    const fmtVal     = (v: any) => {
-      if (v == null || v === '') return missing === 'Show "0"' ? '0' : missing === 'Hide row' ? null : 'null'
-      return typeof v === 'number' ? v.toLocaleString() : String(v)
-    }
+    const dimLabel = dimensions[0] || 'Dimension'
+    const metLabel = metrics[0] || 'Value'
     return (
-      <div style={{ height, overflowY:'auto' as const }}>
-        <table style={{ width:'100%', fontSize:tFontSize, borderCollapse:'collapse', fontFamily:tFontFam }}>
-          {showHeader && (
-            <thead>
-              <tr style={{ background:headerBg }}>
-                {showRowNum && <th style={{ padding:'4px 6px', fontWeight:600, color:ALLOY.mute, borderBottom:`2px solid ${cellBorder}`, width:28, textAlign:'center' as const }}>#</th>}
-                <th style={{ padding:'5px 8px', textAlign:(dimAligns[0]||'left') as any, fontWeight:600, color:ALLOY.mute, borderBottom:`2px solid ${cellBorder}` }}>{dimLabel}</th>
-                {metrics.map((m, i) => <th key={i} style={{ padding:'5px 8px', textAlign:'right', fontWeight:600, color:ALLOY.mute, borderBottom:`2px solid ${cellBorder}` }}>{m}</th>)}
-              </tr>
-            </thead>
-          )}
+      <div style={{ height, overflowY:'auto' }}>
+        <table style={{ width:'100%', fontSize:10, borderCollapse:'collapse' }}>
+          <thead>
+            <tr style={{ background:ALLOY.paper }}>
+              <th style={{ padding:'5px 8px', textAlign:'left', fontWeight:600, color:ALLOY.mute, borderBottom:`2px solid ${ALLOY.line}` }}>{dimLabel}</th>
+              {metrics.map((m, i) => <th key={i} style={{ padding:'5px 8px', textAlign:'right', fontWeight:600, color:ALLOY.mute, borderBottom:`2px solid ${ALLOY.line}` }}>{m}</th>)}
+            </tr>
+          </thead>
           <tbody>
-            {data.slice(0, Math.floor(height/22) || 6).map((d:any, i:number) => {
-              const fv = fmtVal(d.v)
-              if (fv === null) return null
-              return (
-                <tr key={i} style={{ borderBottom:`1px solid ${cellBorder}`, background: i%2===0 ? oddBg : evenBg }}>
-                  {showRowNum && <td style={{ padding:'4px 6px', color:ALLOY.mute, textAlign:'center' as const, fontSize:'9px' }}>{i+1}</td>}
-                  <td style={{ padding:'4px 8px', color:'#444', fontWeight:500, textAlign:(dimAligns[0]||'left') as any }}>{d.d}</td>
-                  {metrics.map((_, mi) => <td key={mi} style={{ padding:'4px 8px', textAlign:'right', fontWeight:600, color:ALLOY.ink }}>{fv}</td>)}
-                </tr>
-              )
-            })}
+            {data.slice(0, Math.floor(height/22) || 6).map((d:any, i:number) => (
+              <tr key={i} style={{ borderBottom:`1px solid ${ALLOY.line}`, background: i%2===0 ? ALLOY.white : ALLOY.paper }}>
+                <td style={{ padding:'4px 8px', color:'#444', fontWeight:500 }}>{d.d}</td>
+                {metrics.map((_, mi) => <td key={mi} style={{ padding:'4px 8px', textAlign:'right', fontWeight:600, color:ALLOY.ink }}>{d.v?.toLocaleString()}</td>)}
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -296,9 +276,9 @@ export function DynamicChart({ chartType, data, height = 80, dimensions = ['Date
     return (
       <ResponsiveContainer width="100%" height={height}>
         <BarChart data={data} barSize={14}>
-          <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:ALLOY.mute, fontFamily:ALLOY.fontBody }}/>
+          <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:ALLOY.mute }}/>
           <YAxis hide/>
-          <Tooltip contentStyle={{ fontSize:10, borderRadius:2, fontFamily:ALLOY.fontBody }}/>
+          <Tooltip contentStyle={{ fontSize:10, borderRadius:2 }}/>
           <Bar dataKey="v" fill={c} fillOpacity={0.4} radius={[2,2,0,0]}/>
           <Line type="monotone" dataKey="v" stroke="#ea8600" strokeWidth={2} dot={false}/>
         </BarChart>
@@ -311,7 +291,7 @@ export function DynamicChart({ chartType, data, height = 80, dimensions = ['Date
         <LineChart data={data}>
           <Line type={chartType === 'waveline' ? 'basis' : 'monotone'} dataKey="v" stroke={c} strokeWidth={2} dot={false}/>
           <Line type="monotone" dataKey="v" stroke="#ea8600" strokeWidth={1.5} dot={false} strokeDasharray="4 2"/>
-          <Tooltip contentStyle={{ fontSize:10, borderRadius:2, fontFamily:ALLOY.fontBody }}/>
+          <Tooltip contentStyle={{ fontSize:10, borderRadius:2 }}/>
         </LineChart>
       </ResponsiveContainer>
     )
@@ -321,8 +301,8 @@ export function DynamicChart({ chartType, data, height = 80, dimensions = ['Date
       <ResponsiveContainer width="100%" height={height}>
         <BarChart data={data} layout="vertical" barSize={12}>
           <XAxis type="number" hide/>
-          <YAxis type="category" dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:ALLOY.mute, fontFamily:ALLOY.fontBody }} width={30}/>
-          <Tooltip contentStyle={{ fontSize:10, borderRadius:2, fontFamily:ALLOY.fontBody }}/>
+          <YAxis type="category" dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:ALLOY.mute }} width={30}/>
+          <Tooltip contentStyle={{ fontSize:10, borderRadius:2 }}/>
           <Bar dataKey="v" radius={[0,3,3,0]}>
             {data.map((_:any,i:number) => <Cell key={i} fill={colors[i%colors.length]}/>)}
           </Bar>
@@ -335,8 +315,8 @@ export function DynamicChart({ chartType, data, height = 80, dimensions = ['Date
       <ResponsiveContainer width="100%" height={height}>
         <BarChart data={data.slice(0,4)} layout="vertical" barSize={10}>
           <XAxis type="number" hide/>
-          <YAxis type="category" dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:ALLOY.mute, fontFamily:ALLOY.fontBody }} width={30}/>
-          <Tooltip contentStyle={{ fontSize:10, borderRadius:2, fontFamily:ALLOY.fontBody }}/>
+          <YAxis type="category" dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:ALLOY.mute }} width={30}/>
+          <Tooltip contentStyle={{ fontSize:10, borderRadius:2 }}/>
           <Bar dataKey="v" stackId="a" fill={c} radius={[0,3,3,0]}/>
         </BarChart>
       </ResponsiveContainer>
@@ -350,7 +330,7 @@ export function DynamicChart({ chartType, data, height = 80, dimensions = ['Date
           <XAxis type="number" dataKey="x" hide/>
           <YAxis type="number" dataKey="y" hide/>
           {chartType === 'bubble' && <ZAxis type="number" dataKey="z" range={[20, 80]}/>}
-          <Tooltip contentStyle={{ fontSize:10, borderRadius:2, fontFamily:ALLOY.fontBody }} formatter={(v:number) => [v.toLocaleString(),'']}/>
+          <Tooltip contentStyle={{ fontSize:10, borderRadius:2 }} formatter={(v:number) => [v.toLocaleString(),'']}/>
           <ScatterPlot data={scatterData} fill={c}/>
         </ScatterChart>
       </ResponsiveContainer>
@@ -360,9 +340,9 @@ export function DynamicChart({ chartType, data, height = 80, dimensions = ['Date
     return (
       <ResponsiveContainer width="100%" height={height}>
         <BarChart data={data} barSize={6}>
-          <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:ALLOY.mute, fontFamily:ALLOY.fontBody }}/>
+          <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:ALLOY.mute }}/>
           <YAxis hide/>
-          <Tooltip contentStyle={{ fontSize:10, borderRadius:2, fontFamily:ALLOY.fontBody }}/>
+          <Tooltip contentStyle={{ fontSize:10, borderRadius:2 }}/>
           <Bar dataKey="v" radius={[2,2,0,0]}>
             {data.map((d:any,i:number) => <Cell key={i} fill={i%2===0?'#34a853':'#ea4335'}/>)}
           </Bar>
@@ -374,9 +354,9 @@ export function DynamicChart({ chartType, data, height = 80, dimensions = ['Date
     return (
       <ResponsiveContainer width="100%" height={height}>
         <BarChart data={data} barSize={16}>
-          <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:ALLOY.mute, fontFamily:ALLOY.fontBody }}/>
+          <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:ALLOY.mute }}/>
           <YAxis hide/>
-          <Tooltip contentStyle={{ fontSize:10, borderRadius:2, fontFamily:ALLOY.fontBody }}/>
+          <Tooltip contentStyle={{ fontSize:10, borderRadius:2 }}/>
           <Bar dataKey="v" radius={[3,3,0,0]}>
             {data.map((d:any,i:number) => <Cell key={i} fill={i===data.length-1?'#ea4335':i%2===0?c:'#34a853'}/>)}
           </Bar>
@@ -391,7 +371,7 @@ export function DynamicChart({ chartType, data, height = 80, dimensions = ['Date
         {data.slice(0,5).map((d:any,i:number) => (
           <div key={i} style={{ display:'flex', alignItems:'center', gap:6 }}>
             <div style={{ height:14, borderRadius:2, background:colors[i%colors.length], transition:'width 0.3s' , width:`${Math.max(20,(d.v/maxV)*100)}%`}}/>
-            <span style={{ fontSize:9, color:ALLOY.mute, whiteSpace:'nowrap', fontFamily:ALLOY.fontBody }}>{d.d}</span>
+            <span style={{ fontSize:9, color:ALLOY.mute, whiteSpace:'nowrap' }}>{d.d}</span>
           </div>
         ))}
       </div>
@@ -402,7 +382,7 @@ export function DynamicChart({ chartType, data, height = 80, dimensions = ['Date
       <div style={{ height, display:'grid', gridTemplateColumns:'1fr 1fr', gridTemplateRows:'1fr 1fr', gap:2, padding:'4px' }}>
         {data.slice(0,4).map((d:any,i:number) => (
           <div key={i} style={{ background:colors[i%colors.length], borderRadius:3, display:'flex', alignItems:'center', justifyContent:'center', opacity:0.8 }}>
-            <span style={{ fontSize:9, color:ALLOY.white, fontWeight:600, fontFamily:ALLOY.fontBody }}>{d.d}</span>
+            <span style={{ fontSize:9, color:ALLOY.white, fontWeight:600 }}>{d.d}</span>
           </div>
         ))}
       </div>
@@ -430,7 +410,7 @@ export function DynamicChart({ chartType, data, height = 80, dimensions = ['Date
           <div key={i} style={{ display:'flex', alignItems:'center', gap:6 }}>
             <div style={{ width:8, height:8, borderRadius:'50%', background:colors[i%colors.length], flexShrink:0 }}/>
             <div style={{ flex:1, height:10, borderRadius:2, background:colors[i%colors.length], opacity:0.7, width:`${30+i*15}%` }}/>
-            <span style={{ fontSize:9, color:ALLOY.mute, fontFamily:ALLOY.fontBody }}>{d.d}</span>
+            <span style={{ fontSize:9, color:ALLOY.mute }}>{d.d}</span>
           </div>
         ))}
       </div>
@@ -469,7 +449,7 @@ export function DynamicChart({ chartType, data, height = 80, dimensions = ['Date
     const dimLabel = dimensions[0] || 'Dimension'
     return (
       <div style={{ height, overflowY:'auto' }}>
-        <table style={{ width:'100%', fontSize:10, borderCollapse:'collapse', fontFamily:ALLOY.fontBody }}>
+        <table style={{ width:'100%', fontSize:10, borderCollapse:'collapse' }}>
           <thead>
             <tr style={{ background:ALLOY.blue4 }}>
               <th style={{ padding:'4px 8px', textAlign:'left', fontWeight:600, color:ALLOY.mute, borderBottom:`2px solid ${ALLOY.blue3}` }}>{dimLabel}</th>
@@ -493,7 +473,7 @@ export function DynamicChart({ chartType, data, height = 80, dimensions = ['Date
     <ResponsiveContainer width="100%" height={height}>
       <LineChart data={data}>
         <Line type="monotone" dataKey="v" stroke={c} strokeWidth={2} dot={false}/>
-        <Tooltip contentStyle={{ fontSize:10, borderRadius:2, fontFamily:ALLOY.fontBody }}/>
+        <Tooltip contentStyle={{ fontSize:10, borderRadius:2 }}/>
       </LineChart>
     </ResponsiveContainer>
   )
@@ -503,8 +483,8 @@ export function DynamicChart({ chartType, data, height = 80, dimensions = ['Date
 export function NewDashCanvas({ onClone }: { onClone: () => void }) {
   return (
     <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', background:ALLOY.paper }}>
-      <p style={{ fontSize:15, color:ALLOY.ink, marginBottom:2, fontFamily:ALLOY.fontDisplay }}>Start building by dragging widgets</p>
-      <p style={{ fontSize:13, color:ALLOY.mute, marginBottom:20, fontFamily:ALLOY.fontBody }}>or</p>
+      <p style={{ fontSize:15, color:ALLOY.ink, marginBottom:2 }}>Start building by dragging widgets</p>
+      <p style={{ fontSize:13, color:ALLOY.mute, marginBottom:20 }}>or</p>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, width:520 }}>
 
         {/* Add a page template */}
@@ -513,8 +493,8 @@ export function NewDashCanvas({ onClone }: { onClone: () => void }) {
             <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect x="4" y="4" width="12" height="12" rx="2" fill="#D0D0D0"/><rect x="20" y="4" width="12" height="12" rx="2" fill="#D0D0D0"/><rect x="4" y="20" width="12" height="7" rx="1.5" fill="#E8E8E8"/><rect x="20" y="20" width="12" height="7" rx="1.5" fill="#E8E8E8"/><circle cx="10" cy="30" r="2.5" fill="#48b5ea"/></svg>
           </div>
           <div>
-            <p style={{ fontSize:14, fontWeight:500, color:ALLOY.ink, marginBottom:6, fontFamily:ALLOY.fontBody }}>Add a page template</p>
-            <p style={{ fontSize:12, color:ALLOY.mute, lineHeight:1.6, fontFamily:ALLOY.fontBody }}>Choose from a ready-made template or one of your saved pages</p>
+            <p style={{ fontSize:14, fontWeight:500, color:ALLOY.ink, marginBottom:6 }}>Add a page template</p>
+            <p style={{ fontSize:12, color:ALLOY.mute, lineHeight:1.6 }}>Choose from a ready-made template or one of your saved pages</p>
           </div>
         </button>
 
@@ -524,8 +504,8 @@ export function NewDashCanvas({ onClone }: { onClone: () => void }) {
             <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="12" stroke="#D0D0D0" strokeWidth="2"/><circle cx="18" cy="10" r="3" fill="#D0D0D0"/><path d="M14 18 L17 21 L23 15" stroke="#48b5ea" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M26 10 L28 14 L32 12" stroke="#D0D0D0" strokeWidth="1.5" strokeLinecap="round"/></svg>
           </div>
           <div>
-            <p style={{ fontSize:14, fontWeight:500, color:ALLOY.ink, marginBottom:6, fontFamily:ALLOY.fontBody }}>Build a page using AI</p>
-            <p style={{ fontSize:12, color:ALLOY.mute, lineHeight:1.6, fontFamily:ALLOY.fontBody }}>Tell AI what you're trying to achieve, and watch it build your page</p>
+            <p style={{ fontSize:14, fontWeight:500, color:ALLOY.ink, marginBottom:6 }}>Build a page using AI</p>
+            <p style={{ fontSize:12, color:ALLOY.mute, lineHeight:1.6 }}>Tell AI what you're trying to achieve, and watch it build your page</p>
           </div>
         </button>
 
@@ -537,8 +517,8 @@ export function NewDashCanvas({ onClone }: { onClone: () => void }) {
             <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect x="5" y="8" width="18" height="22" rx="2" stroke="#D0D0D0" strokeWidth="2"/><rect x="13" y="6" width="18" height="22" rx="2" stroke="#D0D0D0" strokeWidth="2" fill="#FAFAFA"/><path d="M18 13 h8" stroke="#E0E0E0" strokeWidth="1.5" strokeLinecap="round"/><path d="M18 17 h6" stroke="#E0E0E0" strokeWidth="1.5" strokeLinecap="round"/><path d="M18 21 h7" stroke="#E0E0E0" strokeWidth="1.5" strokeLinecap="round"/></svg>
           </div>
           <div>
-            <p style={{ fontSize:14, fontWeight:500, color:ALLOY.ink, marginBottom:6, fontFamily:ALLOY.fontBody }}>Clone existing page</p>
-            <p style={{ fontSize:12, color:ALLOY.mute, lineHeight:1.6, fontFamily:ALLOY.fontBody }}>Copy a page from another page</p>
+            <p style={{ fontSize:14, fontWeight:500, color:ALLOY.ink, marginBottom:6 }}>Clone existing page</p>
+            <p style={{ fontSize:12, color:ALLOY.mute, lineHeight:1.6 }}>Copy a page from another page</p>
           </div>
         </button>
 
@@ -548,8 +528,8 @@ export function NewDashCanvas({ onClone }: { onClone: () => void }) {
             <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect x="4" y="9" width="28" height="18" rx="2" stroke="#D0D0D0" strokeWidth="2"/><path d="M4 15 h28" stroke="#D0D0D0" strokeWidth="1.5"/><rect x="8" y="19" width="7" height="5" rx="1" fill="#E0E0E0"/><rect x="20" y="19" width="7" height="5" rx="1" fill="#48b5ea" fillOpacity="0.35"/><rect x="14" y="27" width="8" height="2" rx="1" fill="#D0D0D0"/></svg>
           </div>
           <div>
-            <p style={{ fontSize:14, fontWeight:500, color:ALLOY.ink, marginBottom:6, fontFamily:ALLOY.fontBody }}>Smart Dashboard</p>
-            <p style={{ fontSize:12, color:ALLOY.mute, lineHeight:1.6, fontFamily:ALLOY.fontBody }}>Generate a dashboard from your connected integrations</p>
+            <p style={{ fontSize:14, fontWeight:500, color:ALLOY.ink, marginBottom:6 }}>Smart Dashboard</p>
+            <p style={{ fontSize:12, color:ALLOY.mute, lineHeight:1.6 }}>Generate a dashboard from your connected integrations</p>
           </div>
         </button>
 
@@ -605,272 +585,10 @@ export function ChartThumbSvg({ id, active }: { id: string; active: boolean }) {
 }
 
 // ── Main page ────────────────────────────────────────────────────────────────
-export function KPICard({ w, _ctx }: { w: Widget; _ctx: any }) {
-  const { editMode, editingWidget, widgetSizes, resizingId, connection, justDroppedRef, openDrill, startEdit, getWidgetData } = _ctx
-  const c = KPI_BG[w.color] || KPI_BG.white
-  const isWhite = w.color === 'white'
-  const isSelected = editingWidget?.id === w.id
-  const bgColor = w.bgHex || c.bg
-  const borderCol = isSelected && editMode ? ALLOY.green1 : (w.borderColor || c.border)
-  const selectedRing = isSelected && editMode
-    ? { border:`2.5px solid ${ALLOY.green1}`, boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` }
-    : {}
-  const textCol = w.textColor || c.text
 
-  // KPI types — show number scorecard layout
-  const isKpiType = !w.chartType || w.chartType === 'scorecard' || w.chartType === 'sparkline'
-
-  const editControls = (
-    <>
-      {editMode && <div style={{ position:'absolute', top:6, left:6, cursor:'grab', color:isWhite?ALLOY.line:'rgba(255,255,255,0.35)', zIndex:5 }}><Grip size={13}/></div>}
-      {editMode && (
-        <div onClick={e => e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', alignItems:'center', gap:4 }}>
-          <button style={{ background:isWhite?'rgba(0,0,0,0.05)':'rgba(255,255,255,0.15)', border:'none', borderRadius:2, padding:'3px 5px', cursor:'pointer', display:'flex' }}>
-            <Maximize2 size={10} style={{ color:isWhite?ALLOY.mute:'rgba(255,255,255,0.7)' }}/>
-          </button>
-          <WidgetDot wid={w.id} onEdit={() => startEdit(w)} widget={w} _ctx={_ctx}/>
-        </div>
-      )}
-    </>
-  )
-
-  if (!isKpiType) {
-    // ── Full chart mode: replaces entire card with chart ──
-    const activeFilters: string[] = (w as any).filters || []
-    return (
-      <div data-widget-id={w.id}
-        onClick={e => { e.stopPropagation(); if (justDroppedRef.current) return; if (editMode) startEdit(w); else openDrill(w) }}
-        style={{ background:ALLOY.white, borderRadius:2, padding:12, position:'relative', minHeight: widgetSizes[w.id]?.h || 130, cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, border:`2px solid ${borderCol}`, ...selectedRing, ...(widgetSizes[w.id] ? { width: widgetSizes[w.id].w, minWidth: widgetSizes[w.id].w, flex: '0 0 auto' } : { flex: '1 1 220px' }) }}>
-        {isSelected && editMode && (
-          <div className="alloy-editing-badge" style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
-            ✦ Editing
-          </div>
-        )}
-        {editControls}
-        <ResizeHandle id={w.id} _ctx={_rhCtx}/>
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6 }}>
-          {(w as any).chartHeaderMode !== 'Never show' && (
-            <span style={{ fontSize:12, color:(w as any).headerFontColor || ALLOY.mute, fontWeight:500, fontFamily:ALLOY.fontBody }}>{w.title}</span>
-          )}
-          <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-            {w.change && <span style={{ fontSize:10, fontWeight:700, padding:'2px 6px', borderRadius:2, color:w.up?ALLOY.green1:ALLOY.red1, background:w.up?ALLOY.green4:ALLOY.red4, fontFamily:ALLOY.fontLabel }}>{w.up?'▲':'▼'} {w.change}</span>}
-            {connection?.connected && <span style={{ fontSize:9, color:ALLOY.green1, fontWeight:600, fontFamily:ALLOY.fontLabel }}>● Live</span>}
-          </div>
-        </div>
-        {activeFilters.length > 0 && (
-          <div style={{ display:'flex', flexWrap:'wrap' as const, gap:4, marginBottom:6 }}>
-            {activeFilters.map((f: string, i: number) => (
-              <span key={i} style={{ fontSize:9, background:ALLOY.yellow4, color:ALLOY.yellow1, border:'1px solid #ffe0b2', borderRadius:999, padding:'2px 8px', display:'flex', alignItems:'center', gap:4, fontFamily:ALLOY.fontLabel }}>
-                <span>≡</span> {f}
-              </span>
-            ))}
-          </div>
-        )}
-        <DynamicChart chartType={w.chartType} data={getWidgetData(w)} height={activeFilters.length > 0 ? 80 : 90} dimensions={(w as any).dimensions} metrics={(w as any).metrics}/>
-      </div>
-    )
-  }
-
-  // ── KPI scorecard mode — compute value from selected metric if available ──
-  const wData = getWidgetData(w as any)
-  const computedValue = wData.length > 0
-    ? wData.reduce((sum: number, d: any) => sum + (d.v || 0), 0)
-    : null
-  const displayValue = w.value && w.value !== '—' ? w.value
-    : computedValue !== null ? (computedValue >= 1000000 ? (computedValue/1000000).toFixed(1)+'M' : computedValue >= 1000 ? (computedValue/1000).toFixed(1)+'K' : computedValue.toFixed(0))
-    : '—'
-
-  return (
-    <div data-widget-id={w.id} className={editMode ? '' : 'alloy-card-hover'}
-      onClick={e => { e.stopPropagation(); if (justDroppedRef.current) return; if (editMode) startEdit(w); else openDrill(w) }}
-      style={{ background:bgColor, borderRadius:2, padding:16, position:'relative', minHeight: widgetSizes[w.id]?.h || 110, cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, border:`2px solid ${borderCol}`, ...selectedRing, ...(widgetSizes[w.id] ? { width: widgetSizes[w.id].w, minWidth: widgetSizes[w.id].w, flex: '0 0 auto' } : { flex: '1 1 180px' }) }}>
-      {isSelected && editMode && (
-        <div className="alloy-editing-badge" style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
-          ✦ Editing
-        </div>
-      )}
-      {editControls}
-      <ResizeHandle id={w.id} _ctx={_rhCtx}/>
-      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:10 }}>
-        <span style={{ fontSize:12, color:c.sub, fontWeight:500, fontFamily:ALLOY.fontBody }}>{w.title}</span>
-        {w.change && <span style={{ fontSize:10, fontWeight:700, marginLeft:8, padding:'2px 6px', borderRadius:2, fontFamily:ALLOY.fontLabel, color:isWhite?(w.up?ALLOY.green1:ALLOY.red1):'rgba(255,255,255,0.95)', background:isWhite?(w.up?ALLOY.green4:ALLOY.red4):'rgba(255,255,255,0.18)' }}>{w.up?'▲':'▼'} {w.change}</span>}
-      </div>
-      <p style={{ fontSize:30, fontWeight:700, color:textCol, letterSpacing:'-0.5px', lineHeight:1, fontFamily:ALLOY.fontDisplay }}>{displayValue}</p>
-      {connection?.connected && <p style={{ fontSize:9, color:isWhite?ALLOY.green1:'rgba(255,255,255,0.7)', marginTop:4, fontFamily:ALLOY.fontLabel }}>● Live</p>}
-      {w.chartType === 'sparkline' && (
-        <div style={{ marginTop:6 }}>
-          <DynamicChart chartType="sparkline" data={getWidgetData(w)} height={35} dimensions={(w as any).dimensions} metrics={(w as any).metrics}/>
-        </div>
-      )}
-    </div>
-  )
-}
-
-export function ChartCard({ id, children, _ctx }: { id: string; children: React.ReactNode; _ctx: any }) {
-  const { editMode, editingWidget, widgetSizes, resizingId, justDroppedRef, openDrill, startEdit, widgets } = _ctx
-  const w = widgets.find((x:Widget) => x.id === id) || widgets[0]
-  const isSelected = editingWidget?.id === w.id
-  const sz = widgetSizes[id]
-  return (
-    <div data-widget-id={id}
-      onClick={e => { e.stopPropagation(); if (justDroppedRef.current) return; if (editMode) startEdit(w); else openDrill(w) }}
-      style={{ background:ALLOY.white, borderRadius:2, padding:16, position:'relative', cursor: editMode ? 'pointer' : 'default', transition: resizingId === id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, ...(isSelected && editMode ? { border:`2.5px solid ${ALLOY.green1}`, boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` } : { border:`2px solid ${ALLOY.line}` }), ...(sz ? { width: sz.w, minWidth: sz.w, minHeight: sz.h, flex: '0 0 auto' } : { flex: '1 1 260px' }) }}>
-      {isSelected && editMode && (
-        <div className="alloy-editing-badge" style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
-          ✦ Editing
-        </div>
-      )}
-      {editMode && <div style={{ position:'absolute', top:6, left:6, cursor:'grab', color:ALLOY.line }}><Grip size={13}/></div>}
-      {editMode && (
-        <div onClick={e => e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', alignItems:'center', gap:4 }}>
-          <button style={{ background:'rgba(0,0,0,0.04)', border:'none', borderRadius:2, padding:'3px 5px', cursor:'pointer', display:'flex' }}>
-            <Maximize2 size={10} style={{ color:ALLOY.mute }}/>
-          </button>
-          <WidgetDot wid={'static__' + id} onEdit={() => startEdit(w)} widget={w} _ctx={_ctx}/>
-        </div>
-      )}
-      <ResizeHandle id={id} _ctx={_rhCtx}/>
-      {children}
-    </div>
-  )
-}
-
-export function WidgetDot({ wid, onEdit, widget, _ctx }: { wid: string; onEdit: () => void; widget?: Widget; _ctx: any }) {
-  const { openMenu, setOpenMenu, editMode, widgets, STATIC_IDS, setWidgets, setEditingWidget, startEdit,
-    setFullscreenWidget, setDrillWidget, setDrillChannel, setShareCapture, setShareToast,
-    setRemovedWidgetIds, LS_REMOVED_KEY, dragIdRef, justDroppedRef, resizingId,
-    setWidgetSizes, LS_SIZES_KEY, LS_WIDGETS_KEY, dynamicWidgets, isWidgetRemoved, ALLOY, widgetSizes } = _ctx
+export function WidgetDot({ wid, onEdit , _ctx }: {  wid: string; onEdit: () => void }; _ctx: any }) {
   const isOpen = openMenu === wid
-
-  // ── Resolve the actual Widget object from wid ──────────────────────────
-  // wid is either 'static__c1' or a dynamic widget id like 'w1234567'
-  const resolvedWidget: Widget | undefined = widget || (() => {
-    const rawId = wid.startsWith('static__') ? wid.replace('static__', '') : wid
-    return widgets.find(w => w.id === rawId)
-  })()
-
-  // ── Actions ──────────────────────────────────────────────────────────────
-  const handleEdit = () => { onEdit(); setOpenMenu(null) }
-
-  const handleFullScreen = () => {
-    setOpenMenu(null)
-    if (resolvedWidget) setFullscreenWidget(resolvedWidget)
-  }
-
-  const handleCopy = () => {
-    if (!resolvedWidget) return
-    const text = JSON.stringify({
-      title: resolvedWidget.title, chartType: resolvedWidget.chartType,
-      dataSource: resolvedWidget.dataSource, color: resolvedWidget.color,
-      dimensions: (resolvedWidget as any).dimensions,
-      metrics: (resolvedWidget as any).metrics,
-      filters: (resolvedWidget as any).filters,
-    }, null, 2)
-    const widgetTitle = resolvedWidget.title
-
-    if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(text).then(() => {
-        setOpenMenu(null)
-        setShareToast(`"${widgetTitle}" config copied`)
-        setTimeout(() => setShareToast(null), 2500)
-      }).catch(() => legacyCopy())
-    } else {
-      legacyCopy()
-    }
-
-    function legacyCopy() {
-      const ta = document.createElement('textarea')
-      ta.value = text
-      ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0'
-      document.body.appendChild(ta)
-      ta.focus(); ta.select(); ta.setSelectionRange(0, 99999)
-      let ok = false
-      try { ok = document.execCommand('copy') } catch {}
-      ta.remove()
-      setOpenMenu(null)
-      setShareToast(ok ? `"${widgetTitle}" config copied` : 'Copy failed — try again')
-      setTimeout(() => setShareToast(null), 2500)
-    }
-  }
-
-  const handleClone = () => {
-    setOpenMenu(null)
-    if (!resolvedWidget) return
-    const cloneId = `w${Date.now()}`
-    const cloned: Widget = {
-      ...resolvedWidget,
-      id: cloneId,
-      title: `${resolvedWidget.title} (Copy)`,
-    }
-    setWidgets(prev => {
-      const updated = [...prev, cloned]
-      try {
-        localStorage.setItem(LS_WIDGETS_KEY, JSON.stringify(
-          updated.map(w => ({ ...w, value: undefined, change: undefined, up: undefined }))
-        ))
-      } catch {}
-      return updated
-    })
-    setShareToast(`"${resolvedWidget.title}" cloned`)
-    setTimeout(() => setShareToast(null), 2500)
-    // Start editing the clone immediately
-    setTimeout(() => startEdit(cloned), 50)
-  }
-
-  const handleShare = () => {
-    setOpenMenu(null)
-    if (!resolvedWidget) return
-    const rawId = wid.startsWith('static__') ? wid.replace('static__', '') : wid
-    // Open share modal — no external library needed
-    setShareCapture({ wid: rawId, title: resolvedWidget.title })
-  }
-
-  const handleResetSize = () => {
-    setOpenMenu(null)
-    if (!resolvedWidget) return
-    const rawId = wid.startsWith('static__') ? wid.replace('static__', '') : wid
-    setWidgetSizes(prev => {
-      const next = { ...prev }
-      delete next[rawId]
-      try { localStorage.setItem(LS_SIZES_KEY, JSON.stringify(next)) } catch {}
-      return next
-    })
-    const el = document.querySelector('[data-widget-id="' + rawId + '"]') as HTMLElement | null
-    if (el) { el.style.width=''; el.style.minWidth=''; el.style.height=''; el.style.minHeight=''; el.style.flex='' }
-    setShareToast('"' + resolvedWidget.title + '" size reset')
-    setTimeout(() => setShareToast(null), 2000)
-  }
-
-  const handleRemove = () => {
-    setOpenMenu(null)
-    if (!resolvedWidget) return
-    const rawId = wid.startsWith('static__') ? wid.replace('static__', '') : wid
-    const isStatic = STATIC_IDS.includes(rawId)
-
-    if (isStatic) {
-      // Static widgets: add to removed set + persist
-      setRemovedWidgetIds(prev => {
-        const next = new Set(Array.from(prev).concat(rawId))
-        try { localStorage.setItem(LS_REMOVED_KEY, JSON.stringify(Array.from(next))) } catch {}
-        return next
-      })
-    } else {
-      // Dynamic widgets: remove from array + persist
-      setWidgets(prev => {
-        const updated = prev.filter(w => w.id !== rawId)
-        try {
-          localStorage.setItem(LS_WIDGETS_KEY, JSON.stringify(
-            updated.map(w => ({ ...w, value: undefined, change: undefined, up: undefined }))
-          ))
-        } catch {}
-        return updated
-      })
-    }
-    if (editingWidget?.id === rawId) setEditingWidget(null)
-    setShareToast(`"${resolvedWidget.title}" removed`)
-    setTimeout(() => setShareToast(null), 2500)
-  }
-
+  { openMenu, setOpenMenu, editMode, widgets, STATIC_IDS, setWidgets, setEditingWidget, startEdit, setFullscreenWidget, setDrillWidget, setDrillChannel, setShareCapture, setShareToast, setRemovedWidgetIds, LS_REMOVED_KEY, dragIdRef, justDroppedRef, resizingId, setWidgetSizes, LS_SIZES_KEY, LS_WIDGETS_KEY, dynamicWidgets, isWidgetRemoved, ALLOY, widgetSizes } = _ctx
   return (
     <div style={{ position:'relative', display:'inline-flex' }}>
       <button onClick={e => { e.stopPropagation(); setOpenMenu(isOpen ? null : wid) }}
@@ -878,67 +596,16 @@ export function WidgetDot({ wid, onEdit, widget, _ctx }: { wid: string; onEdit: 
         <MoreHorizontal size={13} style={{ color:ALLOY.ink }}/>
       </button>
       {isOpen && (
-          <div className="alloy-dropdown" style={{ position:'absolute', right:0, top:'calc(100% + 4px)', background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, boxShadow:'0 4px 16px rgba(0,0,0,0.10)', padding:'4px 0', minWidth:168, zIndex:999 }}
-            onClick={e => e.stopPropagation()}>
-            {/* Edit */}
-            <div onClick={handleEdit}
-              style={{ display:'flex', alignItems:'center', gap:9, padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, cursor:'pointer', userSelect:'none' as const, borderLeft:'2px solid transparent' }}
-              onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.background=ALLOY.green4; el.style.color=ALLOY.green1; el.style.borderLeft=`2px solid ${ALLOY.green1}` }}
-              onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.background='none'; el.style.color=ALLOY.ink; el.style.borderLeft='2px solid transparent' }}>
-              <Edit size={12} strokeWidth={1.5} style={{ color:'inherit', flexShrink:0 }}/>
-              <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:'inherit' }}>Edit</span>
-            </div>
-            {/* Full Screen */}
-            <div onClick={handleFullScreen}
-              style={{ display:'flex', alignItems:'center', gap:9, padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, cursor:'pointer', userSelect:'none' as const, borderLeft:'2px solid transparent' }}
-              onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.background=ALLOY.green4; el.style.color=ALLOY.green1; el.style.borderLeft=`2px solid ${ALLOY.green1}` }}
-              onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.background='none'; el.style.color=ALLOY.ink; el.style.borderLeft='2px solid transparent' }}>
-              <Maximize2 size={12} strokeWidth={1.5} style={{ color:'inherit', flexShrink:0 }}/>
-              <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:'inherit' }}>Full Screen</span>
-            </div>
-            {/* Copy */}
-            <div onClick={handleCopy}
-              style={{ display:'flex', alignItems:'center', gap:9, padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, cursor:'pointer', userSelect:'none' as const, borderLeft:'2px solid transparent' }}
-              onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.background=ALLOY.green4; el.style.color=ALLOY.green1; el.style.borderLeft=`2px solid ${ALLOY.green1}` }}
-              onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.background='none'; el.style.color=ALLOY.ink; el.style.borderLeft='2px solid transparent' }}>
-              <Copy size={12} strokeWidth={1.5} style={{ color:'inherit', flexShrink:0 }}/>
-              <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:'inherit' }}>Copy</span>
-            </div>
-            {/* Clone */}
-            <div onClick={handleClone}
-              style={{ display:'flex', alignItems:'center', gap:9, padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, cursor:'pointer', userSelect:'none' as const, borderLeft:'2px solid transparent' }}
-              onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.background=ALLOY.green4; el.style.color=ALLOY.green1; el.style.borderLeft=`2px solid ${ALLOY.green1}` }}
-              onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.background='none'; el.style.color=ALLOY.ink; el.style.borderLeft='2px solid transparent' }}>
-              <LayoutGrid size={12} strokeWidth={1.5} style={{ color:'inherit', flexShrink:0 }}/>
-              <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:'inherit' }}>Clone</span>
-            </div>
-            {/* Reset Size */}
-            <div onClick={handleResetSize}
-              style={{ display:'flex', alignItems:'center', gap:9, padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, cursor:'pointer', userSelect:'none' as const, borderLeft:'2px solid transparent' }}
-              onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.background=ALLOY.green4; el.style.color=ALLOY.green1; el.style.borderLeft=`2px solid ${ALLOY.green1}` }}
-              onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.background='none'; el.style.color=ALLOY.ink; el.style.borderLeft='2px solid transparent' }}>
-              <Maximize2 size={12} strokeWidth={1.5} style={{ color:'inherit', flexShrink:0 }}/>
-              <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:'inherit' }}>Reset Size</span>
-            </div>
-            {/* Share */}
-            <div onClick={handleShare}
-              style={{ display:'flex', alignItems:'center', gap:9, padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, cursor:'pointer', userSelect:'none' as const, borderLeft:'2px solid transparent' }}
-              onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.background=ALLOY.green4; el.style.color=ALLOY.green1; el.style.borderLeft=`2px solid ${ALLOY.green1}` }}
-              onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.background='none'; el.style.color=ALLOY.ink; el.style.borderLeft='2px solid transparent' }}>
-              <Link2 size={12} strokeWidth={1.5} style={{ color:'inherit', flexShrink:0 }}/>
-              <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:'inherit' }}>Share</span>
-            </div>
-            {/* Divider */}
-            <div style={{ height:1, background:ALLOY.line, margin:'4px 0' }}/>
-            {/* Remove */}
-            <div onClick={handleRemove}
-              style={{ display:'flex', alignItems:'center', gap:9, padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.red1, cursor:'pointer', userSelect:'none' as const, borderLeft:'2px solid transparent' }}
-              onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.background=ALLOY.red4; el.style.borderLeft=`2px solid ${ALLOY.red1}` }}
-              onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.background='none'; el.style.borderLeft='2px solid transparent' }}>
-              <Trash2 size={12} strokeWidth={1.5} style={{ color:ALLOY.red1, flexShrink:0 }}/>
-              <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.red1 }}>Remove</span>
-            </div>
-          </div>
+        <div style={{ position:'absolute', right:0, top:'calc(100% + 4px)', background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, boxShadow:'0 8px 24px rgba(0,0,0,0.12)', padding:4, minWidth:160, zIndex:999 }}
+          onClick={e => e.stopPropagation()}>
+          <button onClick={() => { onEdit(); setOpenMenu(null) }} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'9px 14px', fontSize:13, color:ALLOY.ink, background:'none', border:'none', cursor:'pointer', borderRadius:2, textAlign:'left' as const }}>✏ Edit</button>
+          <button onClick={() => setOpenMenu(null)} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'9px 14px', fontSize:13, color:ALLOY.ink, background:'none', border:'none', cursor:'pointer', borderRadius:2, textAlign:'left' as const }}>⛶ Full Screen</button>
+          <button onClick={() => setOpenMenu(null)} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'9px 14px', fontSize:13, color:ALLOY.ink, background:'none', border:'none', cursor:'pointer', borderRadius:2, textAlign:'left' as const }}>⧉ Copy</button>
+          <button onClick={() => setOpenMenu(null)} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'9px 14px', fontSize:13, color:ALLOY.ink, background:'none', border:'none', cursor:'pointer', borderRadius:2, textAlign:'left' as const }}>❐ Clone</button>
+          <button onClick={() => setOpenMenu(null)} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'9px 14px', fontSize:13, color:ALLOY.ink, background:'none', border:'none', cursor:'pointer', borderRadius:2, textAlign:'left' as const }}>↗ Share</button>
+          <div style={{ height:1, background:ALLOY.paper, margin:'2px 0' }}/>
+          <button onClick={() => setOpenMenu(null)} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'9px 14px', fontSize:13, color:ALLOY.red1, background:'none', border:'none', cursor:'pointer', borderRadius:2 }}>🗑 Remove</button>
+        </div>
       )}
     </div>
   )
@@ -947,7 +614,7 @@ export function WidgetDot({ wid, onEdit, widget, _ctx }: { wid: string; onEdit: 
 export function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label?: string }) {
   return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:10 }}>
-      {label && <span style={{ fontSize:12, color:ALLOY.ink, fontFamily:ALLOY.fontBody }}>{label}</span>}
+      {label && <span style={{ fontSize:12, color:ALLOY.ink }}>{label}</span>}
       <div onClick={() => onChange(!on)}
         style={{ width:36, height:20, borderRadius:999, background: on ? ALLOY.green1 : ALLOY.line, position:'relative', cursor:'pointer', transition:'background 0.2s', flexShrink:0 }}>
         <div style={{ width:16, height:16, borderRadius:'50%', background:ALLOY.white, position:'absolute', top:2, left: on ? 18 : 2, transition:'left 0.2s', boxShadow:'0 1px 3px rgba(0,0,0,0.25)' }}/>
@@ -959,6 +626,7 @@ export function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boo
 export function ResizeHandle({ id, _ctx }: { id: string; _ctx: any }) {
   const { editMode, resizingId, setResizingId, setWidgetSizes, saveSizesToDB, LS_SIZES_KEY, ALLOY } = _ctx
   if (!editMode) return null
+  { editMode, resizingId, setResizingId, setWidgetSizes, saveSizesToDB, LS_SIZES_KEY, ALLOY } = _ctx
 
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -1034,8 +702,6 @@ export function ResizeHandle({ id, _ctx }: { id: string; _ctx: any }) {
   return (
     <div
       onMouseDown={handleMouseDown}
-      draggable={false}
-      onDragStart={e => { e.preventDefault(); e.stopPropagation() }}
       style={{
         position: 'absolute', bottom: 0, right: 0,
         width: 20, height: 20,
@@ -1054,6 +720,116 @@ export function ResizeHandle({ id, _ctx }: { id: string; _ctx: any }) {
         <path d="M5.5 10 L10 5.5" stroke={isResizing ? '#1a73e8' : ALLOY.mute} strokeWidth="1.5" strokeLinecap="round"/>
         <path d="M9 10 L10 9" stroke={isResizing ? '#1a73e8' : ALLOY.mute} strokeWidth="1.5" strokeLinecap="round"/>
       </svg>
+    </div>
+  )
+}
+
+export function KPICard({ w , _ctx }: {  w: Widget }; _ctx: any }) {
+  const c = KPI_BG[w.color] || KPI_BG.white
+  { editMode, editingWidget, widgetSizes, resizingId, connection, justDroppedRef, openDrill, startEdit, getWidgetData, ALLOY } = _ctx
+  const isWhite = w.color === 'white'
+  const isSelected = editingWidget?.id === w.id
+  const bgColor = w.bgHex || c.bg
+  const borderCol = isSelected && editMode ? ALLOY.blue1 : (w.borderColor || c.border)
+  const textCol = w.textColor || c.text
+
+  // KPI types — show number scorecard layout
+  const isKpiType = !w.chartType || w.chartType === 'scorecard' || w.chartType === 'sparkline'
+
+  const editControls = (
+    <>
+      {editMode && <div style={{ position:'absolute', top:6, left:6, cursor:'grab', color:isWhite?ALLOY.line:'rgba(255,255,255,0.35)', zIndex:5 }}><Grip size={13}/></div>}
+      {editMode && (
+        <div onClick={e => e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', alignItems:'center', gap:4 }}>
+          <button style={{ background:isWhite?'rgba(0,0,0,0.05)':'rgba(255,255,255,0.15)', border:'none', borderRadius:2, padding:'3px 5px', cursor:'pointer', display:'flex' }}>
+            <Maximize2 size={10} style={{ color:isWhite?ALLOY.mute:'rgba(255,255,255,0.7)' }}/>
+          </button>
+          <WidgetDot wid={w.id} onEdit={() => startEdit(w)} _ctx={_ctx}/>
+        </div>
+      )}
+    </>
+  )
+
+  if (!isKpiType) {
+    // ── Full chart mode: replaces entire card with chart ──
+    const activeFilters: string[] = (w as any).filters || []
+    return (
+      <div data-widget-id={w.id}
+        onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
+        style={{ background:ALLOY.white, border:`2px solid ${borderCol}`, borderRadius:2, padding:12, position:'relative', minHeight: widgetSizes[w.id]?.h || 130, cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s', ...(widgetSizes[w.id] ? { width: widgetSizes[w.id].w, minWidth: widgetSizes[w.id].w, flex: '0 0 auto' } : { flex: '1 1 220px' }) }}>
+        {editControls}
+        <ResizeHandle id={w.id} _ctx={_ctx}/>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6 }}>
+          <span style={{ fontSize:12, color:ALLOY.mute, fontWeight:500 }}>{w.title}</span>
+          <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+            {w.change && <span style={{ fontSize:10, fontWeight:700, padding:'2px 6px', borderRadius:2, color:w.up?ALLOY.green1:ALLOY.red1, background:w.up?ALLOY.green4:ALLOY.red4 }}>{w.up?'▲':'▼'} {w.change}</span>}
+            {connection?.connected && <span style={{ fontSize:9, color:ALLOY.green1, fontWeight:600 }}>● Live</span>}
+          </div>
+        </div>
+        {activeFilters.length > 0 && (
+          <div style={{ display:'flex', flexWrap:'wrap' as const, gap:4, marginBottom:6 }}>
+            {activeFilters.map((f: string, i: number) => (
+              <span key={i} style={{ fontSize:9, background:ALLOY.yellow4, color:ALLOY.yellow1, border:'1px solid #ffe0b2', borderRadius:999, padding:'2px 8px', display:'flex', alignItems:'center', gap:4 }}>
+                <span>≡</span> {f}
+              </span>
+            ))}
+          </div>
+        )}
+        <DynamicChart chartType={w.chartType} data={getWidgetData(w)} height={activeFilters.length > 0 ? 80 : 90} dimensions={(w as any).dimensions} metrics={(w as any).metrics}/>
+      </div>
+    )
+  }
+
+  // ── KPI scorecard mode — compute value from selected metric if available ──
+  const wData = getWidgetData(w as any)
+  const computedValue = wData.length > 0
+    ? wData.reduce((sum: number, d: any) => sum + (d.v || 0), 0)
+    : null
+  const displayValue = w.value && w.value !== '—' ? w.value
+    : computedValue !== null ? (computedValue >= 1000000 ? (computedValue/1000000).toFixed(1)+'M' : computedValue >= 1000 ? (computedValue/1000).toFixed(1)+'K' : computedValue.toFixed(0))
+    : '—'
+
+  return (
+    <div data-widget-id={w.id}
+      onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
+      style={{ background:bgColor, border:`2px solid ${borderCol}`, borderRadius:2, padding:16, position:'relative', minHeight: widgetSizes[w.id]?.h || 110, cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s', ...(widgetSizes[w.id] ? { width: widgetSizes[w.id].w, minWidth: widgetSizes[w.id].w, flex: '0 0 auto' } : { flex: '1 1 180px' }) }}>
+      {editControls}
+      <ResizeHandle id={w.id} _ctx={_ctx}/>
+      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:10 }}>
+        <span style={{ fontSize:12, color:c.sub, fontWeight:500 }}>{w.title}</span>
+        {w.change && <span style={{ fontSize:10, fontWeight:700, marginLeft:8, padding:'2px 6px', borderRadius:2, color:isWhite?(w.up?ALLOY.green1:ALLOY.red1):'rgba(255,255,255,0.95)', background:isWhite?(w.up?ALLOY.green4:ALLOY.red4):'rgba(255,255,255,0.18)' }}>{w.up?'▲':'▼'} {w.change}</span>}
+      </div>
+      <p style={{ fontSize:30, fontWeight:700, color:textCol, letterSpacing:'-0.5px', lineHeight:1 }}>{displayValue}</p>
+      {connection?.connected && <p style={{ fontSize:9, color:isWhite?ALLOY.green1:'rgba(255,255,255,0.7)', marginTop:4 }}>● Live</p>}
+      {w.chartType === 'sparkline' && (
+        <div style={{ marginTop:6 }}>
+          <DynamicChart chartType="sparkline" data={getWidgetData(w)} height={35} dimensions={(w as any).dimensions} metrics={(w as any).metrics}/>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export function ChartCard({ id, children , _ctx }: {  id: string; children: React.ReactNode }; _ctx: any }) {
+  const w = widgets.find(x => x.id === id) || widgets[0]
+  { editMode, editingWidget, widgetSizes, resizingId, justDroppedRef, openDrill, startEdit, widgets, ALLOY } = _ctx
+  const isSelected = editingWidget?.id === id
+  const sz = widgetSizes[id]
+  return (
+    <div data-widget-id={id}
+      onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
+      style={{ background:ALLOY.white, border:`2px solid ${isSelected && editMode ? ALLOY.blue1 : ALLOY.line}`, borderRadius:2, padding:16, position:'relative', cursor: editMode ? 'pointer' : 'default', transition: resizingId === id ? 'none' : 'border-color 0.15s', ...(sz ? { width: sz.w, minWidth: sz.w, minHeight: sz.h, flex: '0 0 auto' } : { flex: '1 1 260px' }) }}>
+      {editMode && <div style={{ position:'absolute', top:6, left:6, cursor:'grab', color:ALLOY.line }}><Grip size={13}/></div>}
+      {editMode && (
+        <div onClick={e => e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', alignItems:'center', gap:4 }}>
+          <button style={{ background:'rgba(0,0,0,0.04)', border:'none', borderRadius:2, padding:'3px 5px', cursor:'pointer', display:'flex' }}>
+            <Maximize2 size={10} style={{ color:ALLOY.mute }}/>
+          </button>
+          <WidgetDot wid={id} onEdit={() => startEdit(w)} _ctx={_ctx}/>
+        </div>
+      )}
+      <ResizeHandle id={id} _ctx={_ctx}/>
+      {children}
     </div>
   )
 }
