@@ -511,7 +511,7 @@ function NewDashCanvas({ onClone, onTemplate }: { onClone: () => void; onTemplat
 
         {/* Add a page template */}
         <button
-          onMouseDown={e => { e.stopPropagation(); }}
+          onMouseDown={e => { e.preventDefault(); e.stopPropagation(); }}
           onClick={e => { e.preventDefault(); e.stopPropagation(); onTemplate(); }}
           style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:14, padding:'30px 24px', background:ALLOY.white, border:'1px solid #e8e8e8', borderRadius:2, cursor:'pointer', textAlign:'center' as const }}>
           <div style={{ width:56, height:56, display:'flex', alignItems:'center', justifyContent:'center' }}>
@@ -1050,6 +1050,16 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     }
     document.addEventListener('mousedown', onDown)
     return () => document.removeEventListener('mousedown', onDown)
+  }, [])
+
+  // ── Stable callbacks for NewDashCanvas (prevent stale closure on re-render) ──
+  const handleOpenCloneModal = React.useCallback(() => setShowCloneModal(true), [])
+  const handleOpenTemplateModal = React.useCallback(() => {
+    setShowTemplateModal(true)
+    setTemplateStep(1)
+    setTemplateSelected(null)
+    setTemplateName('')
+    setTemplateSearch('')
   }, [])
 
   // ── Core widget constants and helpers ───────────────────────────────────
@@ -2266,8 +2276,8 @@ Alloy Intelligence`)
 
           {isEmptyDash ? (
             // ── Empty canvas fills remaining height ──
-            <div style={{ flex:1, display:'flex' }} onClick={e => e.stopPropagation()}>
-              <NewDashCanvas onClone={() => setShowCloneModal(true)} onTemplate={() => setShowTemplateModal(true)} />
+            <div style={{ flex:1, display:'flex' }} onClick={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()}>
+              <NewDashCanvas onClone={handleOpenCloneModal} onTemplate={handleOpenTemplateModal} />
             </div>
           ) : (
             // ── Real dashboard content ──
