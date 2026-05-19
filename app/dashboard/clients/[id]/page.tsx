@@ -1463,6 +1463,22 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       setShareCapture({ wid: rawId, title: resolvedWidget.title })
     }
 
+    const handleResetSize = () => {
+      setOpenMenu(null)
+      if (!resolvedWidget) return
+      const rawId = wid.startsWith('static__') ? wid.replace('static__', '') : wid
+      setWidgetSizes(prev => {
+        const next = { ...prev }
+        delete next[rawId]
+        try { localStorage.setItem(LS_SIZES_KEY, JSON.stringify(next)) } catch {}
+        return next
+      })
+      const el = document.querySelector('[data-widget-id="' + rawId + '"]') as HTMLElement | null
+      if (el) { el.style.width=''; el.style.minWidth=''; el.style.height=''; el.style.minHeight=''; el.style.flex='' }
+      setShareToast('"' + resolvedWidget.title + '" size reset')
+      setTimeout(() => setShareToast(null), 2000)
+    }
+
     const handleRemove = () => {
       setOpenMenu(null)
       if (!resolvedWidget) return
@@ -1533,6 +1549,14 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                 onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.background='none'; el.style.color=ALLOY.ink; el.style.borderLeft='2px solid transparent' }}>
                 <LayoutGrid size={12} strokeWidth={1.5} style={{ color:'inherit', flexShrink:0 }}/>
                 <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:'inherit' }}>Clone</span>
+              </div>
+              {/* Reset Size */}
+              <div onClick={handleResetSize}
+                style={{ display:'flex', alignItems:'center', gap:9, padding:'8px 14px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, cursor:'pointer', userSelect:'none' as const, borderLeft:'2px solid transparent' }}
+                onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.background=ALLOY.green4; el.style.color=ALLOY.green1; el.style.borderLeft=`2px solid ${ALLOY.green1}` }}
+                onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.background='none'; el.style.color=ALLOY.ink; el.style.borderLeft='2px solid transparent' }}>
+                <Maximize2 size={12} strokeWidth={1.5} style={{ color:'inherit', flexShrink:0 }}/>
+                <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:'inherit' }}>Reset Size</span>
               </div>
               {/* Share */}
               <div onClick={handleShare}
@@ -1649,6 +1673,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     return (
       <div
         onMouseDown={handleMouseDown}
+        draggable={false}
+        onDragStart={e => { e.preventDefault(); e.stopPropagation() }}
         style={{
           position: 'absolute', bottom: 0, right: 0,
           width: 20, height: 20,
@@ -1776,9 +1802,9 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     const isSelected = editingWidget?.id === w.id
     const sz = widgetSizes[id]
     return (
-      <div data-widget-id={w.id}
+      <div data-widget-id={id}
         onClick={e => { e.stopPropagation(); if (justDroppedRef.current) return; if (editMode) startEdit(w); else openDrill(w) }}
-        style={{ background:ALLOY.white, borderRadius:2, padding:16, position:'relative', cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, ...(isSelected && editMode ? { border:`2.5px solid ${ALLOY.green1}`, boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` } : { border:`2px solid ${ALLOY.line}` }), ...(sz ? { width: sz.w, minWidth: sz.w, minHeight: sz.h, flex: '0 0 auto' } : { flex: '1 1 260px' }) }}>
+        style={{ background:ALLOY.white, borderRadius:2, padding:16, position:'relative', cursor: editMode ? 'pointer' : 'default', transition: resizingId === id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, ...(isSelected && editMode ? { border:`2.5px solid ${ALLOY.green1}`, boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` } : { border:`2px solid ${ALLOY.line}` }), ...(sz ? { width: sz.w, minWidth: sz.w, minHeight: sz.h, flex: '0 0 auto' } : { flex: '1 1 260px' }) }}>
         {isSelected && editMode && (
           <div className="alloy-editing-badge" style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
             ✦ Editing
@@ -1793,7 +1819,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
             <WidgetDot wid={`static__${id}`} onEdit={() => startEdit(w)} widget={w}/>
           </div>
         )}
-        <ResizeHandle id={w.id}/>
+        <ResizeHandle id={id}/>
         {children}
       </div>
     )
@@ -2542,20 +2568,20 @@ Alloy Intelligence`)
                         <div
                           key={id}
                           draggable={editMode}
-                          onDragStart={e => { e.stopPropagation(); handleDragStart(id, e) }}
+                          onDragStart={e => { e.stopPropagation(); if (resizingId) { e.preventDefault(); return } handleDragStart(id, e) }}
                           onDragOver={e => { e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect = 'move'; if (editMode && dragIdRef.current !== id) setDragOver(id) }}
                           onDragEnter={e => { e.preventDefault(); if (editMode && dragIdRef.current !== id) setDragOver(id) }}
                           onDragEnd={handleDragEnd}
                           onDrop={e => handleDrop(e, id)}
                           style={{
-                            // v1 (Website Views) spans full width
-                            gridColumn: id === 'v1' ? '1 / -1' : undefined,
+                            flex: widgetSizes[id] ? `0 0 ${widgetSizes[id].w}px` : id === 'v1' ? '1 1 100%' : '1 1 260px',
+                            minWidth: widgetSizes[id] ? widgetSizes[id].w : id === 'v1' ? '100%' : 220,
                             opacity: isBeingDragged ? 0.25 : 1,
                             transform: isDropTarget ? 'scale(1.02)' : 'scale(1)',
-                            transition: 'opacity 0.12s ease, transform 0.15s ease, box-shadow 0.15s ease',
+                            transition: resizingId === id ? 'none' : 'opacity 0.12s ease, transform 0.15s ease, box-shadow 0.15s ease',
                             borderRadius: 4,
                             boxShadow: isDropTarget ? `0 0 0 2.5px ${ALLOY.green1}, 0 8px 24px rgba(32,187,113,0.2)` : 'none',
-                            cursor: editMode ? 'grab' : 'default',
+                          }}',
                           }}
                         >
                           {renderWidgetContent(id)}
