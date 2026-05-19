@@ -510,7 +510,7 @@ function NewDashCanvas({ onClone, onTemplate }: { onClone: () => void; onTemplat
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, width:520 }}>
 
         {/* Add a page template */}
-        <button onClick={onTemplate} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:14, padding:'30px 24px', background:ALLOY.white, border:'1px solid #e8e8e8', borderRadius:2, cursor:'pointer', textAlign:'center' as const }}>
+        <button onClick={e => { e.preventDefault(); e.stopPropagation(); onTemplate(); }} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:14, padding:'30px 24px', background:ALLOY.white, border:'1px solid #e8e8e8', borderRadius:2, cursor:'pointer', textAlign:'center' as const }}>
           <div style={{ width:56, height:56, display:'flex', alignItems:'center', justifyContent:'center' }}>
             <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect x="4" y="4" width="12" height="12" rx="2" fill="#D0D0D0"/><rect x="20" y="4" width="12" height="12" rx="2" fill="#D0D0D0"/><rect x="4" y="20" width="12" height="7" rx="1.5" fill="#E8E8E8"/><rect x="20" y="20" width="12" height="7" rx="1.5" fill="#E8E8E8"/><circle cx="10" cy="30" r="2.5" fill="#48b5ea"/></svg>
           </div>
@@ -3438,9 +3438,9 @@ Alloy Intelligence`)
 
 
 
-      {/* Clone Page Modal */}
-      {showTemplateModal && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:100, padding:16 }}
+      {/* Clone Page Modal — rendered as portal so it's above everything */}
+      {showTemplateModal && typeof document !== 'undefined' && createPortal((
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:9999, padding:16 }}
           onClick={() => setShowTemplateModal(false)}>
           <div style={{ background:ALLOY.white, borderRadius:2, width:'100%', maxWidth:640, maxHeight:'80vh', overflow:'hidden', boxShadow:'0 20px 60px rgba(0,0,0,0.15)', display:'flex', flexDirection:'column' }}
             onClick={e => e.stopPropagation()}>
@@ -3483,7 +3483,7 @@ Alloy Intelligence`)
             </div>
           </div>
         </div>
-      )}
+      ), document.body)}
 
       {showCloneModal && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:100, padding:16 }}
