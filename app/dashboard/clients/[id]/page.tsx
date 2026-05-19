@@ -1046,6 +1046,27 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
   // ── Core widget constants and helpers ───────────────────────────────────
   const STATIC_IDS = ['w1','w2','w3','w4','c1','c2','c3','d1','d2','d3','v1','bounce']
+
+  // Computed GA4 data with static fallbacks
+  const sessionData = ga4Data?.timeSeries?.rows?.map((r: any) => ({ d: r.dimensionValues[0].value.slice(4), v: parseInt(r.metricValues[0].value) })) || STATIC_SESSIONS
+  const deviceData = ga4Data?.devices?.rows?.map((r: any) => ({ name: r.dimensionValues[0].value, v: parseInt(r.metricValues[0].value) })) || STATIC_DEVICES
+  const sourceData = ga4Data?.sources?.rows?.map((r: any, i: number) => ({ name: r.dimensionValues[0].value, value: parseInt(r.metricValues[0].value), color: ['#2196f3','#64b5f6',ALLOY.blue3,'#bbdefb','#e3f2fd'][i%5] })) || STATIC_DONUT
+  const cityData = ga4Data?.cities?.rows?.map((r: any) => ({ city: r.dimensionValues[0].value, val: parseInt(r.metricValues[0].value), pct: 100 })) || STATIC_CITIES
+  const maxCity = Math.max(...cityData.map((c: any) => c.val), 1)
+
+  function getWidgetData(w: Partial<Widget>): any[] {
+    const ds = (w.dataSource || '').toLowerCase()
+    const dims: string[] = (w as any).dimensions || []
+    const mets: string[] = (w as any).metrics || []
+    if (!ga4Data) return sessionData
+    if (ds.includes('device') || dims.includes('Device Category') || dims.includes('deviceCategory')) return deviceData
+    if (ds.includes('source') || ds.includes('channel') || dims.includes('Session Default Channel Group')) return sourceData
+    if (ds.includes('city') || dims.includes('City')) return cityData.map((c: any) => ({ d: c.city, v: c.val }))
+    if (ds.includes('event') || dims.includes('Event Name') || dims.includes('eventName')) return ga4EventRows
+    // For custom widgets with GA4 data
+    if (ga4Data?.timeSeries?.rows) return sessionData
+    return sessionData
+  }
   const dynamicWidgets = widgets.filter(w => !STATIC_IDS.includes(w.id))
   const cloningRef = React.useRef(false)
 
