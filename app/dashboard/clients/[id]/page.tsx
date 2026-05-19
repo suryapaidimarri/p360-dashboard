@@ -658,6 +658,12 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     try { const v = localStorage.getItem(`alloy_widget_sizes_${clientId}`); return v ? JSON.parse(v) : {} } catch { return {} }
   })
   const [resizingId, setResizingId] = useState<string|null>(null)
+  const [dragId, setDragId]     = useState<string|null>(null)
+  const [dragOver, setDragOver] = useState<string|null>(null)
+  const LS_ORDER_KEY = `alloy_widget_order_${clientId}`
+  const [widgetOrder, setWidgetOrder] = useState<string[]>(() => {
+    try { const s = localStorage.getItem(`alloy_widget_order_${clientId}`); return s ? JSON.parse(s) : [] } catch { return [] }
+  })
   const [resizeOverlay, setResizeOverlay] = useState<{x:number;y:number;w:number;h:number}|null>(null)
   const [newFilterName, setNewFilterName] = useState('')
   const [newFilterClauses, setNewFilterClauses] = useState([{ include: true, field: '', operator: 'contains', value: '' }])
@@ -854,6 +860,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
         tableHScroll: (w as any).tableHScroll, tableCompact: (w as any).tableCompact, tableMissingData: (w as any).tableMissingData,
         tableFontSize: (w as any).tableFontSize, tableFontFamily: (w as any).tableFontFamily,
         tableHeaderBg: (w as any).tableHeaderBg, tableOddRow: (w as any).tableOddRow, tableEvenRow: (w as any).tableEvenRow, tableCellBorder: (w as any).tableCellBorder,
+        dateRangeType: (w as any).dateRangeType, dateStart: (w as any).dateStart, dateEnd: (w as any).dateEnd,
         dimAlign: (w as any).dimAlign,
         dimensions: (w as any).dimensions,
         metrics: (w as any).metrics,
@@ -983,6 +990,22 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
         } catch {}
       }
     } catch {}
+  }
+
+  function handleDragStart(id: string) { if (editMode) setDragId(id) }
+  function handleDragOver(e: React.DragEvent, id: string) { e.preventDefault(); if (editMode && dragId !== id) setDragOver(id) }
+  function handleDragEnd() { setDragId(null); setDragOver(null) }
+  function handleDrop(targetId: string) {
+    if (!editMode || !dragId || dragId === targetId) { setDragId(null); setDragOver(null); return }
+    const allIds = [...STATIC_IDS.filter(id => !isWidgetRemoved(id)), ...widgets.filter(w => !STATIC_IDS.includes(w.id) && !isWidgetRemoved(w.id)).map(w => w.id)]
+    let order = widgetOrder.length ? [...widgetOrder] : [...allIds]
+    allIds.forEach(id => { if (!order.includes(id)) order.push(id) })
+    const fi = order.indexOf(dragId), ti = order.indexOf(targetId)
+    if (fi < 0 || ti < 0) { setDragId(null); setDragOver(null); return }
+    const next = [...order]; next.splice(fi, 1); next.splice(ti, 0, dragId)
+    setWidgetOrder(next)
+    try { localStorage.setItem(LS_ORDER_KEY, JSON.stringify(next)) } catch {}
+    setDragId(null); setDragOver(null)
   }
 
   async function checkConnection() {
@@ -2328,18 +2351,32 @@ Alloy Intelligence`)
                 <h2 style={{ fontSize:20, fontWeight:700, color:ALLOY.white, fontFamily:ALLOY.fontDisplay }}>{activeDash}</h2>
                 {connection?.connected && <p style={{ fontSize:11, color:ALLOY.mute, marginTop:4, fontFamily:ALLOY.fontLabel, letterSpacing:'0.04em' }}>REAL-TIME DATA · {connection.email}</p>}
               </div>
+              {editMode && <p style={{ fontFamily:ALLOY.fontLabel, fontSize:9, color:ALLOY.green1, letterSpacing:'0.08em', textTransform:'uppercase' as const, marginBottom:8, marginTop:4 }}>↕ Drag widgets to reorder</p>}
               <div style={{ display:'flex', flexWrap:'wrap' as const, gap:10, marginBottom:10 }}>
-                {widgets.filter(w => !isWidgetRemoved(w.id)).map(w => <KPICard key={w.id} w={w}/>)}
+                {widgets.filter(w => !isWidgetRemoved(w.id)).map(w => (
+                  <div key={w.id}
+                    draggable={editMode} onDragStart={() => handleDragStart(w.id)} onDragOver={e => handleDragOver(e, w.id)} onDragEnd={handleDragEnd} onDrop={() => handleDrop(w.id)}
+                    style={{ opacity: dragId===w.id ? 0.35 : 1, transition:'opacity 0.15s, transform 0.18s', transform: dragOver===w.id && dragId!==w.id ? 'scale(1.03)' : 'none', outline: dragOver===w.id && dragId!==w.id ? `2px dashed ${ALLOY.green1}` : 'none', borderRadius:2 }}>
+                    <KPICard w={w}/>
+                  </div>
+                ))}
               </div>
               <div style={{ display:'flex', flexWrap:'wrap' as const, gap:10, marginBottom:10, alignItems:'flex-start' }}>
-                {!isWidgetRemoved('c1') && <ChartCard id="c1">
+                {!isWidgetRemoved('c1') && (
+                  <div draggable={editMode} onDragStart={() => handleDragStart('c1')} onDragOver={e => handleDragOver(e, 'c1')} onDragEnd={handleDragEnd} onDrop={() => handleDrop('c1')}
+                    style={{ opacity: dragId==='c1' ? 0.35 : 1, transition:'opacity 0.15s, transform 0.18s', transform: dragOver==='c1' && dragId!=='c1' ? 'scale(1.03)' : 'none', outline: dragOver==='c1' && dragId!=='c1' ? `2px dashed ${ALLOY.green1}` : 'none', borderRadius:2 }}>
+                  <ChartCard id="c1">
                   <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
                     <span style={{ fontSize:11, color:ALLOY.mute, fontWeight:500, fontFamily:ALLOY.fontBody }}>{widgets.find(x=>x.id==='c1')?.title || 'Sessions Over Time'}</span>
                     {connection?.connected && <span style={{ fontSize:9, color:ALLOY.green1, fontWeight:600, fontFamily:ALLOY.fontLabel }}>● Live</span>}
                   </div>
                   <DynamicChart chartType={widgets.find(x=>x.id==='c1')?.chartType || 'line'} data={getWidgetData(widgets.find(x=>x.id==='c1') || {})} height={80} dimensions={(widgets.find(x=>x.id==='c1') as any)?.dimensions} metrics={(widgets.find(x=>x.id==='c1') as any)?.metrics}/>
-                </ChartCard>}
-                {!isWidgetRemoved('c2') && <ChartCard id="c2">
+                </ChartCard>
+                  </div>)}
+                {!isWidgetRemoved('c2') && (
+                  <div draggable={editMode} onDragStart={() => handleDragStart('c2')} onDragOver={e => handleDragOver(e, 'c2')} onDragEnd={handleDragEnd} onDrop={() => handleDrop('c2')}
+                    style={{ opacity: dragId==='c2' ? 0.35 : 1, transition:'opacity 0.15s, transform 0.18s', transform: dragOver==='c2' && dragId!=='c2' ? 'scale(1.03)' : 'none', outline: dragOver==='c2' && dragId!=='c2' ? `2px dashed ${ALLOY.green1}` : 'none', borderRadius:2 }}>
+                  <ChartCard id="c2">
                   <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:110 }}>
                     <div style={{ position:'relative', width:90, height:90 }}>
                       <ResponsiveContainer width="100%" height="100%">
@@ -2348,8 +2385,10 @@ Alloy Intelligence`)
                       <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center' }}><span style={{ fontSize:18, fontWeight:700, fontFamily:ALLOY.fontDisplay }}>44</span></div>
                     </div>
                   </div>
-                </ChartCard>}
-                <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                </ChartCard>
+                  </div>)}
+                <div draggable={editMode} onDragStart={() => handleDragStart('c3')} onDragOver={e => handleDragOver(e, 'c3')} onDragEnd={handleDragEnd} onDrop={() => handleDrop('c3')}
+                  style={{ display:'flex', flexDirection:'column', gap:10, opacity: dragId==='c3' ? 0.35 : 1, transition:'opacity 0.15s', outline: dragOver==='c3' && dragId!=='c3' ? `2px dashed ${ALLOY.green1}` : 'none', borderRadius:2 }}>
                   {!isWidgetRemoved('c3') && <ChartCard id="c3">
                     <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
                       <span style={{ fontSize:11, color:ALLOY.mute, fontFamily:ALLOY.fontBody }}>Conversion Rate</span>
@@ -2372,14 +2411,21 @@ Alloy Intelligence`)
                 </div>
               </div>
               <div style={{ display:'flex', flexWrap:'wrap' as const, gap:10, marginBottom:10, alignItems:'flex-start' }}>
-                {!isWidgetRemoved('d1') && <ChartCard id="d1">
+                {!isWidgetRemoved('d1') && (
+                  <div draggable={editMode} onDragStart={() => handleDragStart('d1')} onDragOver={e => handleDragOver(e, 'd1')} onDragEnd={handleDragEnd} onDrop={() => handleDrop('d1')}
+                    style={{ opacity: dragId==='d1' ? 0.35 : 1, transition:'opacity 0.15s, transform 0.18s', transform: dragOver==='d1' && dragId!=='d1' ? 'scale(1.03)' : 'none', outline: dragOver==='d1' && dragId!=='d1' ? `2px dashed ${ALLOY.green1}` : 'none', borderRadius:2 }}>
+                  <ChartCard id="d1">
                   <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
                     <span style={{ fontSize:11, fontWeight:600, fontFamily:ALLOY.fontBody }}>{widgets.find(x=>x.id==='d1')?.title || 'Users By Device'}</span>
                     {connection?.connected && <span style={{ fontSize:9, color:ALLOY.green1, fontWeight:600, fontFamily:ALLOY.fontLabel }}>● Live</span>}
                   </div>
                   <DynamicChart chartType={widgets.find(x=>x.id==='d1')?.chartType || 'column'} data={getWidgetData(widgets.find(x=>x.id==='d1') || {})} height={110} dimensions={(widgets.find(x=>x.id==='d1') as any)?.dimensions} metrics={(widgets.find(x=>x.id==='d1') as any)?.metrics}/>
-                </ChartCard>}
-                {!isWidgetRemoved('d2') && <ChartCard id="d2">
+                </ChartCard>
+                  </div>)}
+                {!isWidgetRemoved('d2') && (
+                  <div draggable={editMode} onDragStart={() => handleDragStart('d2')} onDragOver={e => handleDragOver(e, 'd2')} onDragEnd={handleDragEnd} onDrop={() => handleDrop('d2')}
+                    style={{ opacity: dragId==='d2' ? 0.35 : 1, transition:'opacity 0.15s, transform 0.18s', transform: dragOver==='d2' && dragId!=='d2' ? 'scale(1.03)' : 'none', outline: dragOver==='d2' && dragId!=='d2' ? `2px dashed ${ALLOY.green1}` : 'none', borderRadius:2 }}>
+                  <ChartCard id="d2">
                   <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
                     <span style={{ fontSize:11, fontWeight:600, fontFamily:ALLOY.fontBody }}>Top Referral Sources</span>
                     {connection?.connected && <span style={{ fontSize:9, color:ALLOY.green1, fontWeight:600, fontFamily:ALLOY.fontLabel }}>● Live</span>}
@@ -2391,8 +2437,12 @@ Alloy Intelligence`)
                     </div>
                     <div style={{ flex:1 }}>{sourceData.slice(0,4).map((d:any,i:number) => <div key={d.name} style={{ display:'flex', alignItems:'center', gap:4, marginBottom:3 }}><div style={{ width:6, height:6, borderRadius:'50%', background:['#2196f3','#64b5f6',ALLOY.blue3,'#bbdefb'][i%4], flexShrink:0 }}/><span style={{ fontSize:9, color:ALLOY.mute, flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', fontFamily:ALLOY.fontBody }}>{d.name}</span><span style={{ fontSize:9, fontWeight:600, fontFamily:ALLOY.fontBody }}>{d.value?.toLocaleString()}</span></div>)}</div>
                   </div>
-                </ChartCard>}
-                {!isWidgetRemoved('d3') && <ChartCard id="d3">
+                </ChartCard>
+                  </div>)}
+                {!isWidgetRemoved('d3') && (
+                  <div draggable={editMode} onDragStart={() => handleDragStart('d3')} onDragOver={e => handleDragOver(e, 'd3')} onDragEnd={handleDragEnd} onDrop={() => handleDrop('d3')}
+                    style={{ opacity: dragId==='d3' ? 0.35 : 1, transition:'opacity 0.15s, transform 0.18s', transform: dragOver==='d3' && dragId!=='d3' ? 'scale(1.03)' : 'none', outline: dragOver==='d3' && dragId!=='d3' ? `2px dashed ${ALLOY.green1}` : 'none', borderRadius:2 }}>
+                  <ChartCard id="d3">
                   <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
                     <span style={{ fontSize:12, fontWeight:600, fontFamily:ALLOY.fontBody }}>Traffic by Cities</span>
                     {connection?.connected && <span style={{ fontSize:9, color:ALLOY.green1, fontWeight:600, fontFamily:ALLOY.fontLabel }}>● Live</span>}
@@ -2403,15 +2453,20 @@ Alloy Intelligence`)
                       <div style={{ height:4, background:ALLOY.line, borderRadius:2, overflow:'hidden' }}><div style={{ height:'100%', width:`${(c.val/maxCity)*100}%`, background:ALLOY.green1, borderRadius:2 }}/></div>
                     </div>
                   ))}
-                </ChartCard>}
+                </ChartCard>
+                  </div>)}
               </div>
-              {!isWidgetRemoved('v1') && <ChartCard id="v1">
+              {!isWidgetRemoved('v1') && (
+                  <div draggable={editMode} onDragStart={() => handleDragStart('v1')} onDragOver={e => handleDragOver(e, 'v1')} onDragEnd={handleDragEnd} onDrop={() => handleDrop('v1')}
+                    style={{ opacity: dragId==='v1' ? 0.35 : 1, transition:'opacity 0.15s, transform 0.18s', transform: dragOver==='v1' && dragId!=='v1' ? 'scale(1.03)' : 'none', outline: dragOver==='v1' && dragId!=='v1' ? `2px dashed ${ALLOY.green1}` : 'none', borderRadius:2 }}>
+                  <ChartCard id="v1">
                 <div style={{ display:'flex', justifyContent:'space-between', marginBottom:10 }}>
                   <span style={{ fontSize:12, fontWeight:600, fontFamily:ALLOY.fontBody }}>{widgets.find(x=>x.id==='v1')?.title || 'Website Views'}</span>
                   {connection?.connected && <span style={{ fontSize:9, color:ALLOY.green1, fontWeight:600, fontFamily:ALLOY.fontLabel }}>● Live GA4</span>}
                 </div>
                 <DynamicChart chartType={widgets.find(x=>x.id==='v1')?.chartType || 'area'} data={getWidgetData(widgets.find(x=>x.id==='v1') || {})} height={130} dimensions={(widgets.find(x=>x.id==='v1') as any)?.dimensions} metrics={(widgets.find(x=>x.id==='v1') as any)?.metrics}/>
-              </ChartCard>}
+              </ChartCard>
+                  </div>)}
             </div>
           )}
 
