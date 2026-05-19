@@ -979,7 +979,6 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const dragOverId = React.useRef<string|null>(null)
 
   function onDragStart(e: React.DragEvent, dragId: string) {
-    if (!editMode) return
     dragSrcId.current = dragId
     setDraggingId(dragId)
     e.dataTransfer.effectAllowed = 'move'
@@ -1278,14 +1277,14 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       const chartBorder = isSelected && editMode ? `2.5px solid ${ALLOY.green1}` : editMode ? `2px solid ${w.borderColor || ALLOY.line}` : `1px solid ${ALLOY.line}`
       return (
         <div data-widget-id={w.id}
-          draggable={editMode}
+          draggable={true}
           onDragStart={e => onDragStart(e, w.id)}
           onDragEnd={onDragEnd}
           onDragOver={e => onDragOver(e, w.id)}
           onDragLeave={onDragLeave}
           onDrop={e => onDrop(e, w.id)}
           onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
-          style={{ background:ALLOY.white, borderRadius:2, padding:12, position:'relative', cursor: editMode ? 'grab' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, border: chartBorder, ...(isSelected && editMode ? { boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` } : {}), ...(widgetSizes[w.id] ? { width: widgetSizes[w.id].w, minHeight: widgetSizes[w.id].h } : { width: 'calc(33.333% - 8px)', minWidth: 220 }) }}>
+          style={{ background:ALLOY.white, borderRadius:2, padding:12, position:'relative', cursor: 'grab', transition: resizingId === w.id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, border: chartBorder, ...(isSelected && editMode ? { boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` } : {}), ...(widgetSizes[w.id] ? { width: widgetSizes[w.id].w, minHeight: widgetSizes[w.id].h } : { width: 'calc(33.333% - 8px)', minWidth: 220 }) }}>
           {isSelected && editMode && <div className="alloy-editing-badge" style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase', padding:'3px 8px', borderRadius:2, pointerEvents:'none', whiteSpace:'nowrap' }}>✦ Editing</div>}
           {gripHandle}
           {editControls}
@@ -1313,14 +1312,14 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
     return (
       <div data-widget-id={w.id} className={editMode ? '' : 'alloy-card-hover'}
-        draggable={editMode}
+        draggable={true}
         onDragStart={e => onDragStart(e, w.id)}
         onDragEnd={onDragEnd}
         onDragOver={e => onDragOver(e, w.id)}
         onDragLeave={onDragLeave}
         onDrop={e => onDrop(e, w.id)}
         onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
-        style={{ background:bgColor, borderRadius:2, padding:16, position:'relative', cursor: editMode ? 'grab' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, border: editMode ? `2px solid ${borderCol}` : isWhite ? `1px solid ${ALLOY.line}` : '2px solid transparent', ...selectedRing, ...(widgetSizes[w.id] ? { width: widgetSizes[w.id].w, minHeight: widgetSizes[w.id].h } : { width: 'calc(25% - 8px)', minWidth: 180 }) }}>
+        style={{ background:bgColor, borderRadius:2, padding:16, position:'relative', cursor: 'grab', transition: resizingId === w.id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, border: editMode ? `2px solid ${borderCol}` : isWhite ? `1px solid ${ALLOY.line}` : '2px solid transparent', ...selectedRing, ...(widgetSizes[w.id] ? { width: widgetSizes[w.id].w, minHeight: widgetSizes[w.id].h } : { width: 'calc(25% - 8px)', minWidth: 180 }) }}>
         {isSelected && editMode && <div className="alloy-editing-badge" style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase', padding:'3px 8px', borderRadius:2, pointerEvents:'none', whiteSpace:'nowrap' }}>✦ Editing</div>}
         {gripHandle}
         {editControls}
@@ -1343,14 +1342,14 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     const sz = widgetSizes[id]
     return (
       <div data-widget-id={id}
-        draggable={editMode}
+        draggable={true}
         onDragStart={e => onDragStart(e, id)}
         onDragEnd={onDragEnd}
         onDragOver={e => onDragOver(e, id)}
         onDragLeave={onDragLeave}
         onDrop={e => onDrop(e, id)}
         onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
-        style={{ background:ALLOY.white, borderRadius:2, padding:16, position:'relative', cursor: editMode ? 'grab' : 'default', transition: resizingId === id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, ...(isSelected && editMode ? { border:`2.5px solid ${ALLOY.green1}`, boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` } : { border:`2px solid ${ALLOY.line}` }), ...(sz ? { width: sz.w, minHeight: sz.h } : { width: 'calc(33.333% - 8px)', minWidth: 220 }) }}>
+        style={{ background:ALLOY.white, borderRadius:2, padding:16, position:'relative', cursor: 'grab', transition: resizingId === id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, ...(isSelected && editMode ? { border:`2.5px solid ${ALLOY.green1}`, boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` } : { border:`2px solid ${ALLOY.line}` }), ...(sz ? { width: sz.w, minHeight: sz.h } : { width: 'calc(33.333% - 8px)', minWidth: 220 }) }}>
         {isSelected && editMode && <div className="alloy-editing-badge" style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase', padding:'3px 8px', borderRadius:2, pointerEvents:'none', whiteSpace:'nowrap' }}>✦ Editing</div>}
         {/* Grip icon */}
         {editMode && (
@@ -1407,8 +1406,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       .alloy-spin { animation: alloy-spin 0.8s linear infinite }
 
       /* ── Drag & Drop ── */
-      [data-widget-id][draggable="true"] { cursor: grab !important; user-select: none; }
-      [data-widget-id][draggable="true"]:active { cursor: grabbing !important; }
+      [data-widget-id] { cursor: grab; user-select: none; }
+      [data-widget-id]:active { cursor: grabbing !important; }
       .alloy-dragging { opacity: 0.35 !important; outline: 2px dashed ${ALLOY.green1} !important; outline-offset: 3px !important; }
       .alloy-drag-target { outline: 3px dashed ${ALLOY.green1} !important; outline-offset: 3px !important; background: rgba(32,187,113,0.06) !important; transform: scale(0.97); transition: transform 0.1s; }
 
@@ -1762,14 +1761,14 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                       const bounceWidget = widgets[3]
                       return (
                         <div key="bounce" data-widget-id="bounce"
-                          draggable={editMode}
+                          draggable={true}
                           onDragStart={e => onDragStart(e, 'bounce')}
                           onDragEnd={onDragEnd}
                           onDragOver={e => onDragOver(e, 'bounce')}
                           onDragLeave={onDragLeave}
                           onDrop={e => onDrop(e, 'bounce')}
                           onClick={e => { e.stopPropagation(); if (editMode && bounceWidget) startEdit(bounceWidget) }}
-                          style={{ background:ALLOY.red1, border:`2px solid ${isSel ? ALLOY.blue1 : ALLOY.red1}`, borderRadius:2, padding:16, position:'relative', cursor: editMode ? 'grab' : 'default', width: widgetSizes['bounce'] ? widgetSizes['bounce'].w : 'calc(25% - 8px)', minWidth:180 }}>
+                          style={{ background:ALLOY.red1, border:`2px solid ${isSel ? ALLOY.blue1 : ALLOY.red1}`, borderRadius:2, padding:16, position:'relative', cursor: 'grab', width: widgetSizes['bounce'] ? widgetSizes['bounce'].w : 'calc(25% - 8px)', minWidth:180 }}>
                           {isSel && <div className="alloy-editing-badge" style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase', padding:'3px 8px', borderRadius:2, pointerEvents:'none', whiteSpace:'nowrap' }}>✦ Editing</div>}
                           {/* Grip icon */}
                           {editMode && (
@@ -1868,14 +1867,14 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                       const isDynSelected = editingWidget?.id === dynWidget.id && editMode
                       return (
                         <div key={id} data-widget-id={id}
-                          draggable={editMode}
+                          draggable={true}
                           onDragStart={e => onDragStart(e, id)}
                           onDragEnd={onDragEnd}
                           onDragOver={e => onDragOver(e, id)}
                           onDragLeave={onDragLeave}
                           onDrop={e => onDrop(e, id)}
                           onClick={e => { e.stopPropagation(); if (editMode) startEdit(dynWidget) }}
-                          style={{ background:ALLOY.white, borderRadius:2, padding:14, position:'relative', cursor: editMode ? 'grab' : 'default', transition:'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isDynSelected ? 0.45 : 1, ...(isDynSelected ? { border:`2.5px solid ${ALLOY.green1}`, boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` } : { border:`2px solid ${ALLOY.line}` }), ...(widgetSizes[id] ? { width: widgetSizes[id].w, minHeight: widgetSizes[id].h } : { width: 'calc(33.333% - 8px)', minWidth: 220, minHeight: 140 }) }}>
+                          style={{ background:ALLOY.white, borderRadius:2, padding:14, position:'relative', cursor: 'grab', transition:'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isDynSelected ? 0.45 : 1, ...(isDynSelected ? { border:`2.5px solid ${ALLOY.green1}`, boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` } : { border:`2px solid ${ALLOY.line}` }), ...(widgetSizes[id] ? { width: widgetSizes[id].w, minHeight: widgetSizes[id].h } : { width: 'calc(33.333% - 8px)', minWidth: 220, minHeight: 140 }) }}>
                           {isDynSelected && <div className="alloy-editing-badge" style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase', padding:'3px 8px', borderRadius:2, pointerEvents:'none', whiteSpace:'nowrap' }}>✦ Editing</div>}
                           {/* Grip icon */}
                           {editMode && (
