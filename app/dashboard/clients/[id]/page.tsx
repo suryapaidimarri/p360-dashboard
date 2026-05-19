@@ -902,553 +902,128 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   }, [])
 
   // ── Drag & Drop reorder ──────────────────────────────────────────────────
-  const widgetsRef = React.useRef(widgets)
-  React.useEffect(() => { widgetsRef.current = widgets }, [widgets])
-  const isDraggingRef = React.useRef(false)
+  // ── Drag & Drop ──────────────────────────────────────────────────────────
+  const dragState = React.useRef<{
+    dragId: string
+    ghost: HTMLElement
+    source: HTMLElement
+    ox: number; oy: number
+    over: string | null
+    raf: number
+    mx: number; my: number
+  } | null>(null)
 
-  function startDrag(e: React.MouseEvent, dragId: string) {
+  function onWidgetMouseDown(e: React.MouseEvent, dragId: string) {
     if (!editMode) return
+    // Only drag from the grip handle area (top-left 32x32px of card)
+    const card = (e.currentTarget as HTMLElement)
+    const cr = card.getBoundingClientRect()
+    const localX = e.clientX - cr.left
+    const localY = e.clientY - cr.top
+    if (localX > 32 || localY > 32) return  // outside grip zone
+
     e.preventDefault()
     e.stopPropagation()
 
-    // Walk up from event target to find the widget card
-    const sourceEl = (e.target as HTMLElement).closest('[data-widget-id]') as HTMLElement
-    if (!sourceEl) return
-
-    const rect = sourceEl.getBoundingClientRect()
-    const offsetX = e.clientX - rect.left
-    const offsetY = e.clientY - rect.top
-
-    // Full card ghost
-    const ghost = sourceEl.cloneNode(true) as HTMLElement
+    // Clone full card as ghost
+    const ghost = card.cloneNode(true) as HTMLElement
     ghost.style.cssText = `
-      position:fixed; left:${rect.left}px; top:${rect.top}px;
-      width:${rect.width}px; height:${rect.height}px;
-      pointer-events:none; z-index:99999;
-      border:2px solid ${ALLOY.green1} !important;
-      border-radius:2px;
-      box-shadow:0 24px 60px rgba(0,0,0,0.28), 0 0 0 4px rgba(32,187,113,0.15);
-      transform:rotate(2deg) scale(1.03);
-      opacity:0.96;
-      transition:none;
-      background:white;
-      overflow:hidden;
+      position:fixed!important;
+      left:${cr.left}px; top:${cr.top}px;
+      width:${cr.width}px; height:${cr.height}px;
+      pointer-events:none!important;
+      z-index:99999!important;
+      opacity:0.9!important;
+      transform:rotate(2deg) scale(1.04)!important;
+      box-shadow:0 20px 60px rgba(0,0,0,0.3), 0 0 0 3px #20BB71!important;
+      border-radius:2px!important;
+      transition:none!important;
+      cursor:grabbing!important;
     `
     document.body.appendChild(ghost)
 
-    // Dim the source
-    sourceEl.style.opacity = '0.2'
-    sourceEl.style.pointerEvents = 'none'
+    card.style.opacity = '0.25'
+    card.style.outline = '2px dashed #20BB71'
 
-    let lastX = e.clientX, lastY = e.clientY
-    let dropTarget: string | null = null
-    let rafId = 0
+    dragState.current = { dragId, ghost, source: card, ox: e.clientX - cr.left, oy: e.clientY - cr.top, over: null, raf: 0, mx: e.clientX, my: e.clientY }
 
-    const tick = () => {
-      ghost.style.left = (lastX - offsetX) + 'px'
-      ghost.style.top  = (lastY - offsetY) + 'px'
-      rafId = requestAnimationFrame(tick)
+    const move = (mv: MouseEvent) => {
+      const ds = dragState.current; if (!ds) return
+      ds.mx = mv.clientX; ds.my = mv.clientY
     }
-    rafId = requestAnimationFrame(tick)
 
-    const onMove = (mv: MouseEvent) => {
-      lastX = mv.clientX; lastY = mv.clientY
+    const animLoop = () => {
+      const ds = dragState.current; if (!ds) return
+      ds.ghost.style.left = (ds.mx - ds.ox) + 'px'
+      ds.ghost.style.top  = (ds.my - ds.oy) + 'px'
 
-      // Detect drop target
-      ghost.style.visibility = 'hidden'
-      const under = document.elementFromPoint(mv.clientX, mv.clientY) as HTMLElement | null
-      ghost.style.visibility = ''
-      const overEl = under?.closest('[data-widget-id]') as HTMLElement | null
-      const overId = overEl?.dataset.widgetId ?? null
-      const valid = overId !== dragId ? overId : null
+      // hit-test for drop target
+      ds.ghost.style.visibility = 'hidden'
+      const el = document.elementFromPoint(ds.mx, ds.my) as HTMLElement | null
+      ds.ghost.style.visibility = ''
+      const overCard = el?.closest('[data-widget-id]') as HTMLElement | null
+      const overId = overCard?.dataset.widgetId ?? null
+      const valid = overId && overId !== ds.dragId ? overId : null
 
-      if (valid !== dropTarget) {
-        // Clear previous highlight
-        if (dropTarget) {
-          const prev = document.querySelector(`[data-widget-id="${dropTarget}"]`) as HTMLElement
+      if (valid !== ds.over) {
+        if (ds.over) {
+          const prev = document.querySelector(`[data-widget-id="${ds.over}"]`) as HTMLElement | null
           if (prev) { prev.style.outline = ''; prev.style.transform = ''; prev.style.transition = '' }
         }
-        // Set new highlight
         if (valid) {
-          const next = document.querySelector(`[data-widget-id="${valid}"]`) as HTMLElement
-          if (next) {
-            next.style.outline = `3px dashed ${ALLOY.green1}`
-            next.style.outlineOffset = '3px'
-            next.style.transform = 'scale(0.97)'
-            next.style.transition = 'transform 0.12s ease'
-          }
+          const next = document.querySelector(`[data-widget-id="${valid}"]`) as HTMLElement | null
+          if (next) { next.style.outline = '3px dashed #20BB71'; next.style.outlineOffset = '3px'; next.style.transform = 'scale(0.97)'; next.style.transition = 'transform 0.1s' }
         }
-        dropTarget = valid
+        ds.over = valid
       }
+      ds.raf = requestAnimationFrame(animLoop)
     }
+    dragState.current.raf = requestAnimationFrame(animLoop)
 
-    const onUp = () => {
-      cancelAnimationFrame(rafId)
+    const up = () => {
+      const ds = dragState.current; if (!ds) return
+      cancelAnimationFrame(ds.raf)
 
-      // Clear drop highlight
-      if (dropTarget) {
-        const el = document.querySelector(`[data-widget-id="${dropTarget}"]`) as HTMLElement
-        if (el) { el.style.outline = ''; el.style.transform = ''; el.style.transition = '' }
+      if (ds.over) {
+        const overEl = document.querySelector(`[data-widget-id="${ds.over}"]`) as HTMLElement | null
+        if (overEl) { overEl.style.outline = ''; overEl.style.transform = ''; overEl.style.transition = '' }
       }
 
-      // Animate ghost to final position then remove
-      const snapTo = dropTarget
-        ? document.querySelector(`[data-widget-id="${dropTarget}"]`)?.getBoundingClientRect()
-        : rect
-      if (snapTo) {
-        ghost.style.transition = 'left 0.18s ease, top 0.18s ease, transform 0.18s ease, opacity 0.18s ease'
-        ghost.style.left = snapTo.left + 'px'
-        ghost.style.top  = snapTo.top + 'px'
-        ghost.style.transform = 'rotate(0deg) scale(1)'
-        ghost.style.opacity = '0'
-      }
-      setTimeout(() => { if (document.body.contains(ghost)) document.body.removeChild(ghost) }, 220)
+      ds.source.style.opacity = ''
+      ds.source.style.outline = ''
 
-      // Restore source
-      sourceEl.style.opacity = ''
-      sourceEl.style.pointerEvents = ''
+      // Snap ghost then fade
+      const snapEl = ds.over ? document.querySelector(`[data-widget-id="${ds.over}"]`) : ds.source
+      const sr = snapEl?.getBoundingClientRect()
+      if (sr) {
+        ds.ghost.style.transition = 'left .15s ease, top .15s ease, transform .15s ease, opacity .15s ease'
+        ds.ghost.style.left = sr.left + 'px'; ds.ghost.style.top = sr.top + 'px'
+        ds.ghost.style.transform = 'rotate(0deg) scale(1)'; ds.ghost.style.opacity = '0'
+      }
+      setTimeout(() => { if (document.body.contains(ds.ghost)) document.body.removeChild(ds.ghost) }, 180)
 
       // Commit reorder
-      if (dropTarget) {
-        const prev = widgetsRef.current
-        const ids = prev.map(w => w.id)
-        const fi = ids.indexOf(dragId), ti = ids.indexOf(dropTarget)
-        if (fi !== -1 && ti !== -1) {
-          const next = [...ids]
-          next.splice(fi, 1)
-          next.splice(ti, 0, dragId)
-          const reordered = next.map(id => prev.find(w => w.id === id)!).filter(Boolean)
-          setWidgets(reordered)
+      if (ds.over) {
+        setWidgets(prev => {
+          const ids = prev.map(w => w.id)
+          const fi = ids.indexOf(ds.dragId), ti = ids.indexOf(ds.over!)
+          if (fi === -1 || ti === -1) return prev
+          const next = [...ids]; next.splice(fi, 1); next.splice(ti, 0, ds.dragId)
           try { localStorage.setItem(`alloy_widget_order_${clientId}`, JSON.stringify(next)) } catch {}
-        }
-      }
-
-      isDraggingRef.current = false
-      setDraggingId(null)
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup', onUp)
-    }
-
-    isDraggingRef.current = true
-    setDraggingId(dragId)
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
-  }
-
-
-  async function loadGA4Events(startDate?: string, endDate?: string) {
-    if (!connection?.connected || !selectedProperty) return
-    const sd = startDate ?? activeFetchStart ?? dateRange
-    const ed = endDate   ?? activeFetchEnd   ?? 'today'
-    try {
-      const res = await fetch(`/api/ga4/custom?client_id=${clientId}&property_id=${selectedProperty}&dimensions=eventName&metrics=eventCount&start_date=${sd}&end_date=${ed}`)
-      if (res.ok) {
-        const data = await res.json()
-        const rows = data.rows || []
-        const events = rows.map((r: any) => r.dimensionValues?.[0]?.value).filter(Boolean)
-        setGa4EventNames(events)
-        setGa4EventRows(rows.map((r: any) => ({
-          d: r.dimensionValues?.[0]?.value || '',
-          v: parseInt(r.metricValues?.[0]?.value || '0')
-        })).filter((r: any) => r.d))
-      }
-    } catch {}
-  }
-
-  async function loadGA4Filters() {
-    if (!connection?.connected || !selectedProperty) return
-    setLoadingFilters(true)
-    try {
-      const res = await fetch(`/api/ga4/filters?client_id=${clientId}&property_id=${selectedProperty}`)
-      const data = await res.json()
-      console.log('GA4 Filters loaded:', data.total, 'filters', data.error || '')
-      setGa4Filters(data.filters || [])
-    } catch (e) {
-      console.error('loadGA4Filters error:', e)
-    }
-    setLoadingFilters(false)
-  }
-
-  async function saveSizesToDB(sizes: {[id:string]:{w:number;h:number}}) {
-    try { localStorage.setItem(LS_SIZES_KEY, JSON.stringify(sizes)) } catch {}
-    try {
-      const { createClient } = await import('@/lib/supabase/client')
-      const sb = createClient()
-      await sb.from('dashboard_layouts').upsert({
-        client_id: clientId,
-        key: 'widget_sizes',
-        value: sizes,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'client_id,key' })
-    } catch {}
-  }
-
-  async function loadSizesFromDB() {
-    try {
-      const { createClient } = await import('@/lib/supabase/client')
-      const sb = createClient()
-      const { data } = await sb.from('dashboard_layouts')
-        .select('value')
-        .eq('client_id', clientId)
-        .eq('key', 'widget_sizes')
-        .single()
-      if (data?.value && typeof data.value === 'object') {
-        setWidgetSizes(data.value as any)
-        try { localStorage.setItem(LS_SIZES_KEY, JSON.stringify(data.value)) } catch {}
-      }
-    } catch {}
-  }
-
-  async function loadClientInfo() {
-    // Use /api/client which uses service role key - always works regardless of RLS
-    try {
-      const res = await fetch(`/api/client?id=${clientId}`)
-      if (res.ok) {
-        const data = await res.json()
-        if (data?.name) {
-          const cleanDomain = (data.domain || '')
-            .replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]
-          setClientName(data.name)
-          setClientDomain(cleanDomain)
-          try {
-            localStorage.setItem(`alloy_client_name_${clientId}`, data.name)
-            localStorage.setItem(`alloy_client_domain_${clientId}`, cleanDomain)
-          } catch {}
-          return
-        }
-      }
-    } catch {}
-
-    // Final fallback: Supabase browser client
-    try {
-      const { createClient } = await import('@/lib/supabase/client')
-      const sb = createClient()
-      const { data } = await sb.from('clients').select('name,domain').eq('id', clientId).single()
-      if (data?.name) {
-        const cleanDomain = (data.domain || '')
-          .replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]
-        setClientName(data.name)
-        setClientDomain(cleanDomain)
-        try {
-          localStorage.setItem(`alloy_client_name_${clientId}`, data.name)
-          localStorage.setItem(`alloy_client_domain_${clientId}`, cleanDomain)
-        } catch {}
-      }
-    } catch {}
-  }
-
-  async function checkConnection() {
-    setCheckingConn(true)
-    try {
-      const res = await fetch(`/api/connection?client_id=${clientId}`)
-      const data = await res.json()
-      setConnection(data)
-      if (data.connected && data.ga4_properties?.length > 0) {
-        setSelectedProperty(data.ga4_properties[0].name)
-      }
-    } catch { setConnection({ connected: false }) }
-    finally { setCheckingConn(false) }
-  }
-
-  async function loadMapping() {
-    try {
-      const res = await fetch(`/api/mapping?client_id=${clientId}`)
-      const data = await res.json()
-      let savedStart: string|null = null, savedEnd: string|null = null
-      try { const sv = localStorage.getItem(LS_DATE_KEY); if (sv) { const p=JSON.parse(sv); savedStart=p.start||null; savedEnd=p.end||null } } catch {}
-      if (savedStart && savedEnd) { setActiveFetchStart(savedStart); setActiveFetchEnd(savedEnd) }
-      if (data.ga4_property_id) {
-        setSelectedProperty(data.ga4_property_id)
-        setMappingProp(data.ga4_property_id)
-        setMappingPropName(data.ga4_property_name || '')
-        setMappingSite(data.gsc_site_url || '')
-        fetchGA4(data.ga4_property_id, savedStart||undefined, savedEnd||undefined)
-      } else { fetchGA4(undefined, savedStart||undefined, savedEnd||undefined) }
-    } catch { fetchGA4() }
-  }
-
-  async function fetchGA4(propertyId?: string, startDate?: string, endDate?: string) {
-    const pid = propertyId || selectedProperty
-    if (!pid) return
-    setLoadingData(true)
-    const sd = startDate ?? activeFetchStart ?? dateRange
-    const ed = endDate   ?? activeFetchEnd   ?? 'today'
-    try {
-      const res = await fetch(`/api/ga4?client_id=${clientId}&property_id=${pid}&start_date=${sd}&end_date=${ed}`)
-      const data = await res.json()
-      if (data.connected) {
-        setGa4Data(data)
-        loadGA4Events(sd, ed)
-        const totalsRow = data.timeSeries?.totals?.[0]
-        const sessions = parseInt(totalsRow?.metricValues?.[0]?.value || '0')
-        const users = parseInt(totalsRow?.metricValues?.[1]?.value || '0')
-        const conversions = parseInt(totalsRow?.metricValues?.[2]?.value || '0')
-        const engagementRate = parseFloat(totalsRow?.metricValues?.[4]?.value || '0')
-        setWidgets(prev => prev.map(w => {
-          if (w.id==='w1') return {...w, value: formatNum(sessions)}
-          if (w.id==='w2') return {...w, value: formatNum(conversions)}
-          if (w.id==='w3') return {...w, value: formatNum(users)}
-          if (w.id==='w4') return {...w, value: (engagementRate * 100).toFixed(2) + '%'}
-          return w
-        }))
-      }
-    } catch {}
-    finally { setLoadingData(false) }
-  }
-
-  async function saveMapping() {
-    setSavingMapping(true)
-    try {
-      await fetch('/api/mapping', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ client_id: clientId, ga4_property_id: mappingProp, ga4_property_name: mappingPropName, gsc_site_url: mappingSite }),
-      })
-      setSelectedProperty(mappingProp)
-      fetchGA4(mappingProp)
-      setMappingSaved(true)
-      setTimeout(() => { setMappingSaved(false); setShowMappingModal(false) }, 1500)
-    } catch {}
-    setSavingMapping(false)
-  }
-
-  function connectGoogle() { window.location.href = `/api/auth/google?state=${clientId}` }
-  async function disconnect() { await fetch(`/api/connection?client_id=${clientId}`,{method:'DELETE'}); setConnection({connected:false}); setGa4Data(null) }
-
-  const sessionData = ga4Data?.timeSeries?.rows?.map((r: any) => ({ d: r.dimensionValues[0].value.slice(4), v: parseInt(r.metricValues[0].value) })) || STATIC_SESSIONS
-  const deviceData = ga4Data?.devices?.rows?.map((r: any) => ({ name: r.dimensionValues[0].value, v: parseInt(r.metricValues[0].value) })) || STATIC_DEVICES
-  const sourceData = ga4Data?.sources?.rows?.map((r: any, i: number) => ({ name: r.dimensionValues[0].value, value: parseInt(r.metricValues[0].value), color: ['#2196f3','#64b5f6',ALLOY.blue3,'#bbdefb','#e3f2fd'][i%5] })) || STATIC_DONUT
-  const cityData = ga4Data?.cities?.rows?.map((r: any) => ({ city: r.dimensionValues[0].value, val: parseInt(r.metricValues[0].value), pct: 100 })) || STATIC_CITIES
-  const maxCity = Math.max(...cityData.map((c: any) => c.val), 1)
-
-  // Map friendly metric names to GA4 API names
-  const METRIC_API_MAP: {[key:string]: string} = {
-    'Sessions': 'sessions', 'Total Users': 'totalUsers', 'New Users': 'newUsers',
-    'Active users': 'activeUsers', 'Conversions': 'conversions', 'Bounce Rate': 'bounceRate',
-    'Engagement Rate': 'engagementRate', 'Average Session Duration': 'averageSessionDuration',
-    'Screen Page Views': 'screenPageViews', 'Event Count': 'eventCount', 'Revenue': 'totalRevenue',
-    'Purchase Revenue': 'purchaseRevenue', 'Purchasers': 'purchasers',
-    '7-day active users': 'active7DayUsers', '28-day active users': 'active28DayUsers',
-    'Ads clicks': 'advertiserAdClicks', 'Ads cost': 'advertiserAdCost',
-    'Ads impressions': 'advertiserAdImpressions',
-  }
-  const DIMENSION_API_MAP: {[key:string]: string} = {
-    'Date': 'date', 'City': 'city', 'Country': 'country', 'Device Category': 'deviceCategory',
-    'Browser': 'browser', 'Session Source': 'sessionSource', 'Session Medium': 'sessionMedium',
-    'Landing Page': 'landingPage', 'Page Title': 'pageTitle', 'Age': 'userAgeBracket',
-    'Gender': 'userGender', 'Default Channel Group': 'sessionDefaultChannelGroup',
-    'Operating System': 'operatingSystem', 'Region': 'region',
-  }
-
-  // No cache needed - derive data directly from ga4Data on every render
-
-  // Map existing ga4Data to chart points based on dimension + metric selection
-  function getWidgetDataFallback(w: any): Array<{d: string; v: number}> {
-    const dims: string[] = ((w.dimensions as string[])?.length > 0 ? w.dimensions : null) || ['Date']
-    const mets: string[] = ((w.metrics as string[])?.length > 0 ? w.metrics : null) || ['Sessions']
-    const appliedFilters: string[] = (w.filters as string[]) || []
-    const primaryDim = dims[0] || 'Date'
-
-    // Helper: apply user-defined filter clauses to rows
-    function applyUserFilters(rows: {d:string;v:number}[]): {d:string;v:number}[] {
-      if (appliedFilters.length === 0) return rows
-      let result = rows
-      for (const filterName of appliedFilters) {
-        // Check userFilters first (user-created), then ga4Filters (API filters with clauses)
-        const filterDef = userFilters.find((gf: any) => gf.name === filterName) ||
-                          (ga4Filters as any[]).find((gf: any) => gf.name === filterName && gf.clauses?.length > 0)
-        if (!filterDef?.clauses?.length) continue
-        for (const clause of filterDef.clauses) {
-          if (!clause.field) continue
-          const fieldLower = clause.field.toLowerCase()
-          const dimLower = primaryDim.toLowerCase()
-          // Match if field relates to current dimension
-          const isDimMatch =
-            dimLower.includes(fieldLower) ||
-            fieldLower.includes(dimLower) ||
-            fieldLower.replace(' ', '') === dimLower.replace(' ', '') ||
-            (fieldLower.includes('event') && dimLower.includes('event')) ||
-            // Always apply if no specific dimension restriction needed
-            fieldLower === ''
-          if (!isDimMatch) continue
-          const selectedVals: string[] = clause.values || []
-          const textVal = (clause.value || '').toLowerCase()
-          const op = (clause.operator || '').toLowerCase()
-          const include = clause.include !== false
-          result = result.filter(row => {
-            const dVal = (row.d || '').toLowerCase()
-            let matches = false
-            if (op === 'in' || op === 'in list' || op === 'in') {
-              matches = selectedVals.length > 0
-                ? selectedVals.some(v => dVal === v.toLowerCase().trim())
-                : (textVal ? dVal === textVal : true)
-            } else if (op === 'equal to (=)' || op === '=' || op === 'equals') {
-              matches = dVal === textVal
-            } else if (op === 'contains') {
-              matches = dVal.includes(textVal)
-            } else if (op === 'starts with') {
-              matches = dVal.startsWith(textVal)
-            } else if (op === 'regexp match' || op === 'regexp contains') {
-              try { matches = new RegExp(textVal).test(dVal) } catch { matches = true }
-            } else {
-              matches = selectedVals.length > 0 ? selectedVals.some(v => dVal.includes(v.toLowerCase())) : true
-            }
-            return include ? matches : !matches
-          })
-        }
-      }
-      return result
-    }
-
-    // Helper: apply channel filter to reduce data values
-    function applyChannelFilter(rows: any[]): any[] {
-      if (appliedFilters.length === 0) return rows
-      const channelFilter = appliedFilters.find(f => f.includes('traffic only') || f.includes('only'))
-      if (!channelFilter) return rows
-      // Extract channel name from filter like "Organic Search traffic only"
-      const channel = channelFilter.replace(' traffic only', '').replace(' only', '').toLowerCase()
-      // For source/channel dimension data, filter directly
-      if (primaryDim === 'Session Source' || primaryDim === 'Default Channel Group' || primaryDim === 'Session Medium') {
-        return rows.filter((r: any) => {
-          const dim = (r.dimensionValues?.[0]?.value || r.d || '').toLowerCase()
-          return dim.includes(channel) || channel.includes(dim)
+          return next.map(id => prev.find(w => w.id === id)!).filter(Boolean)
         })
       }
-      // For other dimensions (Date, City etc), scale down values to simulate filtered data
-      // Use a fraction based on source data if available
-      const sourceRows = ga4Data?.sources?.rows || []
-      const matchingSource = sourceRows.find((r: any) =>
-        (r.dimensionValues?.[0]?.value || '').toLowerCase().includes(channel)
-      )
-      if (matchingSource && sourceRows.length > 0) {
-        const totalSessions = sourceRows.reduce((s: number, r: any) => s + parseFloat(r.metricValues?.[0]?.value || '0'), 0)
-        const channelSessions = parseFloat(matchingSource.metricValues?.[0]?.value || '0')
-        const ratio = totalSessions > 0 ? channelSessions / totalSessions : 0.3
-        return rows.map((r: any) => ({ ...r, v: Math.round((r.v || 0) * ratio) }))
-      }
-      // Fallback: reduce by ~30% to indicate filtering
-      return rows.map((r: any) => ({ ...r, v: Math.round((r.v || 0) * 0.3) }))
+
+      dragState.current = null
+      setDraggingId(null)
+      window.removeEventListener('mousemove', move)
+      window.removeEventListener('mouseup', up)
     }
 
-    // Pick metric index from time series based on selected metric
-    const metricIndexMap: {[key:string]: number} = {
-      'Sessions': 0, 'Total Users': 1, 'New Users': 1, 'Active users': 1,
-      'Conversions': 2, 'Bounce Rate': 3, 'Engagement Rate': 4,
-      'Average Session Duration': 5, 'Screen Page Views': 0,
-    }
-    const metIdx = metricIndexMap[mets[0]] ?? 0
-
-    // Dimension → dataset mapping
-    if (primaryDim === 'Device Category') {
-      const rows = ga4Data?.devices?.rows || STATIC_DEVICES.map((d: any) => ({ dimensionValues:[{value:d.name}], metricValues:[{value:String(d.v)}] }))
-      return applyChannelFilter(rows.map((r: any) => ({ d: r.dimensionValues?.[0]?.value || '', v: parseFloat(r.metricValues?.[metIdx < 1 ? 0 : 0]?.value || '0') })))
-    }
-    if (primaryDim === 'City') {
-      const rows = ga4Data?.cities?.rows || STATIC_CITIES.map((c: any) => ({ dimensionValues:[{value:c.city}], metricValues:[{value:String(c.val)}] }))
-      return applyChannelFilter(rows.map((r: any) => ({ d: r.dimensionValues?.[0]?.value || '', v: parseFloat(r.metricValues?.[0]?.value || '0') })))
-    }
-    if (primaryDim === 'Session Source' || primaryDim === 'Default Channel Group' || primaryDim === 'Session Medium') {
-      const rows = ga4Data?.sources?.rows || STATIC_DONUT.map((s: any) => ({ dimensionValues:[{value:s.name}], metricValues:[{value:String(s.value)}] }))
-      return applyChannelFilter(rows.map((r: any) => ({ d: r.dimensionValues?.[0]?.value || '', v: parseFloat(r.metricValues?.[0]?.value || '0'), name: r.dimensionValues?.[0]?.value || '', value: parseFloat(r.metricValues?.[0]?.value || '0') })))
-    }
-    if (primaryDim === 'Country' || primaryDim === 'Region') {
-      const rows = ga4Data?.cities?.rows || STATIC_CITIES.map((c: any) => ({ dimensionValues:[{value:c.city}], metricValues:[{value:String(c.val)}] }))
-      return rows.map((r: any) => ({ d: r.dimensionValues?.[0]?.value || '', v: parseFloat(r.metricValues?.[0]?.value || '0') }))
-    }
-    if (primaryDim === 'Browser' || primaryDim === 'Operating System') {
-      // Simulate browser breakdown from device data
-      const browsers = ['Chrome','Safari','Firefox','Edge','Samsung Internet']
-      const base = ga4Data?.devices?.rows || []
-      if (base.length > 0) {
-        const total = base.reduce((s: number, r: any) => s + parseFloat(r.metricValues?.[0]?.value || '0'), 0)
-        return browsers.map((b, i) => ({ d: b, v: Math.round(total * [0.62,0.19,0.08,0.06,0.05][i]) }))
-      }
-      return browsers.map((b, i) => ({ d: b, v: [4200,1300,550,400,320][i] }))
-    }
-    if (primaryDim === 'Age' || primaryDim === 'Gender') {
-      // Use simulated demographic data
-      if (primaryDim === 'Age') return [
-        {d:'18-24',v:2100},{d:'25-34',v:3800},{d:'35-44',v:2900},{d:'45-54',v:1800},{d:'55-64',v:900},{d:'65+',v:500}
-      ]
-      return [{d:'Male',v:5200},{d:'Female',v:4800},{d:'Unknown',v:800}]
-    }
-    if (primaryDim === 'Landing Page' || primaryDim === 'Page Title') {
-      const pages = ['/','About','/services','/contact','/blog']
-      return pages.map((p, i) => ({ d: p, v: [3200,1800,1400,980,760][i] }))
-    }
-    if (primaryDim === 'Campaign' || primaryDim === 'Session Campaign') {
-      return ga4Data?.sources?.rows?.slice(0,6).map((r: any) => ({
-        d: r.dimensionValues?.[0]?.value || '', v: parseFloat(r.metricValues?.[0]?.value || '0')
-      })) || [{d:'organic',v:2100},{d:'direct',v:1800},{d:'cpc',v:900},{d:'email',v:400}]
-    }
-    if (primaryDim === 'Event Name' || primaryDim === 'eventName') {
-      // Use cached event rows if available, otherwise use fallback events
-      const baseRows = ga4EventRows.length > 0 ? ga4EventRows : (() => {
-        // Trigger load if connected
-        if (connection?.connected && selectedProperty && ga4EventNames.length === 0) loadGA4Events()
-        return [
-          {d:'page_view',v:45230},{d:'session_start',v:28100},{d:'first_visit',v:12400},
-          {d:'scroll',v:9800},{d:'click',v:7200},{d:'user_engagement',v:5600},
-          {d:'view_search_results',v:2100},{d:'file_download',v:890},
-        ]
-      })()
-      // Apply user-defined filters (e.g. Event Name In [page_view])
-      return applyUserFilters(baseRows)
-    }
-    // Any other dimension or Date: use time series with selected metric index
-    if (!ga4Data) return STATIC_SESSIONS
-    const rows = ga4Data.timeSeries?.rows || []
-    if (rows.length === 0) return STATIC_SESSIONS
-    return applyChannelFilter(rows.map((r: any) => ({
-      d: r.dimensionValues?.[0]?.value?.length === 8 ? r.dimensionValues[0].value.slice(4) : (r.dimensionValues?.[0]?.value || ''),
-      v: parseFloat(r.metricValues?.[metIdx]?.value || r.metricValues?.[0]?.value || '0')
-    })))
+    setDraggingId(dragId)
+    window.addEventListener('mousemove', move)
+    window.addEventListener('mouseup', up)
   }
-
-  // Get chart data — always derive fresh from ga4Data using widget's dimensions/metrics
-  function getWidgetData(w: any): Array<{d: string; v: number}> {
-    return getWidgetDataFallback(w)
-  }
-  const STATIC_IDS = ['w1','w2','w3','w4','c1','c2','c3','d1','d2','d3','v1','bounce']
-  const dynamicWidgets = widgets.filter(w => !STATIC_IDS.includes(w.id))
-
-  const cloningRef = React.useRef(false)
-
-  function cloneWidget(resolvedWidget: Widget) {
-    if (cloningRef.current) return
-    cloningRef.current = true
-    setTimeout(() => { cloningRef.current = false }, 500)
-    const cloneId = `w${Date.now()}`
-    const cloned: Widget = {
-      ...resolvedWidget,
-      id: cloneId,
-      title: `${resolvedWidget.title} (Copy)`,
-    }
-    setWidgets(prev => {
-      if (prev.some(w => w.id === cloneId)) return prev
-      const updated = [...prev, cloned]
-      try {
-        localStorage.setItem(LS_WIDGETS_KEY, JSON.stringify(
-          updated.map(w => ({ ...w, value: undefined, change: undefined, up: undefined }))
-        ))
-      } catch {}
-      return updated
-    })
-    setOpenMenu(null)
-    setShareToast(`"${resolvedWidget.title}" cloned`)
-    setTimeout(() => setShareToast(null), 2500)
-    setTimeout(() => startEdit(cloned), 50)
-  }
-
-  function startEdit(w: Widget) {
-    setEditingWidget({...w})
-    setEditTab('General')
-    setOpenMenu(null)
-    setActiveRightPanel(null)
-
-  }
-  function openDrill(w: Widget) { if (!editMode) { setDrillWidget(w); setDrillChannel('All') } }
-
 
   function addWidget(chartType: string, label: string) {
     const newId = `w${Date.now()}`
@@ -1801,7 +1376,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
     const editControls = (
       <>
-        {editMode && <div onMouseDown={e => startDrag(e, w.id)} style={{position:'absolute',top:4,left:4,width:24,height:24,cursor:'grab',color:ALLOY.mute,zIndex:20,opacity:0.4,display:'flex',alignItems:'center',justifyContent:'center',borderRadius:3,background:'rgba(255,255,255,0.8)'}} className='alloy-grip'><Grip size={14}/></div>}
+        
         {editMode && (
           <div onClick={e => e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', alignItems:'center', gap:4 }}>
             <button style={{ background:isWhite?'rgba(0,0,0,0.05)':'rgba(255,255,255,0.15)', border:'none', borderRadius:2, padding:'3px 5px', cursor:'pointer', display:'flex' }}>
@@ -1823,8 +1398,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
           : `1px solid ${ALLOY.line}`
       return (
         <div data-widget-id={w.id}
-          onClick={e => { e.stopPropagation(); if (isDraggingRef.current) return; if (editMode) startEdit(w); else openDrill(w) }}
-         
+          onMouseDown={e => onWidgetMouseDown(e, w.id)}
+          onClick={e => { e.stopPropagation(); if (draggingId) return; if (editMode) startEdit(w); else openDrill(w) }}
           style={{ background:ALLOY.white, borderRadius:2, padding:12, position:'relative', cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, border: chartBorder, ...(isSelected && editMode ? { boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` } : {}), ...(widgetSizes[w.id] ? { width: widgetSizes[w.id].w, minHeight: widgetSizes[w.id].h } : { width: 'calc(33.333% - 8px)', minWidth: 220 }) }}>
           {isSelected && editMode && (
             <div className="alloy-editing-badge" style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
@@ -1867,7 +1442,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
     return (
       <div data-widget-id={w.id} className={editMode ? '' : 'alloy-card-hover'}
-        onClick={e => { e.stopPropagation(); if (isDraggingRef.current) return; if (editMode) startEdit(w); else openDrill(w) }}
+        onMouseDown={e => onWidgetMouseDown(e, w.id)}
+        onClick={e => { e.stopPropagation(); if (draggingId) return; if (editMode) startEdit(w); else openDrill(w) }}
         style={{ background:bgColor, borderRadius:2, padding:16, position:'relative', cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, border: editMode ? `2px solid ${borderCol}` : isWhite ? `1px solid ${ALLOY.line}` : '2px solid transparent', ...selectedRing, ...(widgetSizes[w.id] ? { width: widgetSizes[w.id].w, minHeight: widgetSizes[w.id].h } : { width: 'calc(25% - 8px)', minWidth: 180 }) }}>
         {isSelected && editMode && (
           <div className="alloy-editing-badge" style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
@@ -1897,7 +1473,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     const sz = widgetSizes[id]
     return (
       <div data-widget-id={w.id}
-        onClick={e => { e.stopPropagation(); if (isDraggingRef.current) return; if (editMode) startEdit(w); else openDrill(w) }}
+        onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
        
         style={{ background:ALLOY.white, borderRadius:2, padding:16, position:'relative', cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, ...(isSelected && editMode ? { border:`2.5px solid ${ALLOY.green1}`, boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` } : { border:`2px solid ${ALLOY.line}` }), ...(sz ? { width: sz.w, minHeight: sz.h } : { width: 'calc(33.333% - 8px)', minWidth: 220 }) }}>
         {isSelected && editMode && (
@@ -1905,7 +1481,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
             ✦ Editing
           </div>
         )}
-        {editMode && <div onMouseDown={e => startDrag(e, w.id)} style={{position:'absolute',top:4,left:4,width:24,height:24,cursor:'grab',color:ALLOY.mute,zIndex:20,opacity:0.4,display:'flex',alignItems:'center',justifyContent:'center',borderRadius:3,background:'rgba(255,255,255,0.8)'}} className='alloy-grip'><Grip size={14}/></div>}
+        
         {editMode && (
           <div onClick={e => e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', alignItems:'center', gap:4 }}>
             <button style={{ background:'rgba(0,0,0,0.04)', border:'none', borderRadius:2, padding:'3px 5px', cursor:'pointer', display:'flex' }}>
@@ -1985,10 +1561,21 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       [data-widget-id]:hover > div[title="Drag to resize"] { opacity: 0.6 !important }
       [data-widget-id]:hover > div[title="Drag to resize"]:hover { opacity: 1 !important }
 
-      /* Grip visibility in edit mode */
-      .alloy-grip { opacity: 0.4 }
-      [data-widget-id]:hover .alloy-grip { opacity: 0.8 !important }
-      .alloy-grip:hover { opacity: 1 !important; transform: scale(1.1) }
+      /* Drag cursor on widget cards in edit mode */
+      [data-widget-id] { cursor: default }
+      /* Grip zone indicator — top-left corner shows grab cursor */
+      [data-widget-id]::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0;
+        width: 32px; height: 32px;
+        cursor: grab;
+        z-index: 10;
+        border-radius: 2px 0 0 0;
+      }
+      [data-widget-id]:hover::before {
+        background: radial-gradient(circle at 8px 8px, rgba(107,107,107,0.15) 0%, transparent 70%);
+      }
 
       /* Drop target highlight */
       .alloy-drop-target { outline: 2.5px dashed #20BB71 !important; outline-offset: 2px; background: rgba(32,187,113,0.04) !important; }
@@ -2542,10 +2129,10 @@ Alloy Intelligence`)
                     </div>
                     <span style={{ fontSize:24, fontWeight:700, color:ALLOY.ink, fontFamily:ALLOY.fontDisplay }}>3%</span>
                   </ChartCard>}
-                  {!isWidgetRemoved('bounce') && <div data-widget-id="bounce" onClick={e => { e.stopPropagation(); if (isDraggingRef.current) return; if (editMode) startEdit(widgets[3]) }}
+                  {!isWidgetRemoved('bounce') && <div data-widget-id="bounce" onMouseDown={e => onWidgetMouseDown(e, 'bounce')} onClick={e => { e.stopPropagation(); if (draggingId) return; if (editMode) startEdit(widgets[3]) }}
                    
                     style={{ background:ALLOY.red1, border:`2px solid ${editingWidget?.id==='bounce' && editMode ? ALLOY.blue1 : ALLOY.red1}`, borderRadius:2, padding:16, position:'relative', cursor: editMode ? 'pointer' : 'default' }}>
-                    {editMode && <div onMouseDown={e => startDrag(e, 'bounce')} style={{position:'absolute',top:4,left:4,width:24,height:24,cursor:'grab',color:'rgba(255,255,255,0.9)',zIndex:20,opacity:0.4,display:'flex',alignItems:'center',justifyContent:'center',borderRadius:3,background:'rgba(255,255,255,0.2)'}} className='alloy-grip'><Grip size={14}/></div>}
+                    
                     {editMode && (
                       <div onClick={e => e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', gap:4 }}>
                         <button style={{ background:'rgba(255,255,255,0.2)', border:'none', borderRadius:2, padding:'3px 5px', cursor:'pointer', display:'flex' }}><Maximize2 size={10} style={{ color:'rgba(255,255,255,0.8)' }}/></button>
@@ -2606,7 +2193,8 @@ Alloy Intelligence`)
                   const isDynSelected = editingWidget?.id === w.id && editMode
                   return (
                   <div key={w.id} data-widget-id={w.id}
-                    onClick={e => { e.stopPropagation(); if (isDraggingRef.current) return; if (editMode) startEdit(w) }}
+                    onMouseDown={e => onWidgetMouseDown(e, w.id)}
+                    onClick={e => { e.stopPropagation(); if (draggingId) return; if (editMode) startEdit(w) }}
                    
                     style={{ background:ALLOY.white, borderRadius:2, padding:14, position:'relative', cursor: editMode ? 'pointer' : 'default', minHeight:140, transition:'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isDynSelected ? 0.45 : 1, ...(isDynSelected ? { border:`2.5px solid ${ALLOY.green1}`, boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` } : { border:`2px solid ${ALLOY.line}` }) }}>
                     {isDynSelected && (
@@ -2614,7 +2202,7 @@ Alloy Intelligence`)
                         ✦ Editing
                       </div>
                     )}
-                    {editMode && <div onMouseDown={e => startDrag(e, w.id)} style={{position:'absolute',top:4,left:4,width:24,height:24,cursor:'grab',color:ALLOY.mute,zIndex:20,opacity:0.4,display:'flex',alignItems:'center',justifyContent:'center',borderRadius:3,background:'rgba(255,255,255,0.8)'}} className='alloy-grip'><Grip size={14}/></div>}
+                    
                     {editMode && (
                       <div onClick={e => e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', gap:4 }}>
                         <WidgetDot wid={w.id} onEdit={() => startEdit(w)} onClone={() => cloneWidget(w)} widget={w}/>
