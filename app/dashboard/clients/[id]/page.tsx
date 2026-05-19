@@ -2349,7 +2349,7 @@ Alloy Intelligence`)
                 {connection?.connected && <p style={{ fontSize:11, color:ALLOY.mute, marginTop:4, fontFamily:ALLOY.fontLabel, letterSpacing:'0.04em' }}>REAL-TIME DATA · {connection.email}</p>}
               </div>
               <div style={{ display:'flex', flexWrap:'wrap' as const, gap:10, marginBottom:10 }}>
-                {widgets.filter(w => !isWidgetRemoved(w.id)).map(w => <KPICard key={w.id} w={w}/>)}
+                {widgets.filter(w => !isWidgetRemoved(w.id) && STATIC_IDS.includes(w.id)).map(w => <KPICard key={w.id} w={w}/>)}
               </div>
               <div style={{ display:'flex', flexWrap:'wrap' as const, gap:10, marginBottom:10, alignItems:'flex-start' }}>
                 {!isWidgetRemoved('c1') && <ChartCard id="c1">
@@ -2433,12 +2433,11 @@ Alloy Intelligence`)
                 <DynamicChart chartType={widgets.find(x=>x.id==='v1')?.chartType || 'area'} data={getWidgetData(widgets.find(x=>x.id==='v1') || {})} height={130} dimensions={(widgets.find(x=>x.id==='v1') as any)?.dimensions} metrics={(widgets.find(x=>x.id==='v1') as any)?.metrics}/>
               </ChartCard>}
             </div>
-          )}
 
-            {/* Dynamically added widgets */}
-            {dynamicWidgets.length >= 1 && (
+            {/* Dynamically added / cloned widgets */}
+            {dynamicWidgets.filter(w => !isWidgetRemoved(w.id)).length >= 1 && (
               <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10, marginTop:10 }}>
-                {dynamicWidgets.map(w => {
+                {dynamicWidgets.filter(w => !isWidgetRemoved(w.id)).map(w => {
                   const isDynSelected = editingWidget?.id === w.id && editMode
                   return (
                   <div key={w.id}
@@ -2464,6 +2463,8 @@ Alloy Intelligence`)
                 )})}
               </div>
             )}
+          </div>
+          )}
         </div>
 
         {/* Right panel */}
