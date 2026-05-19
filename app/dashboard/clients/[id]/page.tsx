@@ -1110,41 +1110,70 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
   function onWidgetMouseDown(e: React.MouseEvent, dragId: string) {
     if (!editMode) return
-    // Only drag from the grip handle area (top-left 32x32px of card)
+    // Don't drag from interactive elements
+    const target = e.target as HTMLElement
+    if (target.closest('button,input,select,textarea,[data-no-drag]')) return
+
     const card = (e.currentTarget as HTMLElement)
-    const cr = card.getBoundingClientRect()
-    const localX = e.clientX - cr.left
-    const localY = e.clientY - cr.top
-    if (localX > 32 || localY > 32) return  // outside grip zone
-
-    e.preventDefault()
-    e.stopPropagation()
-
-    // Clone full card as ghost
-    const ghost = card.cloneNode(true) as HTMLElement
-    ghost.style.cssText = `
-      position:fixed!important;
-      left:${cr.left}px; top:${cr.top}px;
-      width:${cr.width}px; height:${cr.height}px;
-      pointer-events:none!important;
-      z-index:99999!important;
-      opacity:0.9!important;
-      transform:rotate(2deg) scale(1.04)!important;
-      box-shadow:0 20px 60px rgba(0,0,0,0.3), 0 0 0 3px #20BB71!important;
-      border-radius:2px!important;
-      transition:none!important;
-      cursor:grabbing!important;
-    `
-    document.body.appendChild(ghost)
-
-    card.style.opacity = '0.25'
-    card.style.outline = '2px dashed #20BB71'
-
-    dragState.current = { dragId, ghost, source: card, ox: e.clientX - cr.left, oy: e.clientY - cr.top, over: null, raf: 0, mx: e.clientX, my: e.clientY }
+    const startX = e.clientX
+    const startY = e.clientY
+    let started = false
 
     const move = (mv: MouseEvent) => {
-      const ds = dragState.current; if (!ds) return
-      ds.mx = mv.clientX; ds.my = mv.clientY
+      // Only start drag after 8px movement threshold
+      if (!started) {
+        if (Math.abs(mv.clientX - startX) < 8 && Math.abs(mv.clientY - startY) < 8) return
+        started = true
+
+        // Now actually start the drag
+        const cr = card.getBoundingClientRect()
+        const ghost = card.cloneNode(true) as HTMLElement
+        ghost.style.cssText = `
+          position:fixed;left:${cr.left}px;top:${cr.top}px;
+          width:${cr.width}px;height:${cr.height}px;
+          pointer-events:none;z-index:99999;
+          opacity:0.92;transform:rotate(2deg) scale(1.04);
+          box-shadow:0 24px 64px rgba(0,0,0,0.32),0 0 0 3px #20BB71;
+          border-radius:2px;transition:none;background:white;overflow:hidden;
+        `
+        document.body.appendChild(ghost)
+        card.style.opacity = '0.25'
+        card.style.outline = '2px dashed #20BB71'
+        card.style.outlineOffset = '2px'
+
+        const ox = startX - cr.left
+        const oy = startY - cr.top
+
+        dragState.current = { dragId, ghost, source: card, ox, oy, over: null, raf: 0, mx: mv.clientX, my: mv.clientY }
+        setDraggingId(dragId)
+
+        const animLoop = () => {
+          const ds = dragState.current; if (!ds) return
+          ds.ghost.style.left = (ds.mx - ds.ox) + 'px'
+          ds.ghost.style.top  = (ds.my - ds.oy) + 'px'
+          ghost.style.visibility = 'hidden'
+          const under = document.elementFromPoint(ds.mx, ds.my) as HTMLElement | null
+          ghost.style.visibility = ''
+          const overCard = under?.closest('[data-widget-id]') as HTMLElement | null
+          const overId = overCard?.dataset.widgetId ?? null
+          const valid = overId && overId !== dragId ? overId : null
+          if (valid !== ds.over) {
+            if (ds.over) {
+              const prev = document.querySelector(`[data-widget-id="${ds.over}"]`) as HTMLElement | null
+              if (prev) { prev.style.outline=''; prev.style.transform=''; prev.style.transition='' }
+            }
+            if (valid) {
+              const next = document.querySelector(`[data-widget-id="${valid}"]`) as HTMLElement | null
+              if (next) { next.style.outline='3px dashed #20BB71'; next.style.outlineOffset='3px'; next.style.transform='scale(0.97)'; next.style.transition='transform 0.1s' }
+            }
+            ds.over = valid
+          }
+          ds.raf = requestAnimationFrame(animLoop)
+        }
+        dragState.current.raf = requestAnimationFrame(animLoop)
+      } else {
+        if (dragState.current) { dragState.current.mx = mv.clientX; dragState.current.my = mv.clientY }
+      }
     }
 
     const animLoop = () => {
@@ -1173,49 +1202,45 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       }
       ds.raf = requestAnimationFrame(animLoop)
     }
-    dragState.current.raf = requestAnimationFrame(animLoop)
+    dragState.current!.raf = requestAnimationFrame(animLoop)
+  }
 
     const up = () => {
-      const ds = dragState.current; if (!ds) return
-      cancelAnimationFrame(ds.raf)
-
-      if (ds.over) {
-        const overEl = document.querySelector(`[data-widget-id="${ds.over}"]`) as HTMLElement | null
-        if (overEl) { overEl.style.outline = ''; overEl.style.transform = ''; overEl.style.transition = '' }
+      const ds = dragState.current
+      if (ds) {
+        cancelAnimationFrame(ds.raf)
+        if (ds.over) {
+          const overEl = document.querySelector(`[data-widget-id="${ds.over}"]`) as HTMLElement | null
+          if (overEl) { overEl.style.outline = ''; overEl.style.transform = ''; overEl.style.transition = '' }
+        }
+        ds.source.style.opacity = ''
+        ds.source.style.outline = ''
+        ds.source.style.outlineOffset = ''
+        const snapEl = ds.over ? document.querySelector(`[data-widget-id="${ds.over}"]`) : ds.source
+        const sr = snapEl?.getBoundingClientRect()
+        if (sr) {
+          ds.ghost.style.transition = 'left .15s ease,top .15s ease,transform .15s ease,opacity .15s ease'
+          ds.ghost.style.left = sr.left + 'px'; ds.ghost.style.top = sr.top + 'px'
+          ds.ghost.style.transform = 'rotate(0deg) scale(1)'; ds.ghost.style.opacity = '0'
+        }
+        setTimeout(() => { if (document.body.contains(ds.ghost)) document.body.removeChild(ds.ghost) }, 180)
+        if (ds.over) {
+          setWidgets(prev => {
+            const ids = prev.map(w => w.id)
+            const fi = ids.indexOf(ds.dragId), ti = ids.indexOf(ds.over!)
+            if (fi === -1 || ti === -1) return prev
+            const next = [...ids]; next.splice(fi, 1); next.splice(ti, 0, ds.dragId)
+            try { localStorage.setItem(`alloy_widget_order_${clientId}`, JSON.stringify(next)) } catch {}
+            return next.map(id => prev.find(w => w.id === id)!).filter(Boolean)
+          })
+        }
+        dragState.current = null
+        setDraggingId(null)
       }
-
-      ds.source.style.opacity = ''
-      ds.source.style.outline = ''
-
-      // Snap ghost then fade
-      const snapEl = ds.over ? document.querySelector(`[data-widget-id="${ds.over}"]`) : ds.source
-      const sr = snapEl?.getBoundingClientRect()
-      if (sr) {
-        ds.ghost.style.transition = 'left .15s ease, top .15s ease, transform .15s ease, opacity .15s ease'
-        ds.ghost.style.left = sr.left + 'px'; ds.ghost.style.top = sr.top + 'px'
-        ds.ghost.style.transform = 'rotate(0deg) scale(1)'; ds.ghost.style.opacity = '0'
-      }
-      setTimeout(() => { if (document.body.contains(ds.ghost)) document.body.removeChild(ds.ghost) }, 180)
-
-      // Commit reorder
-      if (ds.over) {
-        setWidgets(prev => {
-          const ids = prev.map(w => w.id)
-          const fi = ids.indexOf(ds.dragId), ti = ids.indexOf(ds.over!)
-          if (fi === -1 || ti === -1) return prev
-          const next = [...ids]; next.splice(fi, 1); next.splice(ti, 0, ds.dragId)
-          try { localStorage.setItem(`alloy_widget_order_${clientId}`, JSON.stringify(next)) } catch {}
-          return next.map(id => prev.find(w => w.id === id)!).filter(Boolean)
-        })
-      }
-
-      dragState.current = null
-      setDraggingId(null)
       window.removeEventListener('mousemove', move)
       window.removeEventListener('mouseup', up)
     }
 
-    setDraggingId(dragId)
     window.addEventListener('mousemove', move)
     window.addEventListener('mouseup', up)
   }
@@ -1668,7 +1693,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     const sz = widgetSizes[id]
     return (
       <div data-widget-id={w.id}
-        onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
+        onMouseDown={e => onWidgetMouseDown(e, w.id)}
+        onClick={e => { e.stopPropagation(); if (draggingId) return; if (editMode) startEdit(w); else openDrill(w) }}
        
         style={{ background:ALLOY.white, borderRadius:2, padding:16, position:'relative', cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, ...(isSelected && editMode ? { border:`2.5px solid ${ALLOY.green1}`, boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` } : { border:`2px solid ${ALLOY.line}` }), ...(sz ? { width: sz.w, minHeight: sz.h } : { width: 'calc(33.333% - 8px)', minWidth: 220 }) }}>
         {isSelected && editMode && (
