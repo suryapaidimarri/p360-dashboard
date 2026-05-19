@@ -661,6 +661,11 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   })
   const [resizingId, setResizingId] = useState<string|null>(null)
   const [resizeOverlay, setResizeOverlay] = useState<{x:number;y:number;w:number;h:number}|null>(null)
+  const [draggingId, setDraggingId] = useState<string|null>(null)
+  const [dragOverId, setDragOverId] = useState<string|null>(null)
+  const [widgetOrder, setWidgetOrder] = useState<string[]>(() => {
+    try { const v = localStorage.getItem(`alloy_widget_order_${clientId}`); return v ? JSON.parse(v) : [] } catch { return [] }
+  })
   const [newFilterName, setNewFilterName] = useState('')
   const [newFilterClauses, setNewFilterClauses] = useState([{ include: true, field: '', operator: 'contains', value: '' }])
   const [filterFieldSearch, setFilterFieldSearch] = useState('')
@@ -1314,6 +1319,27 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
   }
   function openDrill(w: Widget) { if (!editMode) { setDrillWidget(w); setDrillChannel('All') } }
+
+  function saveWidgetOrder(order: string[]) {
+    setWidgetOrder(order)
+    try { localStorage.setItem(`alloy_widget_order_${clientId}`, JSON.stringify(order)) } catch {}
+  }
+
+  function reorderWidgets(fromId: string, toId: string) {
+    if (fromId === toId) return
+    setWidgets(prev => {
+      const ids = widgetOrder.length > 0 ? widgetOrder : prev.map(w => w.id)
+      const ordered = [...ids.filter(id => prev.some(w => w.id === id)), ...prev.filter(w => !ids.includes(w.id)).map(w => w.id)]
+      const fromIdx = ordered.indexOf(fromId)
+      const toIdx = ordered.indexOf(toId)
+      if (fromIdx === -1 || toIdx === -1) return prev
+      const next = [...ordered]
+      next.splice(fromIdx, 1)
+      next.splice(toIdx, 0, fromId)
+      saveWidgetOrder(next)
+      return next.map(id => prev.find(w => w.id === id)!).filter(Boolean)
+    })
+  }
   function addWidget(chartType: string, label: string) {
     const newId = `w${Date.now()}`
     const isKpi = chartType === 'scorecard' || chartType === 'sparkline'
@@ -1647,6 +1673,82 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     )
   }
 
+  // ── Drag Handle ─────────────────────────────────────────────────────────────
+  function DragHandle({ id }: { id: string }) {
+    if (!editMode) return null
+    const isDragging = draggingId === id
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+
+      const el = (e.currentTarget as HTMLElement).closest('[data-widget-id]') as HTMLElement
+      if (!el) return
+      const rect = el.getBoundingClientRect()
+
+      // Create ghost clone
+      const ghost = el.cloneNode(true) as HTMLElement
+      ghost.id = 'dnd-ghost'
+      ghost.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;opacity:0.85;pointer-events:none;z-index:99999;transform:rotate(1.5deg) scale(1.02);box-shadow:0 16px 40px rgba(0,0,0,0.18);transition:none;border:2px solid ${ALLOY.green1};border-radius:2px;`
+      document.body.appendChild(ghost)
+
+      // Dim original
+      el.style.opacity = '0.3'
+      el.style.transition = 'none'
+
+      setDraggingId(id)
+
+      const offsetX = e.clientX - rect.left
+      const offsetY = e.clientY - rect.top
+
+      const onMove = (mv: MouseEvent) => {
+        ghost.style.left = (mv.clientX - offsetX) + 'px'
+        ghost.style.top = (mv.clientY - offsetY) + 'px'
+
+        // Find which widget we're hovering over
+        ghost.style.display = 'none'
+        const under = document.elementFromPoint(mv.clientX, mv.clientY)
+        ghost.style.display = ''
+        const overEl = under?.closest('[data-widget-id]') as HTMLElement | null
+        const overId = overEl?.dataset.widgetId || null
+        setDragOverId(overId !== id ? overId : null)
+      }
+
+      const onUp = (mv: MouseEvent) => {
+        ghost.style.display = 'none'
+        const under = document.elementFromPoint(mv.clientX, mv.clientY)
+        ghost.style.display = ''
+        const overEl = under?.closest('[data-widget-id]') as HTMLElement | null
+        const overId = overEl?.dataset.widgetId
+
+        if (overId && overId !== id) reorderWidgets(id, overId)
+
+        el.style.opacity = ''
+        el.style.transition = ''
+        document.body.removeChild(ghost)
+        setDraggingId(null)
+        setDragOverId(null)
+        window.removeEventListener('mousemove', onMove)
+        window.removeEventListener('mouseup', onUp)
+      }
+
+      window.addEventListener('mousemove', onMove)
+      window.addEventListener('mouseup', onUp)
+    }
+
+    return (
+      <div
+        onMouseDown={handleMouseDown}
+        title="Drag to reorder"
+        style={{ position:'absolute', top:6, left:6, cursor: isDragging ? 'grabbing' : 'grab', zIndex:5, opacity: isDragging ? 1 : 0, transition:'opacity 0.15s', padding:2 }}
+        onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = '1'}
+        onMouseLeave={e => { if (draggingId !== id) (e.currentTarget as HTMLElement).style.opacity = '0' }}
+      >
+        <Grip size={13} style={{ color: isDragging ? ALLOY.green1 : ALLOY.mute }}/>
+      </div>
+    )
+  }
+
   function KPICard({ w }: { w: Widget }) {
     const c = KPI_BG[w.color] || KPI_BG.white
     const isWhite = w.color === 'white'
@@ -1663,7 +1765,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
     const editControls = (
       <>
-        {editMode && <div style={{ position:'absolute', top:6, left:6, cursor:'grab', color:isWhite?ALLOY.line:'rgba(255,255,255,0.35)', zIndex:5 }}><Grip size={13}/></div>}
+        {editMode && <DragHandle id={w.id}/>}
         {editMode && (
           <div onClick={e => e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', alignItems:'center', gap:4 }}>
             <button style={{ background:isWhite?'rgba(0,0,0,0.05)':'rgba(255,255,255,0.15)', border:'none', borderRadius:2, padding:'3px 5px', cursor:'pointer', display:'flex' }}>
@@ -1686,6 +1788,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       return (
         <div data-widget-id={w.id}
           onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
+          className={dragOverId === w.id && draggingId !== w.id ? 'alloy-drop-target' : ''}
           style={{ background:ALLOY.white, borderRadius:2, padding:12, position:'relative', cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, border: chartBorder, ...(isSelected && editMode ? { boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` } : {}), ...(widgetSizes[w.id] ? { width: widgetSizes[w.id].w, minHeight: widgetSizes[w.id].h } : { width: 'calc(33.333% - 8px)', minWidth: 220 }) }}>
           {isSelected && editMode && (
             <div className="alloy-editing-badge" style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
@@ -1727,7 +1830,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       : '—'
 
     return (
-      <div data-widget-id={w.id} className={editMode ? '' : 'alloy-card-hover'}
+      <div data-widget-id={w.id} className={`${editMode ? '' : 'alloy-card-hover'} ${dragOverId === w.id && draggingId !== w.id ? 'alloy-drop-target' : ''}`}
         onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
         style={{ background:bgColor, borderRadius:2, padding:16, position:'relative', cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, border: editMode ? `2px solid ${borderCol}` : isWhite ? `1px solid ${ALLOY.line}` : '2px solid transparent', ...selectedRing, ...(widgetSizes[w.id] ? { width: widgetSizes[w.id].w, minHeight: widgetSizes[w.id].h } : { width: 'calc(25% - 8px)', minWidth: 180 }) }}>
         {isSelected && editMode && (
@@ -1759,13 +1862,14 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     return (
       <div data-widget-id={w.id}
         onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
+        className={dragOverId === w.id && draggingId !== w.id ? 'alloy-drop-target' : ''}
         style={{ background:ALLOY.white, borderRadius:2, padding:16, position:'relative', cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, ...(isSelected && editMode ? { border:`2.5px solid ${ALLOY.green1}`, boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` } : { border:`2px solid ${ALLOY.line}` }), ...(sz ? { width: sz.w, minHeight: sz.h } : { width: 'calc(33.333% - 8px)', minWidth: 220 }) }}>
         {isSelected && editMode && (
           <div className="alloy-editing-badge" style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
             ✦ Editing
           </div>
         )}
-        {editMode && <div style={{ position:'absolute', top:6, left:6, cursor:'grab', color:ALLOY.line }}><Grip size={13}/></div>}
+        {editMode && <DragHandle id={w.id}/>}
         {editMode && (
           <div onClick={e => e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', alignItems:'center', gap:4 }}>
             <button style={{ background:'rgba(0,0,0,0.04)', border:'none', borderRadius:2, padding:'3px 5px', cursor:'pointer', display:'flex' }}>
@@ -1844,6 +1948,16 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       /* Show resize handle on card hover in edit mode */
       [data-widget-id]:hover > div[title="Drag to resize"] { opacity: 0.6 !important }
       [data-widget-id]:hover > div[title="Drag to resize"]:hover { opacity: 1 !important }
+
+      /* Show drag handle on card hover */
+      [data-widget-id]:hover > div[title="Drag to reorder"] { opacity: 0.6 !important }
+      [data-widget-id]:hover > div[title="Drag to reorder"]:hover { opacity: 1 !important }
+
+      /* Drop target highlight */
+      .alloy-drop-target { outline: 2.5px dashed #20BB71 !important; outline-offset: 2px; background: rgba(32,187,113,0.04) !important; }
+
+      /* Dragging widget */
+      .alloy-dragging { opacity: 0.3 !important; }
 
       /* Spin */
       .alloy-spin { animation: alloy-spin 0.8s linear infinite }
@@ -2393,7 +2507,7 @@ Alloy Intelligence`)
                   </ChartCard>}
                   {!isWidgetRemoved('bounce') && <div onClick={e => { e.stopPropagation(); if (editMode) startEdit(widgets[3]) }}
                     style={{ background:ALLOY.red1, border:`2px solid ${editingWidget?.id==='bounce' && editMode ? ALLOY.blue1 : ALLOY.red1}`, borderRadius:2, padding:16, position:'relative', cursor: editMode ? 'pointer' : 'default' }}>
-                    {editMode && <div style={{ position:'absolute', top:6, left:6, cursor:'grab', color:'rgba(255,255,255,0.35)' }}><Grip size={13}/></div>}
+                    {editMode && <DragHandle id={w.id}/>}
                     {editMode && (
                       <div onClick={e => e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', gap:4 }}>
                         <button style={{ background:'rgba(255,255,255,0.2)', border:'none', borderRadius:2, padding:'3px 5px', cursor:'pointer', display:'flex' }}><Maximize2 size={10} style={{ color:'rgba(255,255,255,0.8)' }}/></button>
@@ -2453,15 +2567,16 @@ Alloy Intelligence`)
                 {dynamicWidgets.filter(w => !isWidgetRemoved(w.id)).map(w => {
                   const isDynSelected = editingWidget?.id === w.id && editMode
                   return (
-                  <div key={w.id}
+                  <div key={w.id} data-widget-id={w.id}
                     onClick={e => { e.stopPropagation(); if (editMode) startEdit(w) }}
-                    style={{ background:ALLOY.white, borderRadius:2, padding:14, position:'relative', cursor: editMode ? 'pointer' : 'default', minHeight:140, transition:'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isDynSelected ? 0.45 : 1, ...(isDynSelected ? { border:`2.5px solid ${ALLOY.green1}`, boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` } : { border:`2px solid ${ALLOY.line}` }) }}>
+                    className={dragOverId === w.id && draggingId !== w.id ? 'alloy-drop-target' : ''}
+                    style={{ background:ALLOY.white, borderRadius:2, padding:14, position:'relative', cursor: editMode ? 'pointer' : 'default', minHeight:140, transition:'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: draggingId === w.id ? 0.3 : editMode && editingWidget && !isDynSelected ? 0.45 : 1, ...(isDynSelected ? { border:`2.5px solid ${ALLOY.green1}`, boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` } : { border:`2px solid ${ALLOY.line}` }) }}>
                     {isDynSelected && (
                       <div className="alloy-editing-badge" style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
                         ✦ Editing
                       </div>
                     )}
-                    {editMode && <div style={{ position:'absolute', top:6, left:6, cursor:'grab', color:ALLOY.line }}><Grip size={13}/></div>}
+                    {editMode && <DragHandle id={w.id}/>}
                     {editMode && (
                       <div onClick={e => e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', gap:4 }}>
                         <WidgetDot wid={w.id} onEdit={() => startEdit(w)} onClone={() => cloneWidget(w)} widget={w}/>
