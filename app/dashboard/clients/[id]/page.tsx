@@ -994,6 +994,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
   // Use a ref so drop handler always reads the latest dragId (no stale closure)
   const dragIdRef = React.useRef<string|null>(null)
+  const justDroppedRef = React.useRef(false)  // prevents click-after-drop from selecting widget
   function handleDragStart(id: string) {
     if (!editMode) return
     dragIdRef.current = id
@@ -1003,6 +1004,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     dragIdRef.current = null
     setDragId(null)
     setDragOver(null)
+    justDroppedRef.current = true
+    setTimeout(() => { justDroppedRef.current = false }, 200)
   }
   function handleDrop(e: React.DragEvent, targetId: string) {
     e.preventDefault()
@@ -1028,6 +1031,9 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     next.splice(ti, 0, srcId)
     setWidgetOrder(next)
     try { localStorage.setItem(LS_ORDER_KEY, JSON.stringify(next)) } catch {}
+    // Suppress the click event that fires immediately after drop
+    justDroppedRef.current = true
+    setTimeout(() => { justDroppedRef.current = false }, 200)
   }
 
   async function checkConnection() {
@@ -1692,7 +1698,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       const activeFilters: string[] = (w as any).filters || []
       return (
         <div data-widget-id={w.id}
-          onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
+          onClick={e => { e.stopPropagation(); if (justDroppedRef.current) return; if (editMode) startEdit(w); else openDrill(w) }}
           style={{ background:ALLOY.white, borderRadius:2, padding:12, position:'relative', minHeight: widgetSizes[w.id]?.h || 130, cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, border:`2px solid ${borderCol}`, ...selectedRing, ...(widgetSizes[w.id] ? { width: widgetSizes[w.id].w, minWidth: widgetSizes[w.id].w, flex: '0 0 auto' } : { flex: '1 1 220px' }) }}>
           {isSelected && editMode && (
             <div className="alloy-editing-badge" style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
@@ -1735,7 +1741,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
     return (
       <div data-widget-id={w.id} className={editMode ? '' : 'alloy-card-hover'}
-        onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
+        onClick={e => { e.stopPropagation(); if (justDroppedRef.current) return; if (editMode) startEdit(w); else openDrill(w) }}
         style={{ background:bgColor, borderRadius:2, padding:16, position:'relative', minHeight: widgetSizes[w.id]?.h || 110, cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, border:`2px solid ${borderCol}`, ...selectedRing, ...(widgetSizes[w.id] ? { width: widgetSizes[w.id].w, minWidth: widgetSizes[w.id].w, flex: '0 0 auto' } : { flex: '1 1 180px' }) }}>
         {isSelected && editMode && (
           <div className="alloy-editing-badge" style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
@@ -1765,7 +1771,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     const sz = widgetSizes[id]
     return (
       <div data-widget-id={w.id}
-        onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
+        onClick={e => { e.stopPropagation(); if (justDroppedRef.current) return; if (editMode) startEdit(w); else openDrill(w) }}
         style={{ background:ALLOY.white, borderRadius:2, padding:16, position:'relative', cursor: editMode ? 'pointer' : 'default', transition: resizingId === w.id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, ...(isSelected && editMode ? { border:`2.5px solid ${ALLOY.green1}`, boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` } : { border:`2px solid ${ALLOY.line}` }), ...(sz ? { width: sz.w, minWidth: sz.w, minHeight: sz.h, flex: '0 0 auto' } : { flex: '1 1 260px' }) }}>
         {isSelected && editMode && (
           <div className="alloy-editing-badge" style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
@@ -2491,7 +2497,7 @@ Alloy Intelligence`)
                   if (dynW) {
                     const isDynSelected = editingWidget?.id === id && editMode
                     return (
-                      <div onClick={e => { e.stopPropagation(); if (editMode) startEdit(dynW) }}
+                      <div onClick={e => { e.stopPropagation(); if (justDroppedRef.current) return; if (editMode) startEdit(dynW) }}
                         style={{ background:ALLOY.white, borderRadius:2, padding:14, position:'relative', cursor:editMode?'grab':'default', minHeight:140, transition:'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity:editMode&&editingWidget&&!isDynSelected?0.45:1, ...(isDynSelected?{border:`2.5px solid ${ALLOY.green1}`,boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)`}:{border:`2px solid ${ALLOY.line}`}) }}>
                         {isDynSelected && <div className="alloy-editing-badge" style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase' as const, padding:'3px 8px', borderRadius:2, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>✦ Editing</div>}
                         {editMode && <div style={{ position:'absolute', top:6, left:6, cursor:'grab', color:ALLOY.line }}><Grip size={13}/></div>}
@@ -2509,33 +2515,47 @@ Alloy Intelligence`)
                   return null
                 }
 
+                // Build a live-reordered preview while dragging
+                // Swap dragId to dragOver position so user sees real-time placement
+                let preview = [...ordered]
+                if (dragId && dragOver && dragId !== dragOver) {
+                  const fi = preview.indexOf(dragId)
+                  const ti = preview.indexOf(dragOver)
+                  if (fi >= 0 && ti >= 0) {
+                    preview.splice(fi, 1)
+                    preview.splice(ti, 0, dragId)
+                  }
+                }
+
                 return (
-                  <div
-                    style={{ display:'flex', flexWrap:'wrap', gap:10, alignItems:'flex-start' }}
-                    onDragOver={e => e.preventDefault()}
-                  >
-                    {ordered.map((id: string) => (
-                      <div
-                        key={id}
-                        draggable={editMode}
-                        onDragStart={e => { e.stopPropagation(); handleDragStart(id) }}
-                        onDragOver={e => { e.preventDefault(); e.stopPropagation(); if (editMode && dragIdRef.current !== id) setDragOver(id) }}
-                        onDragEnter={e => { e.preventDefault(); if (editMode && dragIdRef.current !== id) setDragOver(id) }}
-                        onDragEnd={handleDragEnd}
-                        onDrop={e => handleDrop(e, id)}
-                        style={{
-                          flex: id === 'v1' ? '1 1 100%' : '1 1 260px',
-                          minWidth: id === 'v1' ? '100%' : 220,
-                          opacity: dragId === id ? 0.3 : 1,
-                          transform: dragOver === id && dragId !== id ? 'scale(1.02)' : 'scale(1)',
-                          transition: 'opacity 0.15s ease, transform 0.18s ease',
-                          outline: dragOver === id && dragId !== id ? `2.5px dashed ${ALLOY.green1}` : '2.5px solid transparent',
-                          borderRadius: 4,
-                        }}
-                      >
-                        {renderWidgetContent(id)}
-                      </div>
-                    ))}
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:10, alignItems:'start' }}>
+                    {preview.map((id: string) => {
+                      const isBeingDragged = id === dragId
+                      const isDropTarget   = id === dragOver && dragId !== id
+                      return (
+                        <div
+                          key={id}
+                          draggable={editMode}
+                          onDragStart={e => { e.stopPropagation(); handleDragStart(id) }}
+                          onDragOver={e => { e.preventDefault(); e.stopPropagation(); if (editMode && dragIdRef.current !== id) setDragOver(id) }}
+                          onDragEnter={e => { e.preventDefault(); if (editMode && dragIdRef.current !== id) setDragOver(id) }}
+                          onDragEnd={handleDragEnd}
+                          onDrop={e => handleDrop(e, id)}
+                          style={{
+                            // v1 (Website Views) spans full width
+                            gridColumn: id === 'v1' ? '1 / -1' : undefined,
+                            opacity: isBeingDragged ? 0.25 : 1,
+                            transform: isDropTarget ? 'scale(1.02)' : 'scale(1)',
+                            transition: 'opacity 0.12s ease, transform 0.15s ease, box-shadow 0.15s ease',
+                            borderRadius: 4,
+                            boxShadow: isDropTarget ? `0 0 0 2.5px ${ALLOY.green1}, 0 8px 24px rgba(32,187,113,0.2)` : 'none',
+                            cursor: editMode ? 'grab' : 'default',
+                          }}
+                        >
+                          {renderWidgetContent(id)}
+                        </div>
+                      )
+                    })}
                   </div>
                 )
               })()}
