@@ -1783,7 +1783,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       {/* Edit mode bars */}
       {editMode && (
         <>
-          <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 16px', borderBottom:`1px solid ${ALLOY.line}`, background:ALLOY.white, flexShrink:0 }}>
+          <div className="alloy-edit-topbar" style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 16px', borderBottom:`1px solid ${ALLOY.line}`, background:ALLOY.white, flexShrink:0 }}>
             <span style={{ fontSize:14, fontWeight:700, color:ALLOY.ink, fontFamily:ALLOY.fontDisplay }}>Dashboard</span>
             <div style={{ width:1, height:16, background:ALLOY.line }}/>
             {/* Client logo with multi-source fallback */}
@@ -3377,7 +3377,7 @@ Alloy Intelligence`)
 
       {drillWidget && !editMode && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:200, display:'flex', alignItems:'stretch', justifyContent:'flex-end' }}
-          onClick={() => setDrillWidget(null)}>
+          className="alloy-drilldown-bg" onClick={() => setDrillWidget(null)}>
           <div style={{ width:'82%', background:ALLOY.white, display:'flex', flexDirection:'column', overflow:'hidden' }}
             onClick={e => e.stopPropagation()}>
             <div style={{ padding:'14px 24px', borderBottom:`1px solid ${ALLOY.line}`, display:'flex', alignItems:'center', gap:12, background:ALLOY.white, flexShrink:0 }}>
@@ -3812,7 +3812,7 @@ Alloy Intelligence`)
 
       {/* ── Toast — works in both edit and view mode ── */}
       {shareToast && (
-        <div className="alloy-toast-in" style={{ position:'fixed' as const, bottom:28, left:'50%', transform:'translateX(-50%)', zIndex:9999, background:ALLOY.ink, color:ALLOY.white, fontFamily:ALLOY.fontBody, fontSize:12, fontWeight:500, padding:'11px 22px', borderRadius:2, boxShadow:'0 4px 20px rgba(0,0,0,0.25)', display:'flex', alignItems:'center', gap:10, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
+        <div className="alloy-toast" style={{ position:'fixed' as const, bottom:28, left:'50%', transform:'translateX(-50%)', zIndex:9999, background:ALLOY.ink, color:ALLOY.white, fontFamily:ALLOY.fontBody, fontSize:12, fontWeight:500, padding:'11px 22px', borderRadius:2, boxShadow:'0 4px 20px rgba(0,0,0,0.25)', display:'flex', alignItems:'center', gap:10, pointerEvents:'none' as const, whiteSpace:'nowrap' as const }}>
           <span style={{ color:ALLOY.green1, fontSize:15, lineHeight:1 }}>✓</span>
           {shareToast}
         </div>
