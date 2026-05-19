@@ -507,62 +507,6 @@ function NewDashCanvas({ onClone, onTemplate }: { onClone: () => void; onTemplat
     </div>
   )
 }
-  return (
-    <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', background:'#f8f9fa' }}>
-      <p style={{ fontSize:15, color:'#555', marginBottom:2 }}>Start building by dragging widgets</p>
-      <p style={{ fontSize:13, color:'#bbb', marginBottom:20 }}>or</p>
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, width:520 }}>
-
-        {/* Add a page template */}
-        <button style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:14, padding:'30px 24px', background:'#fff', border:'1px solid #e8e8e8', borderRadius:8, cursor:'pointer', textAlign:'center' as const }}>
-          <div style={{ width:56, height:56, display:'flex', alignItems:'center', justifyContent:'center' }}>
-            <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect x="4" y="4" width="12" height="12" rx="2" fill="#D0D0D0"/><rect x="20" y="4" width="12" height="12" rx="2" fill="#D0D0D0"/><rect x="4" y="20" width="12" height="7" rx="1.5" fill="#E8E8E8"/><rect x="20" y="20" width="12" height="7" rx="1.5" fill="#E8E8E8"/><circle cx="10" cy="30" r="2.5" fill="#48b5ea"/></svg>
-          </div>
-          <div>
-            <p style={{ fontSize:14, fontWeight:500, color:'#1a1a1a', marginBottom:6 }}>Add a page template</p>
-            <p style={{ fontSize:12, color:'#aaa', lineHeight:1.6 }}>Choose from a ready-made template or one of your saved pages</p>
-          </div>
-        </button>
-
-        {/* Build a page using AI */}
-        <button style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:14, padding:'30px 24px', background:'#fff', border:'1px solid #e8e8e8', borderRadius:8, cursor:'pointer', textAlign:'center' as const }}>
-          <div style={{ width:56, height:56, display:'flex', alignItems:'center', justifyContent:'center' }}>
-            <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="12" stroke="#D0D0D0" strokeWidth="2"/><circle cx="18" cy="10" r="3" fill="#D0D0D0"/><path d="M14 18 L17 21 L23 15" stroke="#48b5ea" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M26 10 L28 14 L32 12" stroke="#D0D0D0" strokeWidth="1.5" strokeLinecap="round"/></svg>
-          </div>
-          <div>
-            <p style={{ fontSize:14, fontWeight:500, color:'#1a1a1a', marginBottom:6 }}>Build a page using AI</p>
-            <p style={{ fontSize:12, color:'#aaa', lineHeight:1.6 }}>Tell AI what you're trying to achieve, and watch it build your page</p>
-          </div>
-        </button>
-
-        {/* Clone existing page */}
-        <button
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onClone(); }}
-          style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:14, padding:'30px 24px', background:'#fff', border:'1px solid #e8e8e8', borderRadius:8, cursor:'pointer', textAlign:'center' as const }}>
-          <div style={{ width:56, height:56, display:'flex', alignItems:'center', justifyContent:'center' }}>
-            <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect x="5" y="8" width="18" height="22" rx="2" stroke="#D0D0D0" strokeWidth="2"/><rect x="13" y="6" width="18" height="22" rx="2" stroke="#D0D0D0" strokeWidth="2" fill="#FAFAFA"/><path d="M18 13 h8" stroke="#E0E0E0" strokeWidth="1.5" strokeLinecap="round"/><path d="M18 17 h6" stroke="#E0E0E0" strokeWidth="1.5" strokeLinecap="round"/><path d="M18 21 h7" stroke="#E0E0E0" strokeWidth="1.5" strokeLinecap="round"/></svg>
-          </div>
-          <div>
-            <p style={{ fontSize:14, fontWeight:500, color:'#1a1a1a', marginBottom:6 }}>Clone existing page</p>
-            <p style={{ fontSize:12, color:'#aaa', lineHeight:1.6 }}>Copy a page from another page</p>
-          </div>
-        </button>
-
-        {/* Smart Dashboard */}
-        <button style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:14, padding:'30px 24px', background:'#fff', border:'1px solid #e8e8e8', borderRadius:8, cursor:'pointer', textAlign:'center' as const }}>
-          <div style={{ width:56, height:56, display:'flex', alignItems:'center', justifyContent:'center' }}>
-            <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect x="4" y="9" width="28" height="18" rx="2" stroke="#D0D0D0" strokeWidth="2"/><path d="M4 15 h28" stroke="#D0D0D0" strokeWidth="1.5"/><rect x="8" y="19" width="7" height="5" rx="1" fill="#E0E0E0"/><rect x="20" y="19" width="7" height="5" rx="1" fill="#48b5ea" fillOpacity="0.35"/><rect x="14" y="27" width="8" height="2" rx="1" fill="#D0D0D0"/></svg>
-          </div>
-          <div>
-            <p style={{ fontSize:14, fontWeight:500, color:'#1a1a1a', marginBottom:6 }}>Smart Dashboard</p>
-            <p style={{ fontSize:12, color:'#aaa', lineHeight:1.6 }}>Generate a dashboard from your connected integrations</p>
-          </div>
-        </button>
-
-      </div>
-    </div>
-  )
-}
 
 // ── Main page ────────────────────────────────────────────────────────────────
 export default function ClientWorkspace({ params }: { params: { id: string } }) {
