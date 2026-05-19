@@ -1110,141 +1110,121 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
   function onWidgetMouseDown(e: React.MouseEvent, dragId: string) {
     if (!editMode) return
-    // Don't drag from interactive elements
     const target = e.target as HTMLElement
-    if (target.closest('button,input,select,textarea,[data-no-drag]')) return
+    if (target.closest('button,input,select,textarea')) return
 
-    const card = (e.currentTarget as HTMLElement)
-    const startX = e.clientX
-    const startY = e.clientY
-    let started = false
+    const card = e.currentTarget as HTMLElement
+    const startX = e.clientX, startY = e.clientY
+    let dragging = false
 
-    const move = (mv: MouseEvent) => {
-      // Only start drag after 8px movement threshold
-      if (!started) {
-        if (Math.abs(mv.clientX - startX) < 8 && Math.abs(mv.clientY - startY) < 8) return
-        started = true
+    const onMove = (mv: MouseEvent) => {
+      if (!dragging) {
+        // Start drag only after 6px threshold
+        if (Math.hypot(mv.clientX - startX, mv.clientY - startY) < 6) return
+        dragging = true
 
-        // Now actually start the drag
         const cr = card.getBoundingClientRect()
-        const ghost = card.cloneNode(true) as HTMLElement
-        ghost.style.cssText = `
-          position:fixed;left:${cr.left}px;top:${cr.top}px;
-          width:${cr.width}px;height:${cr.height}px;
-          pointer-events:none;z-index:99999;
-          opacity:0.92;transform:rotate(2deg) scale(1.04);
-          box-shadow:0 24px 64px rgba(0,0,0,0.32),0 0 0 3px #20BB71;
-          border-radius:2px;transition:none;background:white;overflow:hidden;
-        `
-        document.body.appendChild(ghost)
-        card.style.opacity = '0.25'
-        card.style.outline = '2px dashed #20BB71'
-        card.style.outlineOffset = '2px'
-
         const ox = startX - cr.left
         const oy = startY - cr.top
+
+        // Clone full card
+        const ghost = card.cloneNode(true) as HTMLElement
+        ghost.style.cssText = `position:fixed;left:${cr.left}px;top:${cr.top}px;width:${cr.width}px;height:${cr.height}px;pointer-events:none;z-index:99999;opacity:0.93;transform:rotate(2deg) scale(1.04);box-shadow:0 24px 64px rgba(0,0,0,0.3),0 0 0 3px #20BB71;border-radius:2px;transition:none;overflow:hidden;`
+        document.body.appendChild(ghost)
+        card.style.opacity = '0.2'
+        card.style.outline = '2px dashed #20BB71'
+        card.style.outlineOffset = '2px'
 
         dragState.current = { dragId, ghost, source: card, ox, oy, over: null, raf: 0, mx: mv.clientX, my: mv.clientY }
         setDraggingId(dragId)
 
-        const animLoop = () => {
+        const loop = () => {
           const ds = dragState.current; if (!ds) return
           ds.ghost.style.left = (ds.mx - ds.ox) + 'px'
           ds.ghost.style.top  = (ds.my - ds.oy) + 'px'
-          ghost.style.visibility = 'hidden'
+          // Detect drop target
+          ds.ghost.style.visibility = 'hidden'
           const under = document.elementFromPoint(ds.mx, ds.my) as HTMLElement | null
-          ghost.style.visibility = ''
-          const overCard = under?.closest('[data-widget-id]') as HTMLElement | null
-          const overId = overCard?.dataset.widgetId ?? null
+          ds.ghost.style.visibility = 'visible'
+          const overEl = under?.closest('[data-widget-id]') as HTMLElement | null
+          const overId = overEl?.dataset.widgetId ?? null
           const valid = overId && overId !== dragId ? overId : null
           if (valid !== ds.over) {
             if (ds.over) {
-              const prev = document.querySelector(`[data-widget-id="${ds.over}"]`) as HTMLElement | null
-              if (prev) { prev.style.outline=''; prev.style.transform=''; prev.style.transition='' }
+              const el = document.querySelector(`[data-widget-id="${ds.over}"]`) as HTMLElement | null
+              if (el) { el.style.outline=''; el.style.transform=''; el.style.transition='' }
             }
             if (valid) {
-              const next = document.querySelector(`[data-widget-id="${valid}"]`) as HTMLElement | null
-              if (next) { next.style.outline='3px dashed #20BB71'; next.style.outlineOffset='3px'; next.style.transform='scale(0.97)'; next.style.transition='transform 0.1s' }
+              const el = document.querySelector(`[data-widget-id="${valid}"]`) as HTMLElement | null
+              if (el) { el.style.outline='3px dashed #20BB71'; el.style.outlineOffset='3px'; el.style.transform='scale(0.97)'; el.style.transition='transform 0.12s' }
             }
             ds.over = valid
           }
-          ds.raf = requestAnimationFrame(animLoop)
+          ds.raf = requestAnimationFrame(loop)
         }
-        dragState.current.raf = requestAnimationFrame(animLoop)
-      } else {
-        if (dragState.current) { dragState.current.mx = mv.clientX; dragState.current.my = mv.clientY }
+        dragState.current.raf = requestAnimationFrame(loop)
+        return
       }
+      // Update mouse position for rAF loop
+      if (dragState.current) { dragState.current.mx = mv.clientX; dragState.current.my = mv.clientY }
     }
 
-    const animLoop = () => {
-      const ds = dragState.current; if (!ds) return
-      ds.ghost.style.left = (ds.mx - ds.ox) + 'px'
-      ds.ghost.style.top  = (ds.my - ds.oy) + 'px'
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
 
-      // hit-test for drop target
-      ds.ghost.style.visibility = 'hidden'
-      const el = document.elementFromPoint(ds.mx, ds.my) as HTMLElement | null
-      ds.ghost.style.visibility = ''
-      const overCard = el?.closest('[data-widget-id]') as HTMLElement | null
-      const overId = overCard?.dataset.widgetId ?? null
-      const valid = overId && overId !== ds.dragId ? overId : null
-
-      if (valid !== ds.over) {
-        if (ds.over) {
-          const prev = document.querySelector(`[data-widget-id="${ds.over}"]`) as HTMLElement | null
-          if (prev) { prev.style.outline = ''; prev.style.transform = ''; prev.style.transition = '' }
-        }
-        if (valid) {
-          const next = document.querySelector(`[data-widget-id="${valid}"]`) as HTMLElement | null
-          if (next) { next.style.outline = '3px dashed #20BB71'; next.style.outlineOffset = '3px'; next.style.transform = 'scale(0.97)'; next.style.transition = 'transform 0.1s' }
-        }
-        ds.over = valid
-      }
-      ds.raf = requestAnimationFrame(animLoop)
-    }
-    dragState.current!.raf = requestAnimationFrame(animLoop)
-
-    const up = () => {
       const ds = dragState.current
-      if (ds) {
-        cancelAnimationFrame(ds.raf)
-        if (ds.over) {
-          const overEl = document.querySelector(`[data-widget-id="${ds.over}"]`) as HTMLElement | null
-          if (overEl) { overEl.style.outline = ''; overEl.style.transform = ''; overEl.style.transition = '' }
-        }
-        ds.source.style.opacity = ''
-        ds.source.style.outline = ''
-        ds.source.style.outlineOffset = ''
-        const snapEl = ds.over ? document.querySelector(`[data-widget-id="${ds.over}"]`) : ds.source
-        const sr = snapEl?.getBoundingClientRect()
-        if (sr) {
-          ds.ghost.style.transition = 'left .15s ease,top .15s ease,transform .15s ease,opacity .15s ease'
-          ds.ghost.style.left = sr.left + 'px'; ds.ghost.style.top = sr.top + 'px'
-          ds.ghost.style.transform = 'rotate(0deg) scale(1)'; ds.ghost.style.opacity = '0'
-        }
-        setTimeout(() => { if (document.body.contains(ds.ghost)) document.body.removeChild(ds.ghost) }, 180)
-        if (ds.over) {
-          setWidgets(prev => {
-            const ids = prev.map(w => w.id)
-            const fi = ids.indexOf(ds.dragId), ti = ids.indexOf(ds.over!)
-            if (fi === -1 || ti === -1) return prev
-            const next = [...ids]; next.splice(fi, 1); next.splice(ti, 0, ds.dragId)
-            try { localStorage.setItem(`alloy_widget_order_${clientId}`, JSON.stringify(next)) } catch {}
-            return next.map(id => prev.find(w => w.id === id)!).filter(Boolean)
-          })
-        }
-        dragState.current = null
-        setDraggingId(null)
+      if (!ds) return  // no drag started (was just a click)
+
+      cancelAnimationFrame(ds.raf)
+
+      // Clear drop highlight
+      if (ds.over) {
+        const el = document.querySelector(`[data-widget-id="${ds.over}"]`) as HTMLElement | null
+        if (el) { el.style.outline=''; el.style.transform=''; el.style.transition='' }
       }
-      window.removeEventListener('mousemove', move)
-      window.removeEventListener('mouseup', up)
+
+      // Restore source
+      ds.source.style.opacity = ''
+      ds.source.style.outline = ''
+      ds.source.style.outlineOffset = ''
+
+      // Snap ghost to destination then fade out
+      const snapTarget = ds.over ? document.querySelector(`[data-widget-id="${ds.over}"]`) : ds.source
+      const sr = snapTarget?.getBoundingClientRect()
+      if (sr) {
+        ds.ghost.style.transition = 'left .14s ease,top .14s ease,transform .14s ease,opacity .14s ease'
+        ds.ghost.style.left = sr.left + 'px'
+        ds.ghost.style.top  = sr.top  + 'px'
+        ds.ghost.style.transform = 'rotate(0deg) scale(1)'
+        ds.ghost.style.opacity = '0'
+      }
+      setTimeout(() => { if (document.body.contains(ds.ghost)) document.body.removeChild(ds.ghost) }, 160)
+
+      // Commit reorder
+      if (ds.over) {
+        setWidgets(prev => {
+          const ids = prev.map(w => w.id)
+          const fi = ids.indexOf(ds.dragId)
+          const ti = ids.indexOf(ds.over!)
+          if (fi === -1 || ti === -1) return prev
+          const next = [...ids]
+          next.splice(fi, 1)
+          next.splice(ti, 0, ds.dragId)
+          try { localStorage.setItem(`alloy_widget_order_${clientId}`, JSON.stringify(next)) } catch {}
+          return next.map(id => prev.find(w => w.id === id)!).filter(Boolean)
+        })
+      }
+
+      dragState.current = null
+      setDraggingId(null)
     }
 
-    window.addEventListener('mousemove', move)
-    window.addEventListener('mouseup', up)
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
   }
 
-  function addWidget(chartType: string, label: string) {
+    function addWidget(chartType: string, label: string) {
     const newId = `w${Date.now()}`
     const isKpi = chartType === 'scorecard' || chartType === 'sparkline'
     const newWidget: Widget = {
