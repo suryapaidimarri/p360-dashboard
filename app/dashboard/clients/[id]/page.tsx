@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import ClonePageModal from '@/components/dashboard/ClonePageModal'
-import { ChevronRight, Sparkles, Settings, Calendar, ChevronDown, Plus, MoreHorizontal, Maximize2, X, Grip, RotateCcw, RotateCw, Monitor, Smartphone, ChevronLeft, RefreshCw, CheckCircle2, Search } from 'lucide-react'
+import { ChevronRight, Sparkles, Settings, Calendar, ChevronDown, Plus, MoreHorizontal, Maximize2, X, Grip, RotateCcw, RotateCw, Monitor, Smartphone, ChevronLeft, RefreshCw, CheckCircle2 , Search } from 'lucide-react'
 import Link from 'next/link'
 import { BarChart, Bar, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ScatterChart, Scatter as ScatterPlot, ZAxis } from 'recharts'
 
@@ -448,7 +448,7 @@ function DynamicChart({ chartType, data, height = 80, dimensions = ['Date'], met
 }
 
 // ── Empty canvas shown for any dashboard not in REAL_DASHBOARDS ──────────────
-function NewDashCanvas({ onClone, onTemplate }: { onClone: () => void; onTemplate: () => void }) {
+function NewDashCanvas({ onClone, onTemplate }: { onClone: () => void; onTemplate?: () => void }) {
   return (
     <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', background:'#f8f9fa' }}>
       <p style={{ fontSize:15, color:'#555', marginBottom:2 }}>Start building by dragging widgets</p>
@@ -456,9 +456,7 @@ function NewDashCanvas({ onClone, onTemplate }: { onClone: () => void; onTemplat
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, width:520 }}>
 
         {/* Add a page template */}
-        <button
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onTemplate(); }}
-          style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:14, padding:'30px 24px', background:'#fff', border:'1px solid #e8e8e8', borderRadius:8, cursor:'pointer', textAlign:'center' as const }}>
+        <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); onTemplate && onTemplate() }} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:14, padding:'30px 24px', background:'#fff', border:'1px solid #e8e8e8', borderRadius:8, cursor:'pointer', textAlign:'center' as const }}>
           <div style={{ width:56, height:56, display:'flex', alignItems:'center', justifyContent:'center' }}>
             <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect x="4" y="4" width="12" height="12" rx="2" fill="#D0D0D0"/><rect x="20" y="4" width="12" height="12" rx="2" fill="#D0D0D0"/><rect x="4" y="20" width="12" height="7" rx="1.5" fill="#E8E8E8"/><rect x="20" y="20" width="12" height="7" rx="1.5" fill="#E8E8E8"/><circle cx="10" cy="30" r="2.5" fill="#48b5ea"/></svg>
           </div>
@@ -991,53 +989,53 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const STATIC_IDS = ['w1','w2','w3','w4','c1','c2','c3','d1','d2','d3','v1','bounce']
   const dynamicWidgets = widgets.filter(w => !STATIC_IDS.includes(w.id))
 
-  // ── Drag & Drop ──────────────────────────────────────────────────────────
-  const dragSrcId = React.useRef(null as string | null)
+  // Drag & Drop
+  const dragSrcId = { current: '' }
 
-  function onDragStart(e: React.DragEvent, dragId: string) {
+  function onDragStart(e: any, dragId: string) {
     if (!editMode) return
     dragSrcId.current = dragId
     setDraggingId(dragId)
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('text/plain', dragId)
-    const card = e.currentTarget as HTMLElement
-    setTimeout(() => { card.style.opacity = '0.3'; card.style.outline = '2px dashed #20BB71'; card.style.outlineOffset = '2px' }, 0)
+    const card = e.currentTarget
+    setTimeout(() => { card.style.opacity = '0.3'; card.style.outline = '2px dashed #20BB71' }, 0)
   }
 
-  function onDragEnd(e: React.DragEvent) {
-    const card = e.currentTarget as HTMLElement
-    card.style.opacity = ''; card.style.outline = ''; card.style.outlineOffset = ''
-    document.querySelectorAll('[data-widget-id]').forEach(el => {
-      const h = el as HTMLElement; h.style.outline = ''; h.style.transform = ''; h.style.transition = ''
+  function onDragEnd(e: any) {
+    const card = e.currentTarget
+    card.style.opacity = ''; card.style.outline = ''
+    document.querySelectorAll('[data-widget-id]').forEach((el: any) => {
+      el.style.outline = ''; el.style.transform = ''; el.style.transition = ''
     })
-    dragSrcId.current = null; setDraggingId('')
+    dragSrcId.current = ''; setDraggingId('')
   }
 
-  function onDragOver(e: React.DragEvent, overId: string) {
-    e.preventDefault(); e.dataTransfer.dropEffect = 'move'
+  function onDragOver(e: any, overId: string) {
+    e.preventDefault()
     if (!dragSrcId.current || dragSrcId.current === overId) return
-    const el = e.currentTarget as HTMLElement
+    const el = e.currentTarget
     el.style.outline = '3px dashed #20BB71'; el.style.outlineOffset = '3px'
     el.style.transform = 'scale(0.97)'; el.style.transition = 'transform 0.1s'
   }
 
-  function onDragLeave(e: React.DragEvent) {
-    const el = e.currentTarget as HTMLElement
+  function onDragLeave(e: any) {
+    const el = e.currentTarget
     el.style.outline = ''; el.style.transform = ''; el.style.transition = ''
   }
 
-  function onDrop(e: React.DragEvent, toId: string) {
+  function onDrop(e: any, toId: string) {
     e.preventDefault()
     const fromId = dragSrcId.current
     if (!fromId || fromId === toId) return
-    const el = e.currentTarget as HTMLElement
+    const el = e.currentTarget
     el.style.outline = ''; el.style.transform = ''; el.style.transition = ''
     setWidgets(prev => {
       const ids = prev.map(w => w.id)
       const fi = ids.indexOf(fromId), ti = ids.indexOf(toId)
       if (fi === -1 || ti === -1) return prev
       const next = [...ids]; next.splice(fi, 1); next.splice(ti, 0, fromId)
-      try { localStorage.setItem(`alloy_widget_order_${clientId}`, JSON.stringify(next)) } catch {}
+      try { localStorage.setItem('alloy_widget_order_' + clientId, JSON.stringify(next)) } catch {}
       return next.map(id => prev.find(w => w.id === id)!).filter(Boolean)
     })
   }
@@ -1155,12 +1153,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       // ── Full chart mode: replaces entire card with chart ──
       const activeFilters: string[] = (w as any).filters || []
       return (
-        <div data-widget-id={w.id}
-          draggable={editMode}
-          onDragStart={e => onDragStart(e, w.id)} onDragEnd={onDragEnd}
-          onDragOver={e => onDragOver(e, w.id)} onDragLeave={onDragLeave} onDrop={e => onDrop(e, w.id)}
-          onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
-          style={{ background:'#fff', border:`2px solid ${borderCol}`, borderRadius:8, padding:12, position:'relative', minHeight:130, cursor: editMode ? 'grab' : 'default', transition:'border-color 0.15s' }}>
+        <div data-widget-id={w.id} draggable={editMode} onDragStart={e => onDragStart(e, w.id)} onDragEnd={onDragEnd} onDragOver={e => onDragOver(e, w.id)} onDragLeave={onDragLeave} onDrop={e => onDrop(e, w.id)} onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
+          style={{ background:'#fff', border:`2px solid ${borderCol}`, borderRadius:8, padding:12, position:'relative', minHeight:130, cursor: editMode ? 'pointer' : 'default', transition:'border-color 0.15s' }}>
           {editControls}
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6 }}>
             <span style={{ fontSize:12, color:'#666', fontWeight:500 }}>{w.title}</span>
@@ -1193,12 +1187,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       : '—'
 
     return (
-      <div data-widget-id={w.id}
-        draggable={editMode}
-        onDragStart={e => onDragStart(e, w.id)} onDragEnd={onDragEnd}
-        onDragOver={e => onDragOver(e, w.id)} onDragLeave={onDragLeave} onDrop={e => onDrop(e, w.id)}
-        onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
-        style={{ background:bgColor, border:`2px solid ${borderCol}`, borderRadius:8, padding:16, position:'relative', minHeight:110, cursor: editMode ? 'grab' : 'default', transition:'border-color 0.15s' }}>
+      <div data-widget-id={w.id} draggable={editMode} onDragStart={e => onDragStart(e, w.id)} onDragEnd={onDragEnd} onDragOver={e => onDragOver(e, w.id)} onDragLeave={onDragLeave} onDrop={e => onDrop(e, w.id)} onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
+        style={{ background:bgColor, border:`2px solid ${borderCol}`, borderRadius:8, padding:16, position:'relative', minHeight:110, cursor: editMode ? 'pointer' : 'default', transition:'border-color 0.15s' }}>
         {editControls}
         <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:10 }}>
           <span style={{ fontSize:12, color:c.sub, fontWeight:500 }}>{w.title}</span>
@@ -1219,12 +1209,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     const w = widgets.find(x => x.id === id) || widgets[0]
     const isSelected = editingWidget?.id === id
     return (
-      <div data-widget-id={w.id}
-        draggable={editMode}
-        onDragStart={e => onDragStart(e, w.id)} onDragEnd={onDragEnd}
-        onDragOver={e => onDragOver(e, w.id)} onDragLeave={onDragLeave} onDrop={e => onDrop(e, w.id)}
-        onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
-        style={{ background:'#fff', border:`2px solid ${isSelected && editMode ? '#48b5ea' : '#e5e5e5'}`, borderRadius:8, padding:16, position:'relative', cursor: editMode ? 'grab' : 'default', transition:'border-color 0.15s' }}>
+      <div data-widget-id={w.id} draggable={editMode} onDragStart={e => onDragStart(e, w.id)} onDragEnd={onDragEnd} onDragOver={e => onDragOver(e, w.id)} onDragLeave={onDragLeave} onDrop={e => onDrop(e, w.id)} onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
+        style={{ background:'#fff', border:`2px solid ${isSelected && editMode ? '#48b5ea' : '#e5e5e5'}`, borderRadius:8, padding:16, position:'relative', cursor: editMode ? 'pointer' : 'default', transition:'border-color 0.15s' }}>
         {editMode && <div style={{ position:'absolute', top:6, left:6, cursor:'grab', color:'#d0d0d0' }}><Grip size={13}/></div>}
         {editMode && (
           <div onClick={e => e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', alignItems:'center', gap:4 }}>
@@ -2440,7 +2426,6 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
 
 
-      {/* Template Wizard Modal */}
       {showTemplateModal && typeof document !== 'undefined' && createPortal((() => {
         const TMPL = [
           { name:'Website Performance', color:'#48B5EA', source:'Google Analytics 4', preview:[{l:'Sessions',v:'118.3K'},{l:'Users',v:'88.1K'},{l:'Bounce Rate',v:'39.4%'},{l:'Conversions',v:'1,838'}] },
@@ -2452,19 +2437,18 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
           { name:'Email Marketing', color:'#00ACC1', source:'ActiveCampaign', preview:[{l:'Open Rate',v:'24.5%'},{l:'Click Rate',v:'3.8%'},{l:'Subscribers',v:'18.4K'},{l:'Revenue',v:'$8.2K'}] },
           { name:'Executive Summary', color:'#111111', source:'All Sources', preview:[{l:'Sessions',v:'118K'},{l:'Revenue',v:'$89K'},{l:'Conv Rate',v:'3.2%'},{l:'ROAS',v:'3.2x'}] },
         ]
-        const filtered = TMPL.filter(t => t.name.toLowerCase().includes(templateSearch.toLowerCase()))
-        const sel = TMPL.find(t => t.name === templateSelected)
+        const filtered = TMPL.filter((t: any) => t.name.toLowerCase().includes(templateSearch.toLowerCase()))
+        const sel = TMPL.find((t: any) => t.name === templateSelected)
         const close = () => { setShowTemplateModal(false); setTemplateStep(1); setTemplateSelected(''); setTemplateName(''); setTemplateSearch('') }
-        const commit = (name: string) => { setDashboards((p:any)=>[...p,name]); setClonedDashboards((p:any)=>[...p,name]); setActiveDash(name); setTemplateStep(3); setTimeout(close, 900) }
+        const commit = (name: string) => { setDashboards((p: any) => [...p, name]); setClonedDashboards((p: any) => [...p, name]); setActiveDash(name); setTemplateStep(3); setTimeout(close, 900) }
         return (
           <div style={{ position:'fixed', inset:0, background:'rgba(240,242,245,0.97)', display:'flex', flexDirection:'column', zIndex:9999 }}>
             <button onClick={close} style={{ position:'absolute', top:16, right:16, width:36, height:36, borderRadius:'50%', background:'#fff', border:'1px solid #e5e5e5', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', zIndex:10 }}>
               <X size={16} style={{ color:'#666' }}/>
             </button>
             <div style={{ width:'100%', maxWidth:960, margin:'20px auto', background:'#fff', borderRadius:8, boxShadow:'0 4px 24px rgba(0,0,0,0.1)', display:'flex', flexDirection:'column', overflow:'hidden', flex:1, maxHeight:'calc(100vh - 40px)' }}>
-              {/* Step bar */}
               <div style={{ padding:'20px 40px', borderBottom:'1px solid #e5e5e5', display:'flex', alignItems:'center', flexShrink:0 }}>
-                {(['Choose Source','Pick a Name','Start Design']).map((label, i) => (
+                {(['Choose Source','Pick a Name','Start Design']).map((label: string, i: number) => (
                   <React.Fragment key={i}>
                     <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                       <div style={{ width:26, height:26, borderRadius:'50%', background:templateStep>i+1?'#48b5ea':templateStep===i+1?'#48b5ea':'#e5e5e5', display:'flex', alignItems:'center', justifyContent:'center' }}>
@@ -2478,48 +2462,46 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                   </React.Fragment>
                 ))}
               </div>
-              {/* Step 1: Choose */}
               {templateStep===1 && (
                 <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
                   <div style={{ width:300, borderRight:'1px solid #e5e5e5', display:'flex', flexDirection:'column', overflow:'hidden' }}>
                     <div style={{ padding:'24px 24px 12px', textAlign:'center' as const }}>
                       <h2 style={{ fontSize:18, fontWeight:700, color:'#1a1a1a', marginBottom:6 }}>Add Page Template</h2>
-                      <p style={{ fontSize:12, color:'#888', lineHeight:1.6 }}>You can make changes after it's added to your dashboard.</p>
+                      <p style={{ fontSize:12, color:'#888', lineHeight:1.6 }}>You can make changes after adding.</p>
                     </div>
                     <div style={{ height:1, background:'#e5e5e5', margin:'0 20px 8px' }}/>
                     <div style={{ padding:'0 16px 8px' }}>
-                      <input value={templateSearch} onChange={e=>setTemplateSearch(e.target.value)} placeholder="Search templates..." style={{ width:'100%', border:'1px solid #e5e5e5', borderRadius:6, padding:'7px 12px', fontSize:12, outline:'none', boxSizing:'border-box' as const }}/>
+                      <input value={templateSearch} onChange={(e: any) => setTemplateSearch(e.target.value)} placeholder="Search templates..." style={{ width:'100%', border:'1px solid #e5e5e5', borderRadius:6, padding:'7px 12px', fontSize:12, outline:'none', boxSizing:'border-box' as const }}/>
                     </div>
                     <div style={{ flex:1, overflowY:'auto' }}>
-                      {filtered.map(t => (
-                        <div key={t.name} onClick={()=>{setTemplateSelected(t.name);setTemplateName(t.name)}}
+                      {filtered.map((t: any) => (
+                        <div key={t.name} onClick={() => { setTemplateSelected(t.name); setTemplateName(t.name) }}
                           style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 20px', cursor:'pointer', background:templateSelected===t.name?'#f0fdf4':'transparent', borderLeft:templateSelected===t.name?'3px solid #20BB71':'3px solid transparent' }}>
-                          <div style={{ width:18, height:18, borderRadius:'50%', border:`2px solid ${templateSelected===t.name?'#20BB71':'#ccc'}`, background:templateSelected===t.name?'#20BB71':'#fff', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                            {templateSelected===t.name&&<svg width="9" height="9" viewBox="0 0 9 9"><path d="M1.5 4.5l2 2 4-4" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>}
+                          <div style={{ width:18, height:18, borderRadius:'50%', border:'2px solid ' + (templateSelected===t.name?'#20BB71':'#ccc'), background:templateSelected===t.name?'#20BB71':'#fff', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                            {templateSelected===t.name && <svg width="9" height="9" viewBox="0 0 9 9"><path d="M1.5 4.5l2 2 4-4" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>}
                           </div>
                           <span style={{ fontSize:13, color:templateSelected===t.name?'#1a1a1a':'#555', fontWeight:templateSelected===t.name?600:400 }}>{t.name}</span>
                         </div>
                       ))}
                     </div>
                     <div style={{ padding:16, borderTop:'1px solid #e5e5e5', display:'flex', gap:8 }}>
-                      <button onClick={()=>{if(templateSelected)setTemplateStep(2)}} disabled={!templateSelected}
+                      <button onClick={() => { if (templateSelected) setTemplateStep(2) }} disabled={!templateSelected}
                         style={{ flex:1, background:templateSelected?'#48b5ea':'#e5e5e5', border:'none', borderRadius:6, padding:'10px', fontSize:13, fontWeight:600, color:templateSelected?'#fff':'#aaa', cursor:templateSelected?'pointer':'not-allowed' }}>Continue</button>
                       <button onClick={close} style={{ padding:'10px 16px', background:'#fff', border:'1px solid #e5e5e5', borderRadius:6, fontSize:13, color:'#666', cursor:'pointer' }}>Cancel</button>
                     </div>
                   </div>
-                  {/* Preview */}
                   <div style={{ flex:1, overflowY:'auto', padding:24, background:'#f8f9fa' }}>
                     {sel ? (
                       <div>
                         <div style={{ background:sel.color, borderRadius:8, padding:'16px 20px', marginBottom:16 }}>
                           <h3 style={{ fontSize:18, fontWeight:700, color:'#fff' }}>{sel.name}</h3>
-                          <p style={{ fontSize:11, color:'rgba(255,255,255,0.8)', marginTop:2, textTransform:'uppercase' as const, letterSpacing:'0.06em' }}>Source: {sel.source}</p>
+                          <p style={{ fontSize:11, color:'rgba(255,255,255,0.8)', marginTop:2 }}>Source: {sel.source}</p>
                         </div>
                         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
-                          {sel.preview.map((p:any) => (
+                          {sel.preview.map((p: any) => (
                             <div key={p.l} style={{ background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, padding:16 }}>
-                              <p style={{ fontSize:11, color:'#999', marginBottom:6, textTransform:'uppercase' as const, letterSpacing:'0.04em' }}>{p.l}</p>
-                              <p style={{ fontSize:26, fontWeight:300, color:'#1a1a1a', letterSpacing:'-0.5px' }}>{p.v}</p>
+                              <p style={{ fontSize:11, color:'#999', marginBottom:6 }}>{p.l}</p>
+                              <p style={{ fontSize:26, fontWeight:300, color:'#1a1a1a' }}>{p.v}</p>
                             </div>
                           ))}
                         </div>
@@ -2533,29 +2515,26 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                   </div>
                 </div>
               )}
-              {/* Step 2: Name */}
               {templateStep===2 && (
                 <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', padding:40 }}>
                   <div style={{ width:'100%', maxWidth:520 }}>
                     <h2 style={{ fontSize:22, fontWeight:700, color:'#1a1a1a', marginBottom:8, textAlign:'center' as const }}>What would you like your dashboard to be named?</h2>
                     <p style={{ fontSize:13, color:'#888', marginBottom:28, textAlign:'center' as const }}>This name will appear in your list of dashboards</p>
                     <div style={{ height:1, background:'#e5e5e5', marginBottom:28 }}/>
-                    <input value={templateName} onChange={e=>setTemplateName(e.target.value)} autoFocus
-                      onKeyDown={e=>{if(e.key==='Enter'&&templateName.trim()) commit(templateName.trim())}}
+                    <input value={templateName} onChange={(e: any) => setTemplateName(e.target.value)} autoFocus
                       style={{ width:'100%', border:'1px solid #e5e5e5', borderRadius:6, padding:'12px 16px', fontSize:15, color:'#1a1a1a', outline:'none', boxSizing:'border-box' as const }} placeholder="e.g. Website Performance"/>
-                    <button onClick={()=>{if(templateName.trim()) commit(templateName.trim())}} disabled={!templateName.trim()}
+                    <button onClick={() => { if (templateName.trim()) commit(templateName.trim()) }} disabled={!templateName.trim()}
                       style={{ marginTop:20, background:templateName.trim()?'#48b5ea':'#e5e5e5', border:'none', borderRadius:6, padding:'12px 28px', fontSize:13, fontWeight:600, color:templateName.trim()?'#fff':'#aaa', cursor:templateName.trim()?'pointer':'not-allowed' }}>Continue</button>
                   </div>
                 </div>
               )}
-              {/* Step 3: Done */}
               {templateStep===3 && (
                 <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:16 }}>
                   <div style={{ width:64, height:64, borderRadius:'50%', background:'#f0fdf4', display:'flex', alignItems:'center', justifyContent:'center' }}>
                     <svg width="28" height="28" viewBox="0 0 28 28"><path d="M5 14l6 6 12-12" stroke="#20BB71" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
                   </div>
                   <h2 style={{ fontSize:20, fontWeight:700, color:'#1a1a1a' }}>Dashboard Created!</h2>
-                  <p style={{ fontSize:13, color:'#888' }}>"{templateName}" has been added to your dashboards</p>
+                  <p style={{ fontSize:13, color:'#888' }}>"{templateName}" added to your dashboards</p>
                 </div>
               )}
             </div>
@@ -2873,6 +2852,460 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
           </div>
         </div>
       )}
+    </div>
+  )
+}                   {editTab==='Data' && (() => {
+                    const isGA4 = editingWidget.dataSource?.includes('google-analytics')
+                    const ALL_GA4_DIMENSIONS = [
+                      'Achievement ID','Action','Ad format','Ad Label','Ad source','Ad unit','Age',
+                      'Aggregated Link URL','Aggregated Page Path','App version','Browser','Campaign',
+                      'Campaign ID','City','City ID','Content Group','Content ID','Content Type',
+                      'Country','Country ID','Date','Date Hour','Day','Day of Week','Default Channel Group',
+                      'Device Brand','Device Category','Device Model','Event Name','File Extension',
+                      'File Name','First User Campaign','First User Medium','First User Source',
+                      'Form Destination','Form ID','Form Name','Form Submit Text','Gender',
+                      'Google Ads Account Name','Google Ads Ad Group ID','Google Ads Ad Group Name',
+                      'Google Ads Ad Network Type','Google Ads Keyword Text','Google Ads Query',
+                      'Hostname','Hour','Item Affiliation','Item Brand','Item Category','Item Category 2',
+                      'Item Category 3','Item Category 4','Item Category 5','Item ID','Item List ID',
+                      'Item List Name','Item Location ID','Item Name','Item Promotion Creative Name',
+                      'Item Promotion Creative Slot','Item Promotion ID','Item Promotion Name',
+                      'Item Variant','Landing Page','Language','Language Code','Manual Ad Content',
+                      'Manual Campaign ID','Manual Campaign Name','Manual Creative Format',
+                      'Manual Marketing Tactic','Manual Medium','Manual Source','Manual Source / Medium',
+                      'Manual Term','Method','Minute','Month','New / Returning','Operating System',
+                      'Operating System Version','Outbound','Page Location','Page Path + Query String',
+                      'Page Referrer','Page Title','Platform','Region','Screen Class','Screen Name',
+                      'Search Term','Session Campaign','Session Default Channel Group','Session Duration',
+                      'Session Google Ads Ad Network Type','Session Google Ads Keyword Text',
+                      'Session Manual Ad Content','Session Manual Campaign ID','Session Manual Campaign Name',
+                      'Session Manual Creative Format','Session Manual Marketing Tactic',
+                      'Session Manual Medium','Session Manual Source','Session Manual Source / Medium',
+                      'Session Manual Term','Session Medium','Session SA360 Ad Group Name',
+                      'Session Source','Session Source / Medium','Source / Medium','Stream ID',
+                      'Stream Name','Test Data Filter Name','Transaction ID','Unification Service Level',
+                      'Video Provider','Video Title','Video URL','Visible','Week','Year'
+                    ]
+                    const ALL_GA4_METRICS = [
+                      '1-day active users','28-day active users','30-day active users',
+                      '7-day active users','Active users','Ad unit exposure','Add to carts',
+                      'Ads clicks','Ads cost','Ads cost per click','Ads impressions',
+                      'Ads revenue','Ads revenue per click','Average purchase revenue',
+                      'Average purchase revenue per user','Average revenue per user',
+                      'Average session duration','Bounce rate','Cart-to-view rate',
+                      'Checkouts','Conversions','Crash-affected users','Crash-free users rate',
+                      'DAU / MAU','DAU / WAU','Engaged sessions','Engagement rate',
+                      'Event count','Event count per user','Events per session',
+                      'First time purchasers','First time purchasers conversion',
+                      'Item list click events','Item list clicks through rate',
+                      'Item list view events','Item promotion clicks','Item promotion CTR',
+                      'Item promotion views','Item purchase quantity','Item revenue',
+                      'Item view events','Items added to cart','Items checked out',
+                      'Items purchased','Items viewed in list','Items viewed in promotion',
+                      'New users','Organic Google search average position',
+                      'Organic Google search click through rate','Organic Google search clicks',
+                      'Organic Google search impressions','Publisher ad clicks',
+                      'Publisher ad impressions','Purchase revenue','Purchase revenue per user',
+                      'Purchase to view rate','Purchasers','Purchasers per new user',
+                      'Refund amount','Return on ad spend','Revenue','Screen page views',
+                      'Screen page views per session','Screen page views per user',
+                      'Session conversion rate','Session key event rate','Sessions',
+                      'Sessions per user','Shipping amount','Tax amount','Total ad revenue',
+                      'Total purchasers','Total revenue','Total users','Transactions',
+                      'Transactions per purchaser','User conversion rate','User engagement',
+                      'User key event rate','Views per session','WAU / MAU'
+                    ]
+                    // Show only this client's mapped property first, then all others
+                    const mappedProp = connection?.ga4_properties?.find((p: any) =>
+                      p.name === mappingProp || p.displayName === mappingPropName
+                    )
+                    const otherProps = (connection?.ga4_properties || []).filter((p: any) =>
+                      p.name !== mappingProp && p.displayName !== mappingPropName
+                    )
+                    const DATA_SOURCES = [
+                      // Mapped property for this client goes first
+                      ...(mappedProp ? [{
+                        id: mappedProp.name,
+                        label: mappedProp.displayName || mappedProp.name,
+                        domain: 'analytics.google.com',
+                        isMapped: true,
+                      }] : []),
+                      // GSC site for this client
+                      ...(mappingSite ? [{
+                        id: mappingSite,
+                        label: mappingSite.replace(/^https?:\/\//, '').replace(/\/$/, ''),
+                        domain: 'search.google.com',
+                        isMapped: true,
+                      }] : []),
+
+                    ]
+                    const widgetData = editingWidget as any
+                    const dimensions: string[] = widgetData.dimensions || []
+                    const metrics: string[] = widgetData.metrics || []
+
+                    const updateField = (key: string, val: any) => {
+                      const updated = { ...editingWidget, [key]: val } as any
+                      setEditingWidget(updated)
+                      setWidgets(prev => prev.map(w => w.id === updated.id ? updated : w))
+
+                    }
+
+                    return (
+                      <div style={{ fontSize:13 }}>
+
+                        {/* Data Source */}
+                        <div style={{ padding:'14px 0', borderBottom:'1px solid #f0f0f0', position:'relative' as const }}>
+                          <p style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', marginBottom:10 }}>Data source</p>
+                          <div onClick={() => setShowDsDropdown(!showDsDropdown)}
+                            style={{ display:'flex', alignItems:'center', gap:8, background:'#f5f5f5', border:'1px solid #e0e0e0', borderRadius:20, padding:'7px 12px', cursor:'pointer' }}>
+                            <img src="https://www.google.com/s2/favicons?domain=analytics.google.com&sz=32" style={{ width:16, height:16 }} alt=""/>
+                            <span style={{ flex:1, fontSize:12, color:'#333', fontWeight:500 }}>{editingWidget.dataSource?.split('/').pop()?.trim() || 'Select source'}</span>
+                            <ChevronDown size={14} style={{ color:'#666' }}/>
+                            <button onClick={e=>{e.stopPropagation()}} style={{ background:'none', border:'none', cursor:'pointer', color:'#999', padding:'0 2px' }}><X size={12}/></button>
+                          </div>
+                          {showDsDropdown && (
+                            <div style={{ position:'absolute' as const, top:'100%', left:0, right:0, background:'#fff', border:'1px solid #e0e0e0', borderRadius:8, boxShadow:'0 8px 24px rgba(0,0,0,0.12)', zIndex:200, overflow:'hidden' }}>
+                              <div style={{ padding:'10px 12px', borderBottom:'1px solid #f0f0f0' }}>
+                                <div style={{ display:'flex', alignItems:'center', gap:8, background:'#f5f5f5', borderRadius:6, padding:'6px 10px', border:'1px solid #e0e0e0' }}>
+                                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4.5" stroke="#999" strokeWidth="1.5"/><path d="M9.5 9.5 L12 12" stroke="#999" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                                  <input autoFocus value={dsSearch} onChange={e=>setDsSearch(e.target.value)} placeholder="Search" style={{ background:'transparent', border:'none', outline:'none', fontSize:12, color:'#333', width:'100%' }}/>
+                                </div>
+                              </div>
+                              <div style={{ padding:'8px 0' }}>
+                                <p style={{ fontSize:11, color:'#888', padding:'4px 14px', fontWeight:500 }}>Added data sources</p>
+                                {DATA_SOURCES.length === 0 && (
+                                  <div style={{ padding:'12px 14px', fontSize:12, color:'#999', textAlign:'center' as const }}>
+                                    No connected sources. Connect Google above.
+                                  </div>
+                                )}
+                                {/* This client's sources */}
+                                {DATA_SOURCES.filter((ds:any) => ds.isMapped && ds.label.toLowerCase().includes(dsSearch.toLowerCase())).length > 0 && (
+                                  <p style={{ fontSize:11, color:'#888', padding:'8px 14px 4px', fontWeight:500 }}>
+                                    {clientName} — connected sources
+                                  </p>
+                                )}
+                                {DATA_SOURCES.filter((ds:any) => ds.isMapped && ds.label.toLowerCase().includes(dsSearch.toLowerCase())).map((ds:any) => (
+                                  <div key={ds.id} onClick={() => { updateField('dataSource', ds.label); setShowDsDropdown(false) }}
+                                    style={{ display:'flex', alignItems:'center', gap:10, padding:'9px 14px', cursor:'pointer', background: (widgetData.dataSource === ds.label) ? '#e8f0fe' : 'transparent' }}
+                                    onMouseEnter={e=>{ if(widgetData.dataSource !== ds.label)(e.currentTarget as HTMLDivElement).style.background='#f0f7ff' }}
+                                    onMouseLeave={e=>{ (e.currentTarget as HTMLDivElement).style.background = (widgetData.dataSource === ds.label) ? '#e8f0fe' : 'transparent' }}>
+                                    <img src={`https://www.google.com/s2/favicons?domain=${ds.domain}&sz=32`} style={{ width:18, height:18 }} alt=""/>
+                                    <span style={{ fontSize:13, color:'#1a1a1a', flex:1 }}>{ds.label}</span>
+                                    {widgetData.dataSource === ds.label && <span style={{ fontSize:10, color:'#1a85c8', fontWeight:600 }}>✓</span>}
+                                  </div>
+                                ))}
+
+                              </div>
+                            </div>
+                          )}
+                          <button style={{ display:'flex', alignItems:'center', gap:6, marginTop:8, background:'none', border:'none', cursor:'pointer', color:'#1a85c8', fontSize:12, fontWeight:600, padding:0 }}>
+                            <span style={{ fontSize:14 }}>⊕</span> Blend data
+                          </button>
+                        </div>
+
+                        {/* Dimension */}
+                        <div style={{ padding:'14px 0', borderBottom:'1px solid #f0f0f0', position:'relative' as const }}>
+                          <p style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', marginBottom:10 }}>Dimension</p>
+                          <div style={{ display:'flex', flexDirection:'column' as const, gap:6 }}>
+                            {dimensions.map((dim: string, i: number) => (
+                              <div key={i} style={{ display:'flex', alignItems:'center', gap:8, background:'#e8f5e9', border:'1px solid #c8e6c9', borderRadius:20, padding:'5px 12px' }}>
+                                <span style={{ fontSize:10, fontWeight:700, color:'#388e3c', background:'#c8e6c9', borderRadius:3, padding:'1px 4px' }}>ABC</span>
+                                <span style={{ flex:1, fontSize:12, color:'#1a1a1a' }}>{dim}</span>
+                                <button onClick={() => updateField('dimensions', dimensions.filter((_:string,j:number)=>j!==i))} style={{ background:'none', border:'none', cursor:'pointer', color:'#999', padding:0 }}><X size={11}/></button>
+                              </div>
+                            ))}
+                            <button onClick={() => { setShowDimDropdown(!showDimDropdown); setDimSearch('') }}
+                              style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'1px dashed #ccc', borderRadius:20, padding:'5px 12px', cursor:'pointer', color:'#1a85c8', fontSize:12, fontWeight:600 }}>
+                              <Plus size={13}/> Add dimension
+                            </button>
+                          </div>
+                          {showDimDropdown && (
+                            <div style={{ position:'absolute' as const, top:'100%', left:0, right:0, background:'#fff', border:'1px solid #e0e0e0', borderRadius:8, boxShadow:'0 8px 24px rgba(0,0,0,0.14)', zIndex:200, overflow:'hidden', maxHeight:340 }}>
+                              <div style={{ padding:'10px 12px', borderBottom:'1px solid #f0f0f0', position:'sticky' as const, top:0, background:'#fff' }}>
+                                <div style={{ display:'flex', alignItems:'center', gap:8, background:'#f5f5f5', borderRadius:20, padding:'7px 12px', border:'1px solid #e0e0e0' }}>
+                                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4.5" stroke="#999" strokeWidth="1.5"/><path d="M9.5 9.5 L12 12" stroke="#999" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                                  <input autoFocus value={dimSearch} onChange={e=>setDimSearch(e.target.value)} placeholder="Search" style={{ background:'transparent', border:'none', outline:'none', fontSize:12, color:'#333', width:'100%' }}/>
+                                </div>
+                              </div>
+                              <div style={{ overflowY:'auto' as const, maxHeight:240 }}>
+                                <p style={{ fontSize:11, color:'#555', padding:'8px 14px 4px', fontWeight:600 }}>Default group</p>
+                                {ALL_GA4_DIMENSIONS.filter((d:string) => d.toLowerCase().includes(dimSearch.toLowerCase()) && !dimensions.includes(d)).map((dim:string) => (
+                                  <div key={dim} onClick={() => { updateField('dimensions', [...dimensions, dim]); setShowDimDropdown(false); setDimSearch('') }}
+                                    style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 14px', cursor:'pointer' }}
+                                    onMouseEnter={e=>(e.currentTarget as HTMLDivElement).style.background='#e8f5e9'}
+                                    onMouseLeave={e=>(e.currentTarget as HTMLDivElement).style.background='transparent'}>
+                                    <span style={{ fontSize:10, fontWeight:700, color:'#388e3c', background:'#c8e6c9', borderRadius:3, padding:'1px 5px', flexShrink:0 }}>ABC</span>
+                                    <span style={{ fontSize:13, color:'#1a1a1a' }}>{dim}</span>
+                                  </div>
+                                ))}
+                              </div>
+                              <div style={{ padding:'8px 14px', borderTop:'1px solid #f0f0f0' }}>
+                                {[{icon:'⊕',label:'Add calculated field'},{icon:'⊕',label:'Add group'},{icon:'⊕',label:'Add bin'}].map(a => (
+                                  <div key={a.label} style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 0', color:'#1a85c8', cursor:'pointer', fontSize:13, fontWeight:500 }}>
+                                    <span>{a.icon}</span>{a.label}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:10 }}>
+                            <span style={{ fontSize:12, color:'#555' }}>Drill down</span>
+                            <div style={{ width:36, height:20, borderRadius:10, background:'#e0e0e0', position:'relative', cursor:'pointer' }}>
+                              <div style={{ width:16, height:16, borderRadius:'50%', background:'#fff', position:'absolute', top:2, left:2, boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}/>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Metric */}
+                        <div style={{ padding:'14px 0', borderBottom:'1px solid #f0f0f0', position:'relative' as const }}>
+                          <p style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', marginBottom:10 }}>Metric</p>
+                          <div style={{ display:'flex', flexDirection:'column' as const, gap:6 }}>
+                            {metrics.map((met: string, i: number) => (
+                              <div key={i} style={{ display:'flex', alignItems:'center', gap:8, background:'#e3f2fd', border:'1px solid #bbdefb', borderRadius:20, padding:'5px 12px' }}>
+                                <span style={{ fontSize:10, fontWeight:700, color:'#1565c0', background:'#bbdefb', borderRadius:3, padding:'1px 4px' }}>123</span>
+                                <span style={{ flex:1, fontSize:12, color:'#1a1a1a' }}>{met}</span>
+                                <button onClick={() => updateField('metrics', metrics.filter((_:string,j:number)=>j!==i))} style={{ background:'none', border:'none', cursor:'pointer', color:'#999', padding:0 }}><X size={11}/></button>
+                              </div>
+                            ))}
+                            <button onClick={() => { setShowMetDropdown(!showMetDropdown); setMetSearch('') }}
+                              style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'1px dashed #ccc', borderRadius:20, padding:'5px 12px', cursor:'pointer', color:'#1a85c8', fontSize:12, fontWeight:600 }}>
+                              <Plus size={13}/> Add metric
+                            </button>
+                          </div>
+                          {showMetDropdown && (
+                            <div style={{ position:'absolute' as const, top:'100%', left:0, right:0, background:'#fff', border:'1px solid #e0e0e0', borderRadius:8, boxShadow:'0 8px 24px rgba(0,0,0,0.14)', zIndex:200, overflow:'hidden', maxHeight:340 }}>
+                              <div style={{ padding:'10px 12px', borderBottom:'1px solid #f0f0f0', position:'sticky' as const, top:0, background:'#fff' }}>
+                                <div style={{ display:'flex', alignItems:'center', gap:8, background:'#f5f5f5', borderRadius:20, padding:'7px 12px', border:'1px solid #e0e0e0' }}>
+                                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4.5" stroke="#999" strokeWidth="1.5"/><path d="M9.5 9.5 L12 12" stroke="#999" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                                  <input autoFocus value={metSearch} onChange={e=>setMetSearch(e.target.value)} placeholder="Search" style={{ background:'transparent', border:'none', outline:'none', fontSize:12, color:'#333', width:'100%' }}/>
+                                </div>
+                              </div>
+                              <div style={{ overflowY:'auto' as const, maxHeight:240 }}>
+                                <p style={{ fontSize:11, color:'#555', padding:'8px 14px 4px', fontWeight:600 }}>Default group</p>
+                                {ALL_GA4_METRICS.filter((m:string) => m.toLowerCase().includes(metSearch.toLowerCase()) && !metrics.includes(m)).map((met:string) => (
+                                  <div key={met} onClick={() => { updateField('metrics', [...metrics, met]); setShowMetDropdown(false); setMetSearch('') }}
+                                    style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 14px', cursor:'pointer' }}
+                                    onMouseEnter={e=>(e.currentTarget as HTMLDivElement).style.background='#e3f2fd'}
+                                    onMouseLeave={e=>(e.currentTarget as HTMLDivElement).style.background='transparent'}>
+                                    <span style={{ fontSize:10, fontWeight:700, color:'#1565c0', background:'#bbdefb', borderRadius:3, padding:'1px 5px', flexShrink:0 }}>123</span>
+                                    <span style={{ fontSize:13, color:'#1a1a1a' }}>{met}</span>
+                                  </div>
+                                ))}
+                              </div>
+                              <div style={{ padding:'8px 14px', borderTop:'1px solid #f0f0f0' }}>
+                                <div style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 0', color:'#1a85c8', cursor:'pointer', fontSize:13, fontWeight:500 }}>
+                                  <span>⊕</span> Add calculated field
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          {[{label:'Optional metrics'},{label:'Metric sliders'}].map(row => (
+                            <div key={row.label} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:10 }}>
+                              <span style={{ fontSize:12, color:'#555' }}>{row.label}</span>
+                              <div style={{ width:36, height:20, borderRadius:10, background:'#e0e0e0', position:'relative', cursor:'pointer' }}>
+                                <div style={{ width:16, height:16, borderRadius:'50%', background:'#fff', position:'absolute', top:2, left:2, boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}/>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Filter */}
+                        <div style={{ padding:'14px 0', borderBottom:'1px solid #f0f0f0', position:'relative' as const }}>
+                          <p style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', marginBottom:4 }}>Filter</p>
+                          <p style={{ fontSize:11, color:'#999', marginBottom:8 }}>Report Filter</p>
+                          <div style={{ background:'#f5f5f5', border:'1px solid #e0e0e0', borderRadius:20, padding:'7px 14px', fontSize:12, color:'#555', marginBottom:10 }}>
+                            {(widgetData.filters as string[])?.length > 0 ? (widgetData.filters as string[]).join(', ') : 'No filter applied'}
+                          </div>
+
+                          {/* Applied filters */}
+                          {((widgetData.filters as string[]) || []).length > 0 && (
+                            <div style={{ display:'flex', flexDirection:'column' as const, gap:6, marginBottom:8 }}>
+                              {((widgetData.filters as string[]) || []).map((f: string, i: number) => (
+                                <div key={i} style={{ display:'flex', alignItems:'center', gap:8, background:'#fff3e0', border:'1px solid #ffe0b2', borderRadius:20, padding:'5px 12px' }}>
+                                  <span style={{ fontSize:11 }}>≡</span>
+                                  <span style={{ flex:1, fontSize:12, color:'#e65100' }}>{f}</span>
+                                  <button onClick={() => updateField('filters', ((widgetData.filters as string[]) || []).filter((_: string, j: number) => j !== i))}
+                                    style={{ background:'none', border:'none', cursor:'pointer', color:'#999', padding:0 }}><X size={11}/></button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
+                            <span style={{ fontSize:12, color:'#555' }}>Inherit filters</span>
+                            <div style={{ width:36, height:20, borderRadius:10, background:'#e0e0e0', position:'relative', cursor:'pointer' }}>
+                              <div style={{ width:16, height:16, borderRadius:'50%', background:'#fff', position:'absolute', top:2, left:2, boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}/>
+                            </div>
+                          </div>
+
+                          <p style={{ fontSize:12, color:'#555', marginBottom:6 }}>Filters on this chart</p>
+                          <button
+                            onClick={() => { setShowFilterDropdown(!showFilterDropdown); setFilterSearch(''); if (ga4Filters.length === 0) loadGA4Filters() }}
+                            style={{ display:'flex', alignItems:'center', gap:8, background:'#f0f7ff', border:'1px dashed #90caf9', borderRadius:20, padding:'6px 14px', cursor:'pointer', color:'#1a85c8', fontSize:12, width:'100%', justifyContent:'center' }}>
+                            <Plus size={13}/> Add filter
+                          </button>
+
+                          {/* Filter dropdown */}
+                          {showFilterDropdown && (
+                            <div style={{ position:'absolute' as const, top:'100%', left:0, right:0, background:'#fff', border:'1px solid #e0e0e0', borderRadius:12, boxShadow:'0 8px 32px rgba(0,0,0,0.15)', zIndex:300, overflow:'hidden', maxHeight:400 }}>
+                              {/* Search */}
+                              <div style={{ padding:'12px 14px', borderBottom:'1px solid #f0f0f0', position:'sticky' as const, top:0, background:'#fff' }}>
+                                <div style={{ display:'flex', alignItems:'center', gap:8, background:'#f5f5f5', borderRadius:20, padding:'8px 14px' }}>
+                                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="5" stroke="#999" strokeWidth="1.5"/><path d="M10.5 10.5 L13 13" stroke="#999" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                                  <input autoFocus value={filterSearch} onChange={e => setFilterSearch(e.target.value)}
+                                    placeholder="Search" style={{ background:'transparent', border:'none', outline:'none', fontSize:13, color:'#333', width:'100%' }}/>
+                                </div>
+                              </div>
+
+                              <div style={{ overflowY:'auto' as const, maxHeight:300 }}>
+                                {loadingFilters && (
+                                  <div style={{ padding:'16px', textAlign:'center' as const, fontSize:12, color:'#999' }}>Loading filters...</div>
+                                )}
+
+                                {/* GA4 filters from connected property */}
+                                {ga4Filters.filter(f => f.type === 'ga4').filter(f => f.name.toLowerCase().includes(filterSearch.toLowerCase())).length > 0 && (
+                                  <div style={{ padding:'8px 0' }}>
+                                    <p style={{ fontSize:11, color:'#888', padding:'4px 14px 6px', fontWeight:600 }}>Data source and resource filters</p>
+                                    {ga4Filters.filter(f => f.type === 'ga4' && f.name.toLowerCase().includes(filterSearch.toLowerCase())).map(f => (
+                                      <div key={f.name}
+                                        onClick={() => { updateField('filters', [...((widgetData.filters as string[]) || []), f.name]); setShowFilterDropdown(false) }}
+                                        style={{ padding:'9px 14px', fontSize:13, color:'#1a1a1a', cursor:'pointer', background:'transparent' }}
+                                        onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = '#f5f5f5'}
+                                        onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}>
+                                        {f.name}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {/* Other data source filters */}
+                                {ga4Filters.filter(f => f.type === 'other').filter(f => f.name.toLowerCase().includes(filterSearch.toLowerCase())).length > 0 && (
+                                  <div style={{ padding:'8px 0', borderTop:'1px solid #f5f5f5' }}>
+                                    <p style={{ fontSize:11, color:'#888', padding:'4px 14px 6px', fontWeight:600 }}>Filters using other data sources</p>
+                                    {ga4Filters.filter(f => f.type === 'other' && f.name.toLowerCase().includes(filterSearch.toLowerCase())).map(f => (
+                                      <div key={f.name}
+                                        onClick={() => { updateField('filters', [...((widgetData.filters as string[]) || []), f.name]); setShowFilterDropdown(false) }}
+                                        style={{ display:'flex', alignItems:'center', gap:10, padding:'9px 14px', fontSize:13, color:'#1a1a1a', cursor:'pointer', background:'#fff8f6' }}
+                                        onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = '#ffede8'}
+                                        onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = '#fff8f6'}>
+                                        <span style={{ fontSize:12, color:'#e65100' }}>≡</span>
+                                        {f.name}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {/* Show placeholder filters if API hasn't returned yet */}
+                                {!loadingFilters && ga4Filters.length === 0 && (
+                                  <div style={{ padding:'8px 0' }}>
+                                    <p style={{ fontSize:11, color:'#888', padding:'4px 14px 6px', fontWeight:600 }}>Common filters</p>
+                                    {['Sessions only','New users only','Mobile users','Desktop users','Organic traffic','Paid traffic','Direct traffic','Returning users'].filter(f => f.toLowerCase().includes(filterSearch.toLowerCase())).map(f => (
+                                      <div key={f}
+                                        onClick={() => { updateField('filters', [...((widgetData.filters as string[]) || []), f]); setShowFilterDropdown(false) }}
+                                        style={{ padding:'9px 14px', fontSize:13, color:'#1a1a1a', cursor:'pointer' }}
+                                        onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = '#f5f5f5'}
+                                        onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}>
+                                        {f}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Create a filter */}
+                              <div style={{ padding:'10px 14px', borderTop:'1px solid #f0f0f0', background:'#fff' }}>
+                                <button onClick={() => { setShowCreateFilter(true); setShowFilterDropdown(false); setNewFilterName(''); setNewFilterClauses([{ include: true, field: '', operator: 'contains', value: '' }]) }}
+                                  style={{ display:'flex', alignItems:'center', gap:8, color:'#1a85c8', fontSize:13, fontWeight:600, background:'none', border:'none', cursor:'pointer', padding:0 }}>
+                                  <Plus size={15}/> Create a filter
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Default date range filter */}
+                        <div style={{ padding:'14px 0', borderBottom:'1px solid #f0f0f0' }}>
+                          <p style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', marginBottom:10 }}>Default date range filter</p>
+                          {[{val:'auto',label:'Auto: Last 28 days (exclude today)'},{val:'custom',label:'Custom'}].map(opt => (
+                            <label key={opt.val} style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8, cursor:'pointer' }}>
+                              <div style={{ width:18, height:18, borderRadius:'50%', border:`2px solid ${(widgetData.dateRangeType||'auto')===opt.val?'#1a85c8':'#ccc'}`, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                                {(widgetData.dateRangeType||'auto')===opt.val && <div style={{ width:8, height:8, borderRadius:'50%', background:'#1a85c8' }}/>}
+                              </div>
+                              <span style={{ fontSize:12, color:'#333' }}>{opt.label}</span>
+                            </label>
+                          ))}
+                          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:4 }}>
+                            <span style={{ fontSize:12, color:'#555' }}>Comparison date range</span>
+                            <div style={{ width:36, height:20, borderRadius:10, background:'#e0e0e0', position:'relative', cursor:'pointer' }}>
+                              <div style={{ width:16, height:16, borderRadius:'50%', background:'#fff', position:'absolute', top:2, left:2, boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}/>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Number of rows */}
+                        <div style={{ padding:'14px 0', borderBottom:'1px solid #f0f0f0' }}>
+                          <p style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', marginBottom:10 }}>Number of rows</p>
+                          {[{val:'pagination',label:'Pagination'},{val:'topn',label:'Top N'}].map(opt => (
+                            <label key={opt.val} style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8, cursor:'pointer' }}>
+                              <div style={{ width:18, height:18, borderRadius:'50%', border:`2px solid ${(widgetData.rowsType||'pagination')===opt.val?'#1a85c8':'#ccc'}`, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                                {(widgetData.rowsType||'pagination')===opt.val && <div style={{ width:8, height:8, borderRadius:'50%', background:'#1a85c8' }}/>}
+                              </div>
+                              <span style={{ fontSize:12, color:'#333' }}>{opt.label}</span>
+                            </label>
+                          ))}
+                          <div style={{ display:'flex', alignItems:'center', gap:8, background:'#fff', border:'1px solid #e0e0e0', borderRadius:6, padding:'6px 12px', marginTop:4 }}>
+                            <span style={{ fontSize:11, color:'#555' }}>Rows per page</span>
+                            <select style={{ flex:1, border:'none', outline:'none', fontSize:12, color:'#333', background:'transparent' }}>
+                              <option>10</option><option>25</option><option selected>100</option><option>500</option>
+                            </select>
+                          </div>
+                          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:10 }}>
+                            <span style={{ fontSize:12, color:'#555' }}>Show summary row</span>
+                            <div style={{ width:36, height:20, borderRadius:10, background:'#e0e0e0', position:'relative', cursor:'pointer' }}>
+                              <div style={{ width:16, height:16, borderRadius:'50%', background:'#fff', position:'absolute', top:2, left:2, boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}/>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Sort */}
+                        <div style={{ padding:'14px 0', borderBottom:'1px solid #f0f0f0' }}>
+                          <p style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', marginBottom:10 }}>Sort</p>
+                          <div style={{ background:'#f5f5f5', borderRadius:8, padding:10, marginBottom:8 }}>
+                            <p style={{ fontSize:12, fontWeight:600, color:'#333', marginBottom:8 }}>Sort #1</p>
+                            <div style={{ display:'flex', alignItems:'center', gap:8, background:'#e3f2fd', border:'1px solid #bbdefb', borderRadius:20, padding:'5px 12px', marginBottom:8 }}>
+                              <span style={{ fontSize:10, fontWeight:700, color:'#1565c0', background:'#bbdefb', borderRadius:3, padding:'1px 4px' }}>AUT</span>
+                              <span style={{ fontSize:12, color:'#1a1a1a', flex:1 }}>{metrics[0] || 'Sessions'}</span>
+                            </div>
+                            {['Descending','Ascending'].map((opt,i) => (
+                              <label key={opt} style={{ display:'flex', alignItems:'center', gap:10, marginBottom:4, cursor:'pointer' }}>
+                                <div style={{ width:18, height:18, borderRadius:'50%', border:`2px solid ${i===0?'#1a85c8':'#ccc'}`, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                                  {i===0 && <div style={{ width:8, height:8, borderRadius:'50%', background:'#1a85c8' }}/>}
+                                </div>
+                                <span style={{ fontSize:12, color:'#333' }}>{opt}</span>
+                              </label>
+                            ))}
+                          </div>
+                          <button style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'1px dashed #ccc', borderRadius:20, padding:'6px 14px', cursor:'pointer', color:'#666', fontSize:12, width:'100%', justifyContent:'center' }}>
+                            <Plus size={13}/> Add sort
+                          </button>
+                        </div>
+
+                        {/* Chart interactions */}
+                        <div style={{ padding:'14px 0' }}>
+                          <p style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', marginBottom:10 }}>Chart interactions</p>
+                          {[{label:'Cross-filtering', on:false},{label:'Open links in new tab', on:true}].map(row => (
+                            <div key={row.label} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
+                              <span style={{ fontSize:12, color:'#555' }}>{row.label}</span>
+                              <div style={{ width:36, height:20, borderRadius:10, background:row.on?'#1a85c8':'#e0e0e0', position:'relative', cursor:'pointer' }}>
+                                <div style={{ width:16, height:16, borderRadius:'50%', background:'#fff', position:'absolute', top:2, left:row.on?18:2, boxShadow:'0 1px 3px rgba(0,0,0,0.2)', transition:'left 0.2s' }}/>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                      </div>
+                    )
+                  })()}
                 </div>
               </div>
             )}
@@ -3063,7 +3496,260 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
 
 
-      {/* Template Wizard Modal */}
+      {/* Clone Page Modal */}
+      {showCloneModal && (
+        <ClonePageModal
+          onClose={() => setShowCloneModal(false)}
+          onClone={(source, newName) => {
+            setDashboards(prev => [...prev, newName])
+            setClonedDashboards(prev => [...prev, newName])
+            setActiveDash(newName)
+            setShowCloneModal(false)
+          }}
+        />
+      )}
+
+      {/* Create Filter Modal */}
+      {showCreateFilter && (() => {
+        const OPERATORS = ['Equal to (=)','Contains','Starts with','RegExp Match','RegExp Contains','In','Is Null']
+        const GA4_DIM_FIELDS = [
+          'Achievement ID','Action','Ad format','Ad Label','Ad source','Ad unit','Age',
+          'Aggregated Link URL','App version','Browser','Campaign','Campaign ID',
+          'City','Country','Date','Default Channel Group','Device Category',
+          'Event Name','Gender','Hostname','Landing Page','Operating System',
+          'Page Location','Page Title','Region','Screen Class','Session Campaign',
+          'Session Medium','Session Source','Stream Name','Transaction ID',
+        ]
+        return (
+          <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.4)', zIndex:500, display:'flex', flexDirection:'column' as const }}
+            onClick={() => setShowCreateFilter(false)}>
+            {/* Modal panel — bottom half of screen, full width */}
+            <div style={{ marginTop:'auto', background:'#fff', borderRadius:'16px 16px 0 0', boxShadow:'0 -8px 40px rgba(0,0,0,0.2)', width:'100%', height:'50vh', display:'flex', flexDirection:'column' as const }}
+              onClick={e => e.stopPropagation()}>
+
+              {/* Header */}
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 32px', borderBottom:'1px solid #e0e0e0', flexShrink:0, background:'#fff', position:'sticky' as const, top:0, zIndex:800 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                  <span style={{ fontSize:16, fontWeight:600, color:'#1a1a1a' }}>Create Filter</span>
+                  <span style={{ fontSize:11, background:'#e8eaf6', color:'#3949ab', borderRadius:4, padding:'2px 8px', fontWeight:600 }}>BETA</span>
+                </div>
+                <button onClick={() => setShowCreateFilter(false)} style={{ display:'flex', alignItems:'center', gap:6, background:'none', border:'none', cursor:'pointer', color:'#666', fontSize:13, fontWeight:500 }}>
+                  <X size={16}/> CLOSE
+                </button>
+              </div>
+
+              <div style={{ flex:1, overflowY:'auto' as const, padding:'24px 32px' }} onClick={() => { setOpenClauseValueIdx(null); setOpenClauseFieldIdx(null) }}>
+                {/* Filter name + data source row */}
+                <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:24 }}>
+                  <div style={{ position:'relative' as const, flex:'0 0 200px' }}>
+                    <label style={{ position:'absolute' as const, top:-8, left:12, fontSize:11, color:'#666', background:'#fff', padding:'0 4px' }}>Name</label>
+                    <input value={newFilterName} onChange={e => setNewFilterName(e.target.value)}
+                      placeholder="Filter name"
+                      style={{ width:'100%', border:'1px solid #ccc', borderRadius:6, padding:'10px 14px', fontSize:13, outline:'none', color:'#333', boxSizing:'border-box' as const }}/>
+                  </div>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, background:'#f5f5f5', borderRadius:20, padding:'7px 14px', border:'1px solid #e0e0e0' }}>
+                    <img src="https://www.google.com/s2/favicons?domain=analytics.google.com&sz=32" style={{ width:16, height:16 }} alt=""/>
+                    <span style={{ fontSize:13, color:'#333', fontWeight:500 }}>{mappingPropName || 'GA4 Property'}</span>
+                  </div>
+                  <label style={{ display:'flex', alignItems:'center', gap:8, fontSize:13, color:'#333', cursor:'pointer' }}>
+                    <div style={{ width:36, height:20, borderRadius:10, background:'#1a85c8', position:'relative', cursor:'pointer' }}>
+                      <div style={{ width:16, height:16, borderRadius:'50%', background:'#fff', position:'absolute', top:2, left:18, boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}/>
+                    </div>
+                    Show suggested values while typing
+                  </label>
+                </div>
+
+                {/* Filter clauses */}
+                {newFilterClauses.map((clause, idx) => (
+                  <div key={idx} style={{ marginBottom:12 }}>
+                    {idx > 0 && (
+                      <div style={{ display:'flex', gap:8, marginBottom:12 }}>
+                        {['AND','OR'].map(op => (
+                          <button key={op} style={{ padding:'4px 16px', borderRadius:20, border:'1px solid #1a85c8', background: op==='AND' ? '#1a85c8' : 'transparent', color: op==='AND' ? '#fff' : '#1a85c8', fontSize:12, fontWeight:600, cursor:'pointer' }}>{op}</button>
+                        ))}
+                      </div>
+                    )}
+                    <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'nowrap' as const }}>
+                      {/* Include/Exclude */}
+                      <select value={clause.include ? 'include' : 'exclude'}
+                        onChange={e => { const c = [...newFilterClauses]; c[idx] = {...c[idx], include: e.target.value === 'include'}; setNewFilterClauses(c) }}
+                        style={{ border:'1px solid #ccc', borderRadius:6, padding:'10px 14px', fontSize:13, color:'#333', background:'#fff', cursor:'pointer', outline:'none', minWidth:120 }}>
+                        <option value="include">Include</option>
+                        <option value="exclude">Exclude</option>
+                      </select>
+
+                      {/* Field selector */}
+                      <div style={{ position:'relative' as const, flex:'0 0 200px' }}>
+                        <div onClick={e => { e.stopPropagation(); setOpenClauseFieldIdx(openClauseFieldIdx === idx ? null : idx) }}
+                          style={{ border:'1px solid #ccc', borderRadius:6, padding:'10px 14px', fontSize:13, color: clause.field ? '#333' : '#999', background:'#fff', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                          {clause.field ? (
+                            <span style={{ display:'flex', alignItems:'center', gap:8 }}>
+                              <span style={{ fontSize:10, fontWeight:700, color:'#388e3c', background:'#c8e6c9', borderRadius:3, padding:'1px 5px' }}>ABC</span>
+                              {clause.field}
+                            </span>
+                          ) : 'Select a field'}
+                          <ChevronDown size={14} style={{ color:'#666' }}/>
+                        </div>
+                        {openClauseFieldIdx === idx && (
+                          <div onClick={e => e.stopPropagation()} style={{ position:'absolute' as const, top:'100%', left:0, right:0, background:'#fff', border:'1px solid #e0e0e0', borderRadius:8, boxShadow:'0 8px 24px rgba(0,0,0,0.12)', zIndex:600, maxHeight:220, overflow:'hidden', display:'flex', flexDirection:'column' as const }}>
+                            <div style={{ padding:'8px 10px', borderBottom:'1px solid #f0f0f0' }}>
+                              <div style={{ display:'flex', alignItems:'center', gap:8, background:'#f5f5f5', borderRadius:6, padding:'6px 10px' }}>
+                                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="5" cy="5" r="4" stroke="#999" strokeWidth="1.5"/><path d="M9 9 L11 11" stroke="#999" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                                <input autoFocus value={filterFieldSearch} onChange={e => setFilterFieldSearch(e.target.value)}
+                                  placeholder="Search" style={{ background:'transparent', border:'none', outline:'none', fontSize:12, color:'#333', width:'100%' }}/>
+                              </div>
+                            </div>
+                            <div style={{ overflowY:'auto' as const, flex:1 }}>
+                              <p style={{ fontSize:11, color:'#555', padding:'6px 12px 2px', fontWeight:600 }}>Default group</p>
+                              {GA4_DIM_FIELDS.filter(f => f.toLowerCase().includes(filterFieldSearch.toLowerCase())).map(field => (
+                                <div key={field}
+                                  onClick={() => { const c = [...newFilterClauses]; c[idx] = {...c[idx], field}; setNewFilterClauses(c); setOpenClauseFieldIdx(null); setFilterFieldSearch('') }}
+                                  style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 12px', cursor:'pointer', fontSize:13, color:'#1a1a1a' }}
+                                  onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = '#e8f5e9'}
+                                  onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}>
+                                  <span style={{ fontSize:10, fontWeight:700, color:'#388e3c', background:'#c8e6c9', borderRadius:3, padding:'1px 5px', flexShrink:0 }}>ABC</span>
+                                  {field}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Operator — custom dropdown matching Looker Studio */}
+                      <div style={{ position:'relative' as const, flex:'0 0 155px' }}>
+                        <div onClick={() => { setOpenClauseValueIdx(null) }}
+                          style={{ border:`1px solid ${openClauseValueIdx===null?'#ccc':'#ccc'}`, borderRadius:6, overflow:'hidden' }}>
+                          <select value={clause.operator}
+                            onChange={e => {
+                              const c = [...newFilterClauses]
+                              c[idx] = {...c[idx], operator: e.target.value, value: ''}
+                              setNewFilterClauses(c)
+                              setSelectedEventValues(prev => ({...prev, [idx]: []}))
+                              if (e.target.value === 'In') loadGA4Events()
+                            }}
+                            style={{ width:'100%', border:'none', padding:'10px 14px', fontSize:13, color:'#333', background:'#fff', cursor:'pointer', outline:'none', appearance:'auto' }}>
+                            {OPERATORS.map(op => <option key={op} value={op}>{op}</option>)}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Value field — checkbox multi-select for "In", text input otherwise */}
+                      {clause.operator === 'In' ? (
+                        <div style={{ position:'relative' as const, flex:1 }}>
+                          <div
+                            onClick={e => {
+                              e.stopPropagation()
+                              setOpenClauseValueIdx(openClauseValueIdx === idx ? null : idx)
+                              // Only load event names for event-related fields
+                              const isEventField = clause.field.toLowerCase().includes('event')
+                              if (isEventField && ga4EventNames.length === 0) loadGA4Events()
+                            }}
+                            style={{ border:'1px solid #1a85c8', borderRadius:6, padding:'10px 14px', fontSize:13, color: (selectedEventValues[idx]||[]).length > 0 ? '#333' : '#999', background:'#fff', cursor:'pointer', minHeight:42, display:'flex', alignItems:'center', flexWrap:'wrap' as const, gap:4 }}>
+                            {(selectedEventValues[idx]||[]).length > 0
+                              ? (selectedEventValues[idx]||[]).map((v: string) => (
+                                  <span key={v} style={{ background:'#e8f0fe', color:'#1a85c8', borderRadius:4, padding:'2px 8px', fontSize:11, fontWeight:500 }}>{v}</span>
+                                ))
+                              : 'Any Value'}
+                          </div>
+                          {openClauseValueIdx === idx && (
+                            <div onClick={e => e.stopPropagation()} style={{ position:'absolute' as const, top:'calc(100% + 4px)', left:0, right:0, background:'#fff', border:'1px solid #e0e0e0', borderRadius:8, boxShadow:'0 8px 24px rgba(0,0,0,0.12)', zIndex:700, maxHeight:200, overflow:'hidden', display:'flex', flexDirection:'column' as const }}>
+                              <div style={{ padding:'8px 10px', borderBottom:'1px solid #f0f0f0' }}>
+                                <input autoFocus value={eventSearch} onChange={e => setEventSearch(e.target.value)}
+                                  placeholder={`Search ${clause.field || 'values'}...`} style={{ width:'100%', border:'1px solid #e0e0e0', borderRadius:6, padding:'6px 10px', fontSize:12, outline:'none', boxSizing:'border-box' as const }}/>
+                              </div>
+                              <div style={{ overflowY:'auto' as const, flex:1 }}>
+                                {(clause.field.toLowerCase().includes('event') && ga4EventNames.length === 0)
+                                  ? <div style={{ padding:'12px', fontSize:12, color:'#999', textAlign:'center' as const }}>Loading...</div>
+                                  : ((): string[] => {
+                                      const f = (clause.field || '').toLowerCase()
+                                      if (f.includes('device')) return ['mobile','desktop','tablet']
+                                      if (f.includes('country')) return ['United States','United Kingdom','Canada','Australia','Germany','France','India','Brazil']
+                                      if (f.includes('browser')) return ['Chrome','Safari','Firefox','Edge','Samsung Internet','Opera']
+                                      if (f.includes('source')||f.includes('medium')||f.includes('channel')) return ['Organic Search','Direct','Paid Search','Organic Social','Paid Social','Referral','Email','Display']
+                                      if (f.includes('age')) return ['18-24','25-34','35-44','45-54','55-64','65+']
+                                      if (f.includes('gender')) return ['male','female','unknown']
+                                      return ga4EventNames.length > 0 ? ga4EventNames : ['(not set)']
+                                    })().filter(v => v.toLowerCase().includes(eventSearch.toLowerCase())).map(val => {
+                                      const isChecked = (selectedEventValues[idx]||[]).includes(val)
+                                      return (
+                                        <div key={val}
+                                          onClick={() => {
+                                            const cur = selectedEventValues[idx] || []
+                                            const upd = isChecked ? cur.filter((v:string)=>v!==val) : [...cur,val]
+                                            setSelectedEventValues(prev=>({...prev,[idx]:upd}))
+                                            const c=[...newFilterClauses]; c[idx]={...c[idx],value:upd.join(',')}; setNewFilterClauses(c)
+                                          }}
+                                          style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 14px', cursor:'pointer', fontSize:13, color:'#1a1a1a' }}
+                                          onMouseEnter={e=>(e.currentTarget as HTMLDivElement).style.background='#f5f5f5'}
+                                          onMouseLeave={e=>(e.currentTarget as HTMLDivElement).style.background='transparent'}>
+                                          <div style={{ width:16, height:16, border:`2px solid ${isChecked?'#1a85c8':'#ccc'}`, borderRadius:3, background:isChecked?'#1a85c8':'#fff', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                                            {isChecked && <span style={{ color:'#fff', fontSize:10, fontWeight:700 }}>✓</span>}
+                                          </div>
+                                          {val}
+                                        </div>
+                                      )
+                                    })
+                                }
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <input value={clause.value} onChange={e => { const c = [...newFilterClauses]; c[idx] = {...c[idx], value: e.target.value}; setNewFilterClauses(c) }}
+                          placeholder="example: value"
+                          style={{ flex:1, minWidth:0, border:'1px solid #ccc', borderRadius:6, padding:'10px 14px', fontSize:13, color:'#333', outline:'none' }}/>
+                      )}
+
+                      {/* OR button */}
+                      <button style={{ padding:'8px 12px', borderRadius:20, border:'1px solid #ccc', background:'transparent', color:'#666', fontSize:12, fontWeight:600, cursor:'pointer', flexShrink:0, whiteSpace:'nowrap' as const }}>OR ▼</button>
+
+                      {/* Remove clause */}
+                      {newFilterClauses.length > 1 && (
+                        <button onClick={() => setNewFilterClauses(prev => prev.filter((_, i) => i !== idx))}
+                          style={{ background:'none', border:'none', cursor:'pointer', color:'#999', padding:'10px 4px' }}><X size={16}/></button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Add AND clause */}
+                <button onClick={() => setNewFilterClauses(prev => [...prev, { include: true, field: '', operator: 'contains', value: '' }])}
+                  style={{ display:'flex', alignItems:'center', gap:8, marginTop:12, background:'transparent', border:'1px solid #1a85c8', borderRadius:20, padding:'7px 16px', color:'#1a85c8', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+                  AND
+                  <ChevronDown size={14}/>
+                </button>
+
+                <p style={{ marginTop:16, fontSize:12, color:'#999' }}>This filter has {newFilterClauses.length} clause{newFilterClauses.length > 1 ? 's' : ''}</p>
+              </div>
+
+              {/* Footer */}
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'flex-end', gap:12, padding:'16px 32px', borderTop:'1px solid #e0e0e0', flexShrink:0, background:'#fafafa', position:'sticky' as const, bottom:0, zIndex:800 }}>
+                <button onClick={() => setShowCreateFilter(false)}
+                  style={{ background:'none', border:'none', cursor:'pointer', color:'#666', fontSize:14, fontWeight:500 }}>Cancel</button>
+                <button
+                  disabled={!newFilterName.trim()}
+                  onClick={() => {
+                    if (!newFilterName.trim()) return
+                    // Save filter to ga4Filters list and apply to widget
+                    const newFilter = newFilterName.trim()
+                    setGa4Filters(prev => [...prev, { name: newFilter, type: 'ga4' as const }])
+                    if (editingWidget) {
+                      const updated = { ...editingWidget, filters: [...((editingWidget as any).filters || []), newFilter] } as any
+                      setEditingWidget(updated)
+                      setWidgets(prev => prev.map(w => w.id === updated.id ? updated : w))
+                    }
+                    setShowCreateFilter(false)
+                  }}
+                  style={{ background: !newFilterName.trim() ? '#ccc' : '#1a85c8', border:'none', borderRadius:6, padding:'10px 24px', color:'#fff', fontSize:14, fontWeight:600, cursor: !newFilterName.trim() ? 'not-allowed' : 'pointer' }}>
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
       {/* Map Data Sources Modal */}
       {showMappingModal && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:100, padding:16 }}
