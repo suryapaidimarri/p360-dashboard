@@ -2505,9 +2505,10 @@ Alloy Intelligence`)
                     </div>
                     <span style={{ fontSize:24, fontWeight:700, color:ALLOY.ink, fontFamily:ALLOY.fontDisplay }}>3%</span>
                   </ChartCard>}
-                  {!isWidgetRemoved('bounce') && <div onClick={e => { e.stopPropagation(); if (editMode) startEdit(widgets[3]) }}
+                  {!isWidgetRemoved('bounce') && <div data-widget-id="bounce" onClick={e => { e.stopPropagation(); if (editMode) startEdit(widgets[3]) }}
+                    className={dragOverId === 'bounce' && draggingId !== 'bounce' ? 'alloy-drop-target' : ''}
                     style={{ background:ALLOY.red1, border:`2px solid ${editingWidget?.id==='bounce' && editMode ? ALLOY.blue1 : ALLOY.red1}`, borderRadius:2, padding:16, position:'relative', cursor: editMode ? 'pointer' : 'default' }}>
-                    {editMode && <DragHandle id={w.id}/>}
+                    {editMode && <DragHandle id="bounce"/>}
                     {editMode && (
                       <div onClick={e => e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', gap:4 }}>
                         <button style={{ background:'rgba(255,255,255,0.2)', border:'none', borderRadius:2, padding:'3px 5px', cursor:'pointer', display:'flex' }}><Maximize2 size={10} style={{ color:'rgba(255,255,255,0.8)' }}/></button>
