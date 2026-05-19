@@ -657,7 +657,12 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     {id:'w3',title:'Referring Domains',dataSource:'google-analytics-4 / referring',chartType:'line',tooltip:'Unique domains sending traffic.',color:'white',value:'6,961',change:'',up:true},
     {id:'w4',title:'Engagement Rate',dataSource:'google-analytics-4 / engagement',chartType:'area',tooltip:'Percentage of engaged sessions.',color:'green',value:'60.77%',change:'3.97%',up:false},
     {id:'c1',title:'Sessions Over Time',dataSource:'google-analytics-4 / sessions',chartType:'line',tooltip:'Sessions over time.',color:'white',value:'',change:'',up:true},
+    {id:'c2',title:'Engagement Score',dataSource:'google-analytics-4 / engagement',chartType:'donut',tooltip:'Engagement score gauge.',color:'white',value:'',change:'',up:true},
+    {id:'c3',title:'Conversion Rate',dataSource:'google-analytics-4 / conversions',chartType:'scorecard',tooltip:'Conversion rate.',color:'white',value:'3%',change:'34%',up:false},
+    {id:'bounce',title:'Bounce Rate',dataSource:'google-analytics-4 / bounce',chartType:'scorecard',tooltip:'Bounce rate.',color:'red',value:'39.23%',change:'6.84%',up:true},
     {id:'d1',title:'Users By Device',dataSource:'google-analytics-4 / devices',chartType:'column',tooltip:'Users by device category.',color:'white',value:'',change:'',up:true},
+    {id:'d2',title:'Top Referral Sources',dataSource:'google-analytics-4 / sources',chartType:'donut',tooltip:'Traffic by referral source.',color:'white',value:'',change:'',up:true},
+    {id:'d3',title:'Traffic by Cities',dataSource:'google-analytics-4 / cities',chartType:'bar',tooltip:'Traffic by city.',color:'white',value:'',change:'',up:true},
     {id:'v1',title:'Website Views',dataSource:'google-analytics-4 / views',chartType:'area',tooltip:'Website views over time.',color:'white',value:'',change:'',up:true},
   ]
 
@@ -1321,8 +1326,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
   // ── ChartCard — now uses unified drag handlers ──────────────────────────
   function ChartCard({ id, children }: { id: string; children: React.ReactNode }) {
-    const w = widgets.find(x => x.id === id)
-    const isSelected = editingWidget?.id === w?.id
+    const w = widgets.find(x => x.id === id) ?? { id, title: id, chartType: 'line', color: 'white', tooltip: '', dataSource: '', value: '', change: '', up: true } as Widget
+    const isSelected = editingWidget?.id === id
     const sz = widgetSizes[id]
     return (
       <div data-widget-id={id}
@@ -1332,7 +1337,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
         onDragOver={e => onDragOver(e, id)}
         onDragLeave={onDragLeave}
         onDrop={e => onDrop(e, id)}
-        onClick={e => { e.stopPropagation(); if (editMode && w) startEdit(w); else if (w) openDrill(w) }}
+        onClick={e => { e.stopPropagation(); if (editMode) startEdit(w); else openDrill(w) }}
         style={{ background:ALLOY.white, borderRadius:2, padding:16, position:'relative', cursor: editMode ? 'grab' : 'default', transition: resizingId === id ? 'none' : 'border-color 0.15s, box-shadow 0.15s, opacity 0.15s', opacity: editMode && editingWidget && !isSelected ? 0.45 : 1, ...(isSelected && editMode ? { border:`2.5px solid ${ALLOY.green1}`, boxShadow:`0 0 0 4px ${ALLOY.green4}, 0 6px 24px rgba(32,187,113,0.22)` } : { border:`2px solid ${ALLOY.line}` }), ...(sz ? { width: sz.w, minHeight: sz.h } : { width: 'calc(33.333% - 8px)', minWidth: 220 }) }}>
         {isSelected && editMode && <div className="alloy-editing-badge" style={{ position:'absolute', top:-12, left:10, zIndex:30, background:ALLOY.green1, color:ALLOY.white, fontFamily:ALLOY.fontLabel, fontSize:8, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase', padding:'3px 8px', borderRadius:2, pointerEvents:'none', whiteSpace:'nowrap' }}>✦ Editing</div>}
         {/* Grip icon */}
@@ -1348,7 +1353,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
         {editMode && (
           <div onClick={e => e.stopPropagation()} style={{ position:'absolute', top:6, right:6, zIndex:10, display:'flex', alignItems:'center', gap:4 }}>
             <button style={{ background:'rgba(0,0,0,0.04)', border:'none', borderRadius:2, padding:'3px 5px', cursor:'pointer', display:'flex' }}><Maximize2 size={10} style={{ color:ALLOY.mute }}/></button>
-            <WidgetDot wid={`static__${id}`} onEdit={() => w && startEdit(w)} onClone={() => w && cloneWidget(w)} widget={w}/>
+            <WidgetDot wid={id} onEdit={() => startEdit(w)} onClone={() => cloneWidget(w)} widget={w}/>
           </div>
         )}
         <ResizeHandle id={id}/>
