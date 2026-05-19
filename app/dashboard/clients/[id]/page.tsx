@@ -156,9 +156,9 @@ const STATIC_CITIES = [{city:'Atlanta',val:25348,pct:92},{city:'(not set)',val:7
 
 const KPI_BG: {[key:string]:{bg:string;border:string;text:string;sub:string}} = {
   white:{bg:ALLOY.white,border:ALLOY.line,text:ALLOY.ink,sub:ALLOY.mute},
-  blue:{bg:ALLOY.blue1,border:ALLOY.blue1,text:ALLOY.white,sub:'rgba(255,255,255,0.85)'},
-  green:{bg:ALLOY.green1,border:ALLOY.green1,text:ALLOY.white,sub:'rgba(255,255,255,0.85)'},
-  red:{bg:ALLOY.red1,border:ALLOY.red1,text:ALLOY.white,sub:'rgba(255,255,255,0.85)'},
+  blue:{bg:ALLOY.blue1,border:'transparent',text:ALLOY.white,sub:'rgba(255,255,255,0.85)'},
+  green:{bg:ALLOY.green1,border:'transparent',text:ALLOY.white,sub:'rgba(255,255,255,0.85)'},
+  red:{bg:ALLOY.red1,border:'transparent',text:ALLOY.white,sub:'rgba(255,255,255,0.85)'},
 }
 
 interface Widget { id:string; title:string; dataSource:string; chartType:string; tooltip:string; color:string; value:string; change:string; up:boolean; textColor?:string; borderColor?:string; bgHex?:string; showAnomalies?:boolean; showForecast?:boolean; showIntegIcon?:boolean; metrics?:string[]; dimensions?:string[]; filters?:string[] }
@@ -754,6 +754,9 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
           return {
             ...def,
             ...saved_w,
+            // Always restore original color/border for default widgets — never use cached values
+            color: def.color,
+            borderColor: def.borderColor,
             // Keep live GA4 values from default (value/change/up restored by fetchGA4)
             value: def.value,
             change: def.change,
