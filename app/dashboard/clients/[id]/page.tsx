@@ -995,7 +995,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   // Use a ref so drop handler always reads the latest dragId (no stale closure)
   const dragIdRef = React.useRef<string|null>(null)
   const justDroppedRef = React.useRef(false)  // prevents click-after-drop from selecting widget
-  function handleDragStart(id: string, e?: React.DragEvent) {
+  function handleDragStart(id: string, e?: React.DragEvent<HTMLElement>) {
     if (!editMode) return
     dragIdRef.current = id
     setDragId(id)
@@ -1011,7 +1011,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     setDragId(null)
     setDragOver(null)
   }
-  function handleDrop(e: React.DragEvent, targetId: string) {
+  function handleDrop(e: React.DragEvent<HTMLElement>, targetId: string) {
     e.preventDefault()
     e.stopPropagation()
     const srcId = dragIdRef.current   // still valid — dragEnd already fired but we didn't clear it
@@ -1816,7 +1816,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
             <button style={{ background:'rgba(0,0,0,0.04)', border:'none', borderRadius:2, padding:'3px 5px', cursor:'pointer', display:'flex' }}>
               <Maximize2 size={10} style={{ color:ALLOY.mute }}/>
             </button>
-            <WidgetDot wid={`static__${id}`} onEdit={() => startEdit(w)} widget={w}/>
+            <WidgetDot wid={'static__' + id} onEdit={() => startEdit(w)} widget={w}/>
           </div>
         )}
         <ResizeHandle id={id}/>
