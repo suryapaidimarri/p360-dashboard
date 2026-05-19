@@ -813,6 +813,119 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     }
   }, [])
 
+  async function saveSizesToDB(sizes: {[id:string]:{w:number;h:number}}) {
+    try { localStorage.setItem(`alloy_widget_sizes_${clientId}`, JSON.stringify(sizes)) } catch {}
+    try {
+      const { createClient } = await import('@/lib/supabase/client')
+      const sb = createClient()
+      await sb.from('dashboard_layouts').upsert({ client_id: clientId, key: 'widget_sizes', value: sizes, updated_at: new Date().toISOString() }, { onConflict: 'client_id,key' })
+    } catch {}
+  }
+
+  function connectGoogle() { window.location.href = `/api/auth/google?state=${clientId}` }
+
+  async function disconnect() {
+    await fetch(`/api/connection?client_id=${clientId}`, { method: 'DELETE' })
+    setConnection({ connected: false })
+    setGa4Data(null)
+  }
+
+  async function fetchGA4(propertyId?: string) {
+    const pid = propertyId || selectedProperty
+    if (!pid) return
+    setLoadingData(true)
+    try {
+      const res = await fetch(`/api/ga4?client_id=${clientId}&property_id=${pid}&start_date=${activeFetchStart || dateRange}&end_date=${activeFetchEnd || 'today'}`)
+      const data = await res.json()
+      if (data.connected) {
+        setGa4Data(data)
+        const totalsRow = data.timeSeries?.totals?.[0]
+        const sessions = parseInt(totalsRow?.metricValues?.[0]?.value || '0')
+        const users = parseInt(totalsRow?.metricValues?.[1]?.value || '0')
+        const conversions = parseInt(totalsRow?.metricValues?.[2]?.value || '0')
+        const engagementRate = parseFloat(totalsRow?.metricValues?.[4]?.value || '0')
+        setWidgets(prev => prev.map(w => {
+          if (w.id === 'w1') return { ...w, value: formatNum(sessions) }
+          if (w.id === 'w2') return { ...w, value: formatNum(conversions) }
+          if (w.id === 'w3') return { ...w, value: formatNum(users) }
+          if (w.id === 'w4') return { ...w, value: (engagementRate * 100).toFixed(2) + '%' }
+          return w
+        }))
+      }
+    } catch {}
+    finally { setLoadingData(false) }
+  }
+
+  async function saveMapping() {
+    setSavingMapping(true)
+    try {
+      await fetch('/api/mapping', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_id: clientId, ga4_property_id: mappingProp, ga4_property_name: mappingPropName, gsc_site_url: mappingSite }),
+      })
+      setSelectedProperty(mappingProp)
+      fetchGA4(mappingProp)
+      setMappingSaved(true)
+      setTimeout(() => { setMappingSaved(false); setShowMappingModal(false) }, 1500)
+    } catch {}
+    setSavingMapping(false)
+  }
+
+  async function loadClientInfo() {
+    try {
+      const { createClient } = await import('@/lib/supabase/client')
+      const sb = createClient()
+      const { data } = await sb.from('clients').select('name,domain').eq('id', clientId).single()
+      if (data) {
+        setClientName(data.name)
+        setClientDomain(data.domain || '')
+        try { localStorage.setItem(`alloy_client_name_${clientId}`, data.name) } catch {}
+        try { localStorage.setItem(`alloy_client_domain_${clientId}`, data.domain || '') } catch {}
+      }
+    } catch {}
+  }
+
+  async function checkConnection(): Promise<void> {
+    setCheckingConn(true)
+    try {
+      const res = await fetch(`/api/connection?client_id=${clientId}`)
+      const data = await res.json()
+      setConnection(data)
+      if (data.connected && data.ga4_properties?.length > 0) {
+        setSelectedProperty(data.ga4_properties[0].name)
+      }
+    } catch { setConnection({ connected: false }) }
+    finally { setCheckingConn(false) }
+  }
+
+  async function loadMapping() {
+    try {
+      const res = await fetch(`/api/mapping?client_id=${clientId}`)
+      const data = await res.json()
+      if (data.ga4_property_id) {
+        setSelectedProperty(data.ga4_property_id)
+        setMappingProp(data.ga4_property_id)
+        setMappingPropName(data.ga4_property_name || '')
+        setMappingSite(data.gsc_site_url || '')
+        fetchGA4(data.ga4_property_id)
+      } else {
+        fetchGA4()
+      }
+    } catch { fetchGA4() }
+  }
+
+  async function loadSizesFromDB() {
+    try {
+      const { createClient } = await import('@/lib/supabase/client')
+      const sb = createClient()
+      const { data } = await sb.from('dashboard_layouts').select('value').eq('client_id', clientId).eq('key', 'widget_sizes').single()
+      if (data?.value) {
+        setWidgetSizes(prev => ({ ...data.value, ...prev }))
+      }
+    } catch {}
+  }
+
   useEffect(() => {
     loadClientInfo()
     checkConnection().then(() => loadMapping())
