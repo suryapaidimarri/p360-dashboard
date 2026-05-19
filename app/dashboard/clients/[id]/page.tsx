@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronRight, Sparkles, Settings, Calendar, ChevronDown, Plus, MoreHorizontal, Maximize2, X, Grip, RotateCcw, RotateCw, Monitor, Smartphone, ChevronLeft, RefreshCw, CheckCircle2, Download, Mail, Link2, LayoutGrid, Edit, Copy, Trash2 } from 'lucide-react'
 import Link from 'next/link'
@@ -619,6 +619,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [drillWidget, setDrillWidget] = useState<Widget|null>(null)
   const [drillChannel, setDrillChannel] = useState('All')
   const [openMenu, setOpenMenu] = useState<string|null>(null)
+  const [menuPos, setMenuPos] = useState<{top:number;left:number}>({top:0,left:0})
   const [activeRightPanel, setActiveRightPanel] = useState<string|null>(null)
   const [integrationSearch, setIntegrationSearch] = useState('')
   const [connection, setConnection] = useState<any>(null)
@@ -1437,25 +1438,22 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       setTimeout(() => setShareToast(null), 2500)
     }
 
-    const dotBtnRef = useRef<HTMLButtonElement>(null)
-    const [dropPos, setDropPos] = useState<{top:number;left:number}|null>(null)
-
-    const openDrop = (e: React.MouseEvent) => {
+    const openDrop = (e: React.MouseEvent<HTMLButtonElement>) => {
       e.stopPropagation()
       if (isOpen) { setOpenMenu(null); return }
-      const rect = dotBtnRef.current?.getBoundingClientRect()
-      if (rect) setDropPos({ top: rect.bottom + 4, left: rect.right - 168 })
+      const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect()
+      setMenuPos({ top: rect.bottom + 4, left: Math.max(4, rect.right - 168) })
       setOpenMenu(wid)
     }
 
     return (
       <div style={{ position:'relative', display:'inline-flex' }}>
-        <button ref={dotBtnRef} onClick={openDrop}
+        <button onClick={openDrop}
           style={{ background:'rgba(255,255,255,0.92)', border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'2px 6px', cursor:'pointer', display:'flex', alignItems:'center' }}>
           <MoreHorizontal size={13} style={{ color:ALLOY.ink }}/>
         </button>
-        {isOpen && dropPos && typeof document !== 'undefined' && createPortal(
-            <div className="alloy-dropdown" style={{ position:'fixed', top:dropPos.top, left:Math.max(4, dropPos.left), background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, boxShadow:'0 4px 16px rgba(0,0,0,0.15)', padding:'4px 0', minWidth:168, zIndex:99999 }}
+        {isOpen && typeof document !== 'undefined' && createPortal(
+            <div className="alloy-dropdown" style={{ position:'fixed', top:menuPos.top, left:menuPos.left, background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, boxShadow:'0 4px 16px rgba(0,0,0,0.15)', padding:'4px 0', minWidth:168, zIndex:99999 }}
               onClick={e => e.stopPropagation()}>
               {/* Edit */}
               <div onClick={handleEdit}
