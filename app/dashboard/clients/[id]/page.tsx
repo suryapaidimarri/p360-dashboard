@@ -1339,74 +1339,144 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     try { localStorage.setItem(`alloy_widget_order_${clientId}`, JSON.stringify(next)) } catch {}
   }
 
-  // Parent-level mousedown handler for all drag handles — stable, no nested component issues
+  // ── Drag & Drop — full card follows cursor ───────────────────────────────
   React.useEffect(() => {
     if (!editMode) return
+
     const handleMouseDown = (e: MouseEvent) => {
       const handle = (e.target as HTMLElement).closest('[data-drag-handle]') as HTMLElement | null
       if (!handle) return
+
       const dragId = handle.dataset.dragHandle!
-      const el = handle.closest('[data-widget-id]') as HTMLElement | null
-      if (!el) return
+      const sourceEl = handle.closest('[data-widget-id]') as HTMLElement | null
+      if (!sourceEl) return
 
       e.preventDefault()
       e.stopPropagation()
 
-      const rect = el.getBoundingClientRect()
+      const rect = sourceEl.getBoundingClientRect()
       const offsetX = e.clientX - rect.left
       const offsetY = e.clientY - rect.top
 
-      // Ghost
-      const ghost = document.createElement('div')
-      ghost.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;background:white;border:2.5px solid #20BB71;border-radius:2px;box-shadow:0 16px 40px rgba(0,0,0,0.2);opacity:0.92;pointer-events:none;z-index:99999;transform:rotate(1.5deg) scale(1.02);transition:none;overflow:hidden;`
-      // Add title label inside ghost
-      ghost.innerHTML = `<div style="padding:12px 14px;font-size:13px;font-weight:600;color:#111;font-family:DM Sans,sans-serif;">${el.querySelector('[data-widget-title]')?.textContent || dragId}</div>`
+      // ── 1. Clone the full card as ghost ──────────────────────────────────
+      const ghost = sourceEl.cloneNode(true) as HTMLElement
+      ghost.removeAttribute('data-widget-id')
+      ghost.style.cssText = `
+        position: fixed;
+        left: ${rect.left}px;
+        top: ${rect.top}px;
+        width: ${rect.width}px;
+        height: ${rect.height}px;
+        margin: 0;
+        pointer-events: none;
+        z-index: 99999;
+        opacity: 0.95;
+        border: 2px solid #20BB71 !important;
+        border-radius: 2px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.25), 0 0 0 3px rgba(32,187,113,0.2);
+        transform: rotate(2deg) scale(1.03);
+        transform-origin: center center;
+        transition: transform 0.08s ease;
+        cursor: grabbing;
+        background: white;
+        overflow: hidden;
+      `
       document.body.appendChild(ghost)
 
-      el.style.opacity = '0.25'
+      // ── 2. Dim source in place ────────────────────────────────────────────
+      sourceEl.style.opacity = '0.2'
+      sourceEl.style.outline = '2px dashed #20BB71'
+      sourceEl.style.outlineOffset = '2px'
 
       let currentOverId: string | null = null
+      let hasMoved = false
 
+      // ── 3. Mouse move — move ghost + highlight target ─────────────────────
       const onMove = (mv: MouseEvent) => {
+        if (!hasMoved) {
+          hasMoved = true
+          ghost.style.transform = 'rotate(2deg) scale(1.03)'
+        }
+
         ghost.style.left = (mv.clientX - offsetX) + 'px'
-        ghost.style.top = (mv.clientY - offsetY) + 'px'
+        ghost.style.top  = (mv.clientY - offsetY) + 'px'
 
-        ghost.style.pointerEvents = 'none'
+        // Detect drop target
+        ghost.style.display = 'none'
         const under = document.elementFromPoint(mv.clientX, mv.clientY) as HTMLElement | null
-        const overEl = under?.closest('[data-widget-id]') as HTMLElement | null
-        const overId = overEl?.dataset?.widgetId || null
+        ghost.style.display = ''
 
-        if (overId !== currentOverId) {
-          // Remove highlight from old
+        const overEl = under?.closest('[data-widget-id]') as HTMLElement | null
+        const overId = overEl?.dataset?.widgetId ?? null
+        const validOver = overId && overId !== dragId ? overId : null
+
+        if (validOver !== currentOverId) {
+          // Clear old target
           if (currentOverId) {
-            const old = document.querySelector(`[data-widget-id="${currentOverId}"]`) as HTMLElement | null
-            if (old) { old.style.outline = ''; old.style.background = '' }
+            const prev = document.querySelector(`[data-widget-id="${currentOverId}"]`) as HTMLElement | null
+            if (prev) {
+              prev.style.outline = ''
+              prev.style.outlineOffset = ''
+              prev.style.transform = ''
+              prev.style.transition = ''
+            }
           }
-          // Add highlight to new
-          if (overId && overId !== dragId) {
-            const newEl = document.querySelector(`[data-widget-id="${overId}"]`) as HTMLElement | null
-            if (newEl) { newEl.style.outline = '2.5px dashed #20BB71'; newEl.style.outlineOffset = '2px' }
+          // Highlight new target
+          if (validOver) {
+            const next = document.querySelector(`[data-widget-id="${validOver}"]`) as HTMLElement | null
+            if (next) {
+              next.style.outline = '2.5px dashed #20BB71'
+              next.style.outlineOffset = '3px'
+              next.style.transform = 'scale(0.98)'
+              next.style.transition = 'transform 0.1s ease'
+            }
           }
-          currentOverId = overId !== dragId ? overId : null
+          currentOverId = validOver
         }
       }
 
+      // ── 4. Mouse up — commit reorder ──────────────────────────────────────
       const onUp = (mv: MouseEvent) => {
-        // Cleanup highlight
+        // Clear all highlights
         if (currentOverId) {
           const overEl = document.querySelector(`[data-widget-id="${currentOverId}"]`) as HTMLElement | null
-          if (overEl) { overEl.style.outline = ''; overEl.style.background = '' }
+          if (overEl) {
+            overEl.style.outline = ''
+            overEl.style.outlineOffset = ''
+            overEl.style.transform = ''
+            overEl.style.transition = ''
+          }
         }
 
-        ghost.style.pointerEvents = 'none'
-        const under = document.elementFromPoint(mv.clientX, mv.clientY) as HTMLElement | null
-        const overEl = under?.closest('[data-widget-id]') as HTMLElement | null
-        const overId = overEl?.dataset?.widgetId
+        // Restore source
+        sourceEl.style.opacity = ''
+        sourceEl.style.outline = ''
+        sourceEl.style.outlineOffset = ''
 
-        if (overId && overId !== dragId) reorderWidgets(dragId, overId)
+        // Snap ghost to drop target for visual feedback before removing
+        if (currentOverId) {
+          const targetEl = document.querySelector(`[data-widget-id="${currentOverId}"]`) as HTMLElement | null
+          if (targetEl) {
+            const tr = targetEl.getBoundingClientRect()
+            ghost.style.transition = 'left 0.15s ease, top 0.15s ease, transform 0.15s ease, opacity 0.15s ease'
+            ghost.style.left = tr.left + 'px'
+            ghost.style.top = tr.top + 'px'
+            ghost.style.transform = 'rotate(0deg) scale(1)'
+            ghost.style.opacity = '0'
+          }
+          reorderWidgets(dragId, currentOverId)
+        } else {
+          ghost.style.transition = 'left 0.15s ease, top 0.15s ease, transform 0.15s ease, opacity 0.15s ease'
+          ghost.style.left = rect.left + 'px'
+          ghost.style.top = rect.top + 'px'
+          ghost.style.transform = 'rotate(0deg) scale(1)'
+          ghost.style.opacity = '0'
+        }
 
-        el.style.opacity = ''
-        document.body.removeChild(ghost)
+        setTimeout(() => {
+          if (document.body.contains(ghost)) document.body.removeChild(ghost)
+        }, 200)
+
         setDraggingId(null)
         setDragOverId(null)
         window.removeEventListener('mousemove', onMove)
@@ -1761,11 +1831,11 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       <div
         data-drag-handle={id}
         title="Drag to reorder"
-        style={{ position:'absolute', top:0, left:0, width:32, height:32, cursor:'grab', zIndex:20, display:'flex', alignItems:'center', justifyContent:'center', opacity:0, transition:'opacity 0.15s' }}
-        onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = '1'}
-        onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = '0'}
+        style={{ position:'absolute', top:4, left:4, width:28, height:28, cursor:'grab', zIndex:25, display:'flex', alignItems:'center', justifyContent:'center', borderRadius:4, background:'rgba(255,255,255,0.85)', opacity:0, transition:'opacity 0.15s', backdropFilter:'blur(4px)' }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.98)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 8px rgba(0,0,0,0.12)' }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '0'; (e.currentTarget as HTMLElement).style.boxShadow = '' }}
       >
-        <Grip size={14} style={{ color: ALLOY.mute, pointerEvents:'none' }}/>
+        <Grip size={14} style={{ color: ALLOY.ink, pointerEvents:'none' }}/>
       </div>
     )
   }
@@ -1970,9 +2040,9 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       [data-widget-id]:hover > div[title="Drag to resize"] { opacity: 0.6 !important }
       [data-widget-id]:hover > div[title="Drag to resize"]:hover { opacity: 1 !important }
 
-      /* Show drag handle on card hover */
-      [data-widget-id]:hover > div[title="Drag to reorder"] { opacity: 0.6 !important }
-      [data-widget-id]:hover > div[title="Drag to reorder"]:hover { opacity: 1 !important }
+      /* Show drag handle on card hover in edit mode */
+      [data-widget-id]:hover [data-drag-handle] { opacity: 0.7 !important }
+      [data-widget-id] [data-drag-handle]:hover { opacity: 1 !important }
 
       /* Drop target highlight */
       .alloy-drop-target { outline: 2.5px dashed #20BB71 !important; outline-offset: 2px; background: rgba(32,187,113,0.04) !important; }
