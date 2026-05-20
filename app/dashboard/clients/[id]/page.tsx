@@ -3582,28 +3582,51 @@ Alloy Intelligence`)
 
 
 
-      {/* Template Wizard Modal */}
-{showTemplateModal && (
-  <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:100, padding:16 }}
-    onClick={() => setShowTemplateModal(false)}>
-    <TemplateWizard
-      step={templateStep}
-      selected={templateSelected}
-      name={templateName}
-      search={templateSearch}
-      onStepChange={setTemplateStep}
-      onSelectChange={setTemplateSelected}
-      onNameChange={setTemplateName}
-      onSearchChange={setTemplateSearch}
-      onCommit={(name: string) => {
-        setDashboards(prev => [...prev, name])
-        setActiveDash(name)
-        setShowTemplateModal(false)
-      }}
-      onClose={() => setShowTemplateModal(false)}
-    />
-  </div>
-)}              </div>
+      {/* Template Modal */}
+      {showTemplateModal && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:100, padding:16 }}
+          onClick={() => setShowTemplateModal(false)}>
+          <div style={{ background:ALLOY.white, borderRadius:2, width:'100%', maxWidth:600, overflow:'hidden', boxShadow:'0 20px 60px rgba(0,0,0,0.15)' }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ height:3, background:ALLOY.green1 }}/>
+            <div style={{ padding:28 }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
+                <h2 style={{ fontSize:15, fontWeight:700, color:ALLOY.ink, fontFamily:ALLOY.fontDisplay }}>Add Page Template</h2>
+                <button onClick={() => setShowTemplateModal(false)} style={{ background:'none', border:'none', cursor:'pointer', color:ALLOY.mute, fontSize:18 }}>✕</button>
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10, marginBottom:24 }}>
+                {['Website Performance','Paid Media','Organic + AI Search','Social Media','E-Commerce','Executive Summary'].map(name => (
+                  <button key={name} oonClick={() => {
+
+  const templateWidgets = [
+    {
+      id: `w_${Date.now()}`,
+      title: 'Total Sessions',
+      chartType: 'line',
+      dataSource: 'google-analytics-4 / traffic',
+      color: 'blue'
+    },
+    {
+      id: `w_${Date.now()}_2`,
+      title: 'Conversions',
+      chartType: 'column',
+      dataSource: 'google-analytics-4 / conversions',
+      color: 'green'
+    }
+  ]
+
+  setDashboards((prev: string[]) => [...prev, name])
+
+  setWidgets(templateWidgets)
+
+  setActiveDash(name)
+
+  setShowTemplateModal(false)
+}} style={{ padding:'14px 10px', background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:2, cursor:'pointer', fontSize:12, fontWeight:500, color:ALLOY.ink, fontFamily:ALLOY.fontBody, textAlign:'center' as const }}>
+                    {name}
+                  </button>
+                ))}
+              </div>
               <div style={{ display:'flex', gap:8 }}>
                 <button onClick={() => setShowTemplateModal(false)}
                   style={{ flex:1, background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'9px', fontFamily:ALLOY.fontBody, fontSize:13, color:ALLOY.mute, cursor:'pointer' }}>Cancel</button>
