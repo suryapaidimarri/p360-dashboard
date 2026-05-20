@@ -1187,7 +1187,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
   // ── Stable callbacks for NewDashCanvas ──────────────────────────────────
   const handleOpenCloneModal = React.useCallback(() => setShowCloneModal(true), [])
-  const handleOpenTemplateModal = React.useCallback(() => setShowCloneModal(true), [])
+  const handleOpenTemplateModal = React.useCallback(() => setShowTemplateModal(true), [])
 
   // ── Core widget constants and helpers ───────────────────────────────────
   const STATIC_IDS = ['w1','w2','w3','w4','c1','c2','c3','d1','d2','d3','v1','bounce']
@@ -3598,7 +3598,6 @@ Alloy Intelligence`)
                 {['Website Performance','Paid Media','Organic + AI Search','Social Media','E-Commerce','Executive Summary'].map(name => (
                   <button key={name} onClick={() => {
                     setDashboards((prev: string[]) => [...prev, name])
-                    setClonedDashboards((prev: string[]) => [...prev, name])
                     setActiveDash(name)
                     setShowTemplateModal(false)
                   }} style={{ padding:'14px 10px', background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:2, cursor:'pointer', fontSize:12, fontWeight:500, color:ALLOY.ink, fontFamily:ALLOY.fontBody, textAlign:'center' as const }}>
