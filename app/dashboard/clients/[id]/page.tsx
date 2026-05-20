@@ -819,6 +819,9 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [ga4Filters, setGa4Filters] = useState<{name:string; type:'ga4'|'other'}[]>([])
   const [userFilters, setUserFilters] = useState<any[]>([])
   const [loadingFilters, setLoadingFilters] = useState(false)
+  // Per-widget filtered data cache: { widgetId: { rows: [{d,v}], loading: bool } }
+  const [widgetFilteredData, setWidgetFilteredData] = useState<{[wid:string]:{rows:{d:string;v:number}[];loading:boolean}}>({})
+
   const [showDimDropdown, setShowDimDropdown] = useState(false)
   const [showMetDropdown, setShowMetDropdown] = useState(false)
   const [dsSearch, setDsSearch] = useState('')
@@ -955,6 +958,136 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       }
     } catch {}
     finally { setLoadingData(false) }
+  }
+
+  // Fetch GA4 data for a specific widget applying its filters via the API
+  async function fetchWidgetFilteredData(widget: Widget) {
+    const pid = selectedProperty
+    if (!pid || !connection?.connected) return
+
+    const filterNames: string[] = (widget as any).filters || []
+    if (filterNames.length === 0) return
+
+    // Resolve filter clauses from userFilters
+    const clauses: any[] = []
+    for (const fname of filterNames) {
+      const saved = userFilters.find((f: any) => f.name === fname)
+      if (saved?.clauses) clauses.push(...saved.clauses)
+    }
+    if (clauses.length === 0) return
+
+    const dimensions: string[] = (widget as any).dimensions || ['Event Name']
+    const metrics: string[] = (widget as any).metrics || ['Event count']
+
+    // Map display names to GA4 API names
+    const dimMap: {[k:string]:string} = {
+      'Date':'date','Event Name':'eventName','Device Category':'deviceCategory',
+      'City':'city','Country':'country','Session Default Channel Group':'sessionDefaultChannelGroup',
+      'Page Title':'pageTitle','Page Location':'pageLocation','Browser':'browser',
+      'Operating System':'operatingSystem','Region':'region','Language':'language',
+      'Campaign':'campaignName','Session Campaign':'sessionCampaignName',
+      'Session Medium':'sessionMedium','Session Source':'sessionSourceMedium',
+    }
+    const metMap: {[k:string]:string} = {
+      'Sessions':'sessions','Active users':'activeUsers','Total users':'totalUsers',
+      'Event count':'eventCount','Conversions':'conversions','Bounce rate':'bounceRate',
+      'Engagement rate':'engagementRate','Screen page views':'screenPageViews',
+      'New users':'newUsers','User engagement':'userEngagementDuration',
+    }
+
+    const apiDim = dimMap[dimensions[0]] || 'eventName'
+    const apiMet = metMap[metrics[0]] || 'eventCount'
+
+    // Build GA4 dimensionFilter from clauses
+    const buildFilter = (clause: any) => {
+      const fieldName = dimMap[clause.field] || clause.field?.replace(/ /g,'') || 'eventName'
+      const values: string[] = clause.values?.length > 0 ? clause.values : clause.value ? [clause.value] : []
+      if (values.length === 0) return null
+
+      if (clause.operator === 'In' || values.length > 1) {
+        return { inListFilter: { values, caseSensitive: false }, fieldName }
+      }
+      if (clause.operator === 'Equal to (=)') {
+        return { stringFilter: { value: values[0], matchType: 'EXACT', caseSensitive: false }, fieldName }
+      }
+      if (clause.operator === 'Contains') {
+        return { stringFilter: { value: values[0], matchType: 'CONTAINS', caseSensitive: false }, fieldName }
+      }
+      if (clause.operator === 'Starts with') {
+        return { stringFilter: { value: values[0], matchType: 'BEGINS_WITH', caseSensitive: false }, fieldName }
+      }
+      if (clause.operator === 'RegExp Match' || clause.operator === 'RegExp Contains') {
+        return { stringFilter: { value: values[0], matchType: 'FULL_REGEXP', caseSensitive: false }, fieldName }
+      }
+      return { stringFilter: { value: values[0], matchType: 'CONTAINS', caseSensitive: false }, fieldName }
+    }
+
+    const filterExpressions = clauses.map(buildFilter).filter(Boolean)
+    if (filterExpressions.length === 0) return
+
+    const dimensionFilter = filterExpressions.length === 1
+      ? { filter: filterExpressions[0] }
+      : { andGroup: { expressions: filterExpressions.map(f => ({ filter: f })) } }
+
+    setWidgetFilteredData(prev => ({ ...prev, [widget.id]: { rows: prev[widget.id]?.rows || [], loading: true } }))
+
+    try {
+      const sd = activeFetchStart || dateRange
+      const ed = activeFetchEnd || 'today'
+
+      // Try POST with dimensionFilter first
+      const res = await fetch(`/api/ga4/custom?client_id=${clientId}&property_id=${pid}&dimensions=${apiDim}&metrics=${apiMet}&start_date=${sd}&end_date=${ed}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dimensionFilter }),
+      })
+      const data = await res.json()
+
+      if (data.rows && data.rows.length > 0) {
+        // API returned filtered rows
+        const rows = data.rows.map((r: any) => ({
+          d: r.dimensionValues?.[0]?.value || '',
+          v: parseInt(r.metricValues?.[0]?.value || '0'),
+        }))
+        setWidgetFilteredData(prev => ({ ...prev, [widget.id]: { rows, loading: false } }))
+      } else {
+        // Fallback: client-side filter on existing ga4EventRows or sessionData
+        const allRows = apiDim === 'eventName' ? ga4EventRows : sessionData
+        const filtered = allRows.filter((row: any) => {
+          return clauses.every((clause: any) => {
+            const val = row.d?.toLowerCase() || ''
+            const clauseVals: string[] = clause.values?.length > 0
+              ? clause.values.map((v: string) => v.toLowerCase())
+              : clause.value ? [clause.value.toLowerCase()] : []
+            if (clauseVals.length === 0) return true
+
+            const match = clauseVals.some((cv: string) => {
+              if (clause.operator === 'Equal to (=)') return val === cv
+              if (clause.operator === 'Starts with') return val.startsWith(cv)
+              if (clause.operator === 'In') return clauseVals.includes(val)
+              return val.includes(cv) // Contains (default)
+            })
+            return clause.include ? match : !match
+          })
+        })
+        setWidgetFilteredData(prev => ({ ...prev, [widget.id]: { rows: filtered, loading: false } }))
+      }
+    } catch {
+      // On error, still try client-side filter
+      const allRows = apiDim === 'eventName' ? ga4EventRows : sessionData
+      const filtered = allRows.filter((row: any) => {
+        return clauses.every((clause: any) => {
+          const val = row.d?.toLowerCase() || ''
+          const clauseVals: string[] = clause.values?.length > 0
+            ? clause.values.map((v: string) => v.toLowerCase())
+            : clause.value ? [clause.value.toLowerCase()] : []
+          if (clauseVals.length === 0) return true
+          const match = clauseVals.some((cv: string) => val.includes(cv))
+          return clause.include ? match : !match
+        })
+      })
+      setWidgetFilteredData(prev => ({ ...prev, [widget.id]: { rows: filtered, loading: false } }))
+    }
   }
 
   async function saveMapping() {
@@ -1175,6 +1308,16 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     }
   }, [widgets, connection, selectedProperty])
 
+  // Auto-fetch filtered data for widgets that have filters applied
+  useEffect(() => {
+    if (!connection?.connected || !selectedProperty) return
+    widgets.forEach(w => {
+      const filterNames: string[] = (w as any).filters || []
+      if (filterNames.length === 0) return
+      fetchWidgetFilteredData(w)
+    })
+  }, [widgets, userFilters, connection, selectedProperty, dateRange, activeFetchStart, activeFetchEnd])
+
   // Close menus on outside click
   useEffect(() => {
     function onDown(e: MouseEvent) {
@@ -1222,6 +1365,12 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const maxCity = Math.max(...cityData.map((c: any) => c.val), 1)
 
   function getWidgetData(w: Partial<Widget>): any[] {
+    // If this widget has filters applied and we have filtered data, use it
+    const wid = (w as Widget).id
+    const filtered = wid ? widgetFilteredData[wid] : null
+    if (filtered && !filtered.loading && filtered.rows.length > 0) {
+      return filtered.rows
+    }
     const ds = (w.dataSource || '').toLowerCase()
     const dims: string[] = (w as any).dimensions || []
     const mets: string[] = (w as any).metrics || []
@@ -3934,6 +4083,10 @@ Alloy Intelligence`)
                       }
                     }
                     setFilterJustSaved(true)
+                    // Fetch filtered data for the current widget immediately
+                    if (editingWidget) {
+                      setTimeout(() => fetchWidgetFilteredData(editingWidget), 100)
+                    }
                     setTimeout(() => {
                       setFilterJustSaved(false)
                       setEditingFilterName(null)
