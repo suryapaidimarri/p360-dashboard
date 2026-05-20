@@ -656,12 +656,7 @@ function NewDashCanvas({ onClone, onTemplate }: { onClone: () => void; onTemplat
         <button
           data-action="open-template"
           onMouseDown={e => { e.stopPropagation(); }}
-          onClick={e => {
-            e.stopPropagation();
-            e.nativeEvent.stopImmediatePropagation();
-            console.log('[TEMPLATE] button clicked, calling onTemplate');
-            onTemplate();
-          }}
+          onClick={e => { e.stopPropagation(); e.nativeEvent.stopImmediatePropagation(); onTemplate(); }}
           style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:14, padding:'30px 24px', background:ALLOY.white, border:'1px solid #e8e8e8', borderRadius:2, cursor:'pointer', textAlign:'center' as const }}>
           <div style={{ width:56, height:56, display:'flex', alignItems:'center', justifyContent:'center' }}>
             <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect x="4" y="4" width="12" height="12" rx="2" fill="#D0D0D0"/><rect x="20" y="4" width="12" height="12" rx="2" fill="#D0D0D0"/><rect x="4" y="20" width="12" height="7" rx="1.5" fill="#E8E8E8"/><rect x="20" y="20" width="12" height="7" rx="1.5" fill="#E8E8E8"/><circle cx="10" cy="30" r="2.5" fill="#48b5ea"/></svg>
@@ -1205,14 +1200,11 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   // ── Stable callbacks for NewDashCanvas (prevent stale closure on re-render) ──
   const handleOpenCloneModal = React.useCallback(() => setShowCloneModal(true), [])
   const handleOpenTemplateModal = React.useCallback(() => {
-    console.log('[TEMPLATE] handleOpenTemplateModal called')
-    console.log('[TEMPLATE] setting showTemplateModal = true')
     setShowTemplateModal(true)
     setTemplateStep(1)
     setTemplateSelected(null)
     setTemplateName('')
     setTemplateSearch('')
-    console.log('[TEMPLATE] state setters called')
   }, [])
 
   // Fallback: catch template button click at document level in case React event is blocked
@@ -3625,7 +3617,6 @@ Alloy Intelligence`)
 
 
       {/* Template Wizard Modal */}
-      {showTemplateModal && console.log('[TEMPLATE] showTemplateModal=true, rendering modal') as any}
       {showTemplateModal && (
         <div style={{ position:'fixed', inset:0, zIndex:9999, background:'rgba(240,242,245,0.97)', display:'flex', flexDirection:'column' }}>
           <TemplateWizard
