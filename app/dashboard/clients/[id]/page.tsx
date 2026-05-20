@@ -2272,7 +2272,13 @@ Alloy Intelligence`)
           {isEmptyDash ? (
             // ── Empty canvas fills remaining height ──
             <div style={{ flex:1, display:'flex' }} onClick={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()}>
-              <NewDashCanvas onClone={handleOpenCloneModal} onTemplate={handleOpenTemplateModal} />
+              <NewDashCanvas 
+  onClone={handleOpenCloneModal} 
+  onTemplate={() => {
+    console.log('Template button clicked'); // Debug log
+    setShowTemplateModal(true);
+  }} 
+/>
             </div>
           ) : (
             // ── Real dashboard content ──
@@ -3449,139 +3455,254 @@ Alloy Intelligence`)
       )}
 
       {/* Template Modal */}
-      {showTemplateModal && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:100, padding:16 }}
-          onClick={() => setShowTemplateModal(false)}>
-          <div style={{ background:ALLOY.white, borderRadius:2, width:'100%', maxWidth:600, overflow:'hidden', boxShadow:'0 20px 60px rgba(0,0,0,0.15)' }}
-            onClick={e => e.stopPropagation()}>
-            <div style={{ height:3, background:ALLOY.green1 }}/>
-            <div style={{ padding:28 }}>
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
-                <h2 style={{ fontSize:15, fontWeight:700, color:ALLOY.ink, fontFamily:ALLOY.fontDisplay }}>Add Page Template</h2>
-                <button onClick={() => setShowTemplateModal(false)} style={{ background:'none', border:'none', cursor:'pointer', color:ALLOY.mute, fontSize:18 }}>✕</button>
-              </div>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10, marginBottom:24 }}>
-                {[
-                  { name:'Website Performance', widgets: [
-                    { title:'Total Sessions', chartType:'sparkline', color:'white', value:'118.3K', change:'+12%', up:true, dataSource:'google-analytics-4 / traffic' },
-                    { title:'Users', chartType:'line', color:'blue', value:'88.1K', change:'+8%', up:true, dataSource:'google-analytics-4 / users' },
-                    { title:'Bounce Rate', chartType:'scorecard', color:'red', value:'39.4%', change:'-5%', up:false, dataSource:'google-analytics-4 / engagement' },
-                    { title:'Conversions', chartType:'column', color:'green', value:'1.8K', change:'+18%', up:true, dataSource:'google-analytics-4 / conversions' }
-                  ] },
-                  { name:'Paid Media', widgets: [
-                    { title:'Ad Spend', chartType:'scorecard', color:'white', value:'$12.4K', change:'+15%', up:false, dataSource:'google-ads / spend' },
-                    { title:'ROAS', chartType:'scorecard', color:'green', value:'3.2x', change:'+0.4x', up:true, dataSource:'google-ads / roas' },
-                    { title:'Impressions', chartType:'line', color:'blue', value:'842K', change:'+22%', up:true, dataSource:'google-ads / impressions' },
-                    { title:'CTR', chartType:'scorecard', color:'white', value:'2.4%', change:'+0.3%', up:true, dataSource:'google-ads / ctr' }
-                  ] },
-                  { name:'Organic + AI Search', widgets: [
-                    { title:'Clicks', chartType:'line', color:'green', value:'24.5K', change:'+18%', up:true, dataSource:'search-console / clicks' },
-                    { title:'Impressions', chartType:'area', color:'blue', value:'310K', change:'+25%', up:true, dataSource:'search-console / impressions' },
-                    { title:'Avg Position', chartType:'scorecard', color:'white', value:'12.3', change:'-1.2', up:true, dataSource:'search-console / position' },
-                    { title:'CTR', chartType:'scorecard', color:'white', value:'7.9%', change:'+1.2%', up:true, dataSource:'search-console / ctr' }
-                  ] },
-                  { name:'Social Media', widgets: [
-                    { title:'Reach', chartType:'line', color:'blue', value:'142K', change:'+32%', up:true, dataSource:'social / reach' },
-                    { title:'Engagement', chartType:'scorecard', color:'green', value:'8.4%', change:'+1.1%', up:true, dataSource:'social / engagement' },
-                    { title:'Followers', chartType:'area', color:'white', value:'12.3K', change:'+5%', up:true, dataSource:'social / followers' },
-                    { title:'Posts', chartType:'column', color:'white', value:'48', change:'+12', up:true, dataSource:'social / posts' }
-                  ] },
-                  { name:'E-Commerce', widgets: [
-                    { title:'Revenue', chartType:'scorecard', color:'green', value:'$89.4K', change:'+23%', up:true, dataSource:'ecommerce / revenue' },
-                    { title:'Orders', chartType:'line', color:'blue', value:'1.2K', change:'+15%', up:true, dataSource:'ecommerce / orders' },
-                    { title:'AOV', chartType:'scorecard', color:'white', value:'$72.10', change:'+$4.20', up:true, dataSource:'ecommerce / aov' },
-                    { title:'Conv Rate', chartType:'scorecard', color:'white', value:'3.2%', change:'+0.4%', up:true, dataSource:'ecommerce / conversion' }
-                  ] },
-                  { name:'Executive Summary', widgets: [
-                    { title:'Total Sessions', chartType:'sparkline', color:'blue', value:'118K', change:'+12%', up:true, dataSource:'google-analytics-4 / traffic' },
-                    { title:'Revenue', chartType:'scorecard', color:'green', value:'$89K', change:'+23%', up:true, dataSource:'ecommerce / revenue' },
-                    { title:'Conv Rate', chartType:'scorecard', color:'white', value:'3.2%', change:'+0.4%', up:true, dataSource:'google-analytics-4 / conversions' },
-                    { title:'ROAS', chartType:'scorecard', color:'white', value:'3.2x', change:'+0.4x', up:true, dataSource:'google-ads / roas' }
-                  ] }
-                ].map(template => (
-                  <button key={template.name} onClick={() => {
-                    // Generate new widgets with unique IDs
-                    const newWidgets = template.widgets.map((widget, idx) => ({
-                      id: `w_${Date.now()}_${idx}`,
-                      title: widget.title,
-                      chartType: widget.chartType,
-                      dataSource: widget.dataSource,
-                      color: widget.color,
-                      tooltip: `${widget.title} from ${widget.dataSource}`,
-                      value: widget.value,
-                      change: widget.change,
-                      up: widget.up,
-                    }))
-                    
-                    // Merge with existing widgets (keeping static ones)
-                    setWidgets(prev => {
-                      // Filter out any placeholder or empty widgets
-                      const existingWidgets = prev.filter(w => 
-                        STATIC_IDS.includes(w.id) || 
-                        w.title === 'Total Sessions' || 
-                        w.title === 'Total Conversions' ||
-                        w.title === 'Referring Domains' ||
-                        w.title === 'Engagement Rate'
-                      )
-                      return [...existingWidgets, ...newWidgets]
-                    })
-                    
-                    // Add the new dashboard if it doesn't exist
-                    setDashboards((prev: string[]) => {
-                      if (!prev.includes(template.name)) {
-                        return [...prev, template.name]
-                      }
-                      return prev
-                    })
-                    
-                    // Set active dashboard
-                    setActiveDash(template.name)
-                    
-                    // Clear removed widgets for this new dashboard
-                    setRemovedWidgetIds(new Set())
-                    
-                    // Close modal
-                    setShowTemplateModal(false)
-                    
-                    // Show success toast
-                    setShareToast(`"${template.name}" template added`)
-                    setTimeout(() => setShareToast(null), 2500)
-                  }}
-                  style={{ 
-                    padding:'14px 10px', 
-                    background:ALLOY.paper, 
-                    border:`1px solid ${ALLOY.line}`, 
-                    borderRadius:2, 
-                    cursor:'pointer', 
-                    fontSize:12, 
-                    fontWeight:500, 
-                    color:ALLOY.ink, 
-                    fontFamily:ALLOY.fontBody, 
-                    textAlign:'center' as const,
-                    transition: 'all 0.15s ease'
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.borderColor = ALLOY.green1
-                    e.currentTarget.style.background = ALLOY.green4
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.borderColor = ALLOY.line
-                    e.currentTarget.style.background = ALLOY.paper
-                  }}>
-                    {template.name}
-                  </button>
-                ))}
-              </div>
-              <div style={{ display:'flex', gap:8 }}>
-                <button onClick={() => setShowTemplateModal(false)}
-                  style={{ flex:1, background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'9px', fontFamily:ALLOY.fontBody, fontSize:13, color:ALLOY.mute, cursor:'pointer' }}>Cancel</button>
-              </div>
-            </div>
+{showTemplateModal && (
+  <div style={{ 
+    position:'fixed', 
+    inset:0, 
+    background:'rgba(0,0,0,0.6)', 
+    display:'flex', 
+    alignItems:'center', 
+    justifyContent:'center', 
+    zIndex:9999, 
+    padding:16 
+  }}
+    onClick={() => setShowTemplateModal(false)}>
+    <div style={{ 
+      background:ALLOY.white, 
+      borderRadius:2, 
+      width:'100%', 
+      maxWidth:700, 
+      overflow:'hidden', 
+      boxShadow:'0 20px 60px rgba(0,0,0,0.3)',
+      maxHeight:'90vh',
+      overflowY:'auto'
+    }}
+      onClick={e => e.stopPropagation()}>
+      <div style={{ height:3, background:ALLOY.green1 }}/>
+      <div style={{ padding:28 }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
+          <div>
+            <h2 style={{ fontSize:18, fontWeight:700, color:ALLOY.ink, fontFamily:ALLOY.fontDisplay, marginBottom:4 }}>Add Page Template</h2>
+            <p style={{ fontSize:12, color:ALLOY.mute, fontFamily:ALLOY.fontBody }}>Choose a pre-built dashboard template to get started quickly</p>
           </div>
+          <button 
+            onClick={() => setShowTemplateModal(false)} 
+            style={{ 
+              background:ALLOY.paper, 
+              border:`1px solid ${ALLOY.line}`, 
+              borderRadius:2, 
+              width:32, 
+              height:32, 
+              cursor:'pointer', 
+              display:'flex', 
+              alignItems:'center', 
+              justifyContent:'center' 
+            }}>
+            <X size={16} style={{ color:ALLOY.mute }}/>
+          </button>
         </div>
-      )}
-
-      {showCloneModal && (
+        
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(2, 1fr)', gap:12, marginBottom:24 }}>
+          {[
+            { 
+              name:'Website Performance', 
+              icon:'🌐', 
+              color:'#48B5EA',
+              description:'Traffic, engagement, and conversion metrics',
+              widgets: [
+                { title:'Total Sessions', chartType:'sparkline', color:'white', value:'118.3K', change:'+12%', up:true, dataSource:'google-analytics-4 / traffic' },
+                { title:'Users', chartType:'line', color:'blue', value:'88.1K', change:'+8%', up:true, dataSource:'google-analytics-4 / users' },
+                { title:'Bounce Rate', chartType:'scorecard', color:'red', value:'39.4%', change:'-5%', up:false, dataSource:'google-analytics-4 / engagement' },
+                { title:'Conversions', chartType:'column', color:'green', value:'1.8K', change:'+18%', up:true, dataSource:'google-analytics-4 / conversions' }
+              ] 
+            },
+            { 
+              name:'Paid Media', 
+              icon:'📢', 
+              color:'#F9B62A',
+              description:'Ad spend, ROAS, and campaign performance',
+              widgets: [
+                { title:'Ad Spend', chartType:'scorecard', color:'white', value:'$12.4K', change:'+15%', up:false, dataSource:'google-ads / spend' },
+                { title:'ROAS', chartType:'scorecard', color:'green', value:'3.2x', change:'+0.4x', up:true, dataSource:'google-ads / roas' },
+                { title:'Impressions', chartType:'line', color:'blue', value:'842K', change:'+22%', up:true, dataSource:'google-ads / impressions' },
+                { title:'CTR', chartType:'scorecard', color:'white', value:'2.4%', change:'+0.3%', up:true, dataSource:'google-ads / ctr' }
+              ] 
+            },
+            { 
+              name:'Organic + AI Search', 
+              icon:'🔍', 
+              color:'#20BB71',
+              description:'Search visibility and organic traffic',
+              widgets: [
+                { title:'Clicks', chartType:'line', color:'green', value:'24.5K', change:'+18%', up:true, dataSource:'search-console / clicks' },
+                { title:'Impressions', chartType:'area', color:'blue', value:'310K', change:'+25%', up:true, dataSource:'search-console / impressions' },
+                { title:'Avg Position', chartType:'scorecard', color:'white', value:'12.3', change:'-1.2', up:true, dataSource:'search-console / position' },
+                { title:'CTR', chartType:'scorecard', color:'white', value:'7.9%', change:'+1.2%', up:true, dataSource:'search-console / ctr' }
+              ] 
+            },
+            { 
+              name:'Social Media', 
+              icon:'📱', 
+              color:'#F64674',
+              description:'Social reach, engagement, and growth',
+              widgets: [
+                { title:'Reach', chartType:'line', color:'blue', value:'142K', change:'+32%', up:true, dataSource:'social / reach' },
+                { title:'Engagement', chartType:'scorecard', color:'green', value:'8.4%', change:'+1.1%', up:true, dataSource:'social / engagement' },
+                { title:'Followers', chartType:'area', color:'white', value:'12.3K', change:'+5%', up:true, dataSource:'social / followers' },
+                { title:'Posts', chartType:'column', color:'white', value:'48', change:'+12', up:true, dataSource:'social / posts' }
+              ] 
+            },
+            { 
+              name:'E-Commerce', 
+              icon:'🛒', 
+              color:'#9C27B0',
+              description:'Revenue, orders, and conversion metrics',
+              widgets: [
+                { title:'Revenue', chartType:'scorecard', color:'green', value:'$89.4K', change:'+23%', up:true, dataSource:'ecommerce / revenue' },
+                { title:'Orders', chartType:'line', color:'blue', value:'1.2K', change:'+15%', up:true, dataSource:'ecommerce / orders' },
+                { title:'AOV', chartType:'scorecard', color:'white', value:'$72.10', change:'+$4.20', up:true, dataSource:'ecommerce / aov' },
+                { title:'Conv Rate', chartType:'scorecard', color:'white', value:'3.2%', change:'+0.4%', up:true, dataSource:'ecommerce / conversion' }
+              ] 
+            },
+            { 
+              name:'Executive Summary', 
+              icon:'📊', 
+              color:'#111111',
+              description:'Key metrics across all channels',
+              widgets: [
+                { title:'Total Sessions', chartType:'sparkline', color:'blue', value:'118K', change:'+12%', up:true, dataSource:'google-analytics-4 / traffic' },
+                { title:'Revenue', chartType:'scorecard', color:'green', value:'$89K', change:'+23%', up:true, dataSource:'ecommerce / revenue' },
+                { title:'Conv Rate', chartType:'scorecard', color:'white', value:'3.2%', change:'+0.4%', up:true, dataSource:'google-analytics-4 / conversions' },
+                { title:'ROAS', chartType:'scorecard', color:'white', value:'3.2x', change:'+0.4x', up:true, dataSource:'google-ads / roas' }
+              ] 
+            }
+          ].map(template => (
+            <button 
+              key={template.name} 
+              onClick={() => {
+                console.log('Template selected:', template.name); // Debug log
+                
+                // Generate new widgets with unique IDs
+                const newWidgets = template.widgets.map((widget, idx) => ({
+                  id: `w_${Date.now()}_${idx}_${Math.random()}`,
+                  title: widget.title,
+                  chartType: widget.chartType,
+                  dataSource: widget.dataSource,
+                  color: widget.color,
+                  tooltip: `${widget.title} from ${widget.dataSource}`,
+                  value: widget.value,
+                  change: widget.change,
+                  up: widget.up,
+                }))
+                
+                // Merge with existing widgets (keeping static ones)
+                setWidgets(prev => {
+                  const existingWidgets = prev.filter(w => 
+                    STATIC_IDS.includes(w.id)
+                  )
+                  const updated = [...existingWidgets, ...newWidgets]
+                  console.log('Widgets updated:', updated.length); // Debug log
+                  return updated
+                })
+                
+                // Add the new dashboard
+                setDashboards((prev: string[]) => {
+                  if (!prev.includes(template.name)) {
+                    const updated = [...prev, template.name]
+                    console.log('Dashboard added:', template.name); // Debug log
+                    return updated
+                  }
+                  return prev
+                })
+                
+                // Set active dashboard
+                setActiveDash(template.name)
+                
+                // Clear removed widgets
+                setRemovedWidgetIds(new Set())
+                
+                // Close modal
+                setShowTemplateModal(false)
+                
+                // Show success toast
+                setShareToast(`"${template.name}" template added!`)
+                setTimeout(() => setShareToast(null), 3000)
+              }}
+              style={{ 
+                display:'flex',
+                flexDirection:'column',
+                alignItems:'flex-start',
+                gap:12,
+                padding:'16px',
+                background:ALLOY.white, 
+                border:`1px solid ${ALLOY.line}`, 
+                borderRadius:2, 
+                cursor:'pointer', 
+                textAlign:'left' as const,
+                transition: 'all 0.2s ease',
+                width:'100%'
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.borderColor = template.color
+                e.currentTarget.style.boxShadow = `0 4px 12px rgba(0,0,0,0.1)`
+                e.currentTarget.style.transform = 'translateY(-2px)'
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = ALLOY.line
+                e.currentTarget.style.boxShadow = 'none'
+                e.currentTarget.style.transform = 'translateY(0)'
+              }}>
+              <div style={{ display:'flex', alignItems:'center', gap:10, width:'100%' }}>
+                <div style={{ 
+                  width:40, 
+                  height:40, 
+                  borderRadius:2, 
+                  background:template.color + '15', 
+                  display:'flex', 
+                  alignItems:'center', 
+                  justifyContent:'center',
+                  fontSize:20
+                }}>
+                  {template.icon}
+                </div>
+                <div style={{ flex:1 }}>
+                  <p style={{ fontSize:14, fontWeight:600, color:ALLOY.ink, fontFamily:ALLOY.fontBody, marginBottom:2 }}>{template.name}</p>
+                  <p style={{ fontSize:11, color:ALLOY.mute, fontFamily:ALLOY.fontBody }}>{template.description}</p>
+                </div>
+                <ChevronRight size={16} style={{ color:ALLOY.mute }}/>
+              </div>
+            </button>
+          ))}
+        </div>
+        
+        <div style={{ display:'flex', gap:8, borderTop:`1px solid ${ALLOY.line}`, paddingTop:20, marginTop:8 }}>
+          <button 
+            onClick={() => setShowTemplateModal(false)}
+            style={{ 
+              flex:1, 
+              background:ALLOY.paper, 
+              border:`1px solid ${ALLOY.line}`, 
+              borderRadius:2, 
+              padding:'10px', 
+              fontFamily:ALLOY.fontBody, 
+              fontSize:13, 
+              color:ALLOY.mute, 
+              cursor:'pointer',
+              transition: 'all 0.15s ease'
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = ALLOY.line
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = ALLOY.paper
+            }}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}    {showCloneModal && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:100, padding:16 }}
           onClick={() => setShowCloneModal(false)}>
           <div style={{ background:ALLOY.white, borderRadius:2, width:'100%', maxWidth:420, overflow:'hidden', boxShadow:'0 20px 60px rgba(0,0,0,0.15)' }}
