@@ -2408,35 +2408,8 @@ Alloy Intelligence`)
             // ── Empty canvas fills remaining height ──
             <div style={{ flex:1, display:'flex' }} onClick={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()}>
               <NewDashCanvas onClone={handleOpenCloneModal} onTemplate={() => {
-
-    const templateWidgets = [
-      {
-        id: `w_${Date.now()}`,
-        title: 'Total Sessions',
-        chartType: 'line',
-        dataSource: 'google-analytics-4 / traffic',
-        color: 'blue',
-        tooltip: 'Traffic sessions',
-        value: '12.4K',
-        change: '+12%',
-        up: true
-      },
-      {
-        id: `w_${Date.now()}_2`,
-        title: 'Conversions',
-        chartType: 'column',
-        dataSource: 'google-analytics-4 / conversions',
-        color: 'green',
-        tooltip: 'Total conversions',
-        value: '1.8K',
-        change: '+8%',
-        up: true
-      }
-    ]
-
-    setWidgets(templateWidgets)
-  }}
-/>
+  setShowTemplateModal(true)
+}}/>
             </div>
           ) : (
             // ── Real dashboard content ──
@@ -3631,37 +3604,39 @@ Alloy Intelligence`)
                   <button key={name} onClick={() => {
 
   const templateWidgets = [
-  {
-    id: `w_${Date.now()}`,
-    title: 'Total Sessions',
-    chartType: 'line',
-    dataSource: 'google-analytics-4 / traffic',
-    color: 'blue',
-    tooltip: 'Traffic sessions',
-    value: '12.4K',
-    change: '+12%',
-    up: true
-  },
-  {
-    id: `w_${Date.now()}_2`,
-    title: 'Conversions',
-    chartType: 'column',
-    dataSource: 'google-analytics-4 / conversions',
-    color: 'green',
-    tooltip: 'Total conversions',
-    value: '1.8K',
-    change: '+8%',
-    up: true
-  }
-]
-  setDashboards((prev: string[]) => [...prev, name])
+    {
+      id: `w_${Date.now()}`,
+      title: 'Total Sessions',
+      chartType: 'line',
+      dataSource: 'google-analytics-4 / traffic',
+      color: 'blue',
+      tooltip: 'Traffic sessions',
+      value: '12.4K',
+      change: '+12%',
+      up: true
+    },
+    {
+      id: `w_${Date.now()}_2`,
+      title: 'Conversions',
+      chartType: 'column',
+      dataSource: 'google-analytics-4 / conversions',
+      color: 'green',
+      tooltip: 'Total conversions',
+      value: '1.8K',
+      change: '+8%',
+      up: true
+    }
+  ]
 
   setWidgets(templateWidgets)
+
+  setDashboards((prev: string[]) => [...prev, name])
 
   setActiveDash(name)
 
   setShowTemplateModal(false)
-}} style={{ padding:'14px 10px', background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:2, cursor:'pointer', fontSize:12, fontWeight:500, color:ALLOY.ink, fontFamily:ALLOY.fontBody, textAlign:'center' as const }}>
+}}
+style={{ padding:'14px 10px', background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:2, cursor:'pointer', fontSize:12, fontWeight:500, color:ALLOY.ink, fontFamily:ALLOY.fontBody, textAlign:'center' as const }}>
                     {name}
                   </button>
                 ))}
