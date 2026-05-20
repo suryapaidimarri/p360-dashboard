@@ -3100,7 +3100,7 @@ Alloy Intelligence`)
                                       <div style={{ width:15, height:15, border:`2px solid ${checked?ALLOY.blue1:ALLOY.line}`, borderRadius:3, background:checked?ALLOY.blue1:ALLOY.white, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
                                         {checked && <span style={{ color:ALLOY.white, fontSize:9, fontWeight:700 }}>✓</span>}
                                       </div>
-                                      <span style={{ fontSize:11, fontFamily:ALLOY.fontLabel, fontSize:10 as any, fontWeight:700, color:ALLOY.blue1, background:ALLOY.blue4, borderRadius:2, padding:'1px 5px' }}>123</span>
+                                      <span style={{ fontSize:10, fontFamily:ALLOY.fontLabel, fontWeight:700, color:ALLOY.blue1, background:ALLOY.blue4, borderRadius:2, padding:'1px 5px' }}>123</span>
                                       <span style={{ fontSize:12, color:ALLOY.ink, fontFamily:ALLOY.fontBody }}>{m}</span>
                                     </div>
                                   )
