@@ -655,7 +655,37 @@ function NewDashCanvas({ onClone, onTemplate }: { onClone: () => void; onTemplat
         {/* Add a page template */}
         <button
           data-action="open-template"
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onTemplate(); }}
+          onClick={(e) => {
+  e.preventDefault()
+  e.stopPropagation()
+
+  const templateWidgets = [
+    {
+      id: `w_${Date.now()}`,
+      title: 'Total Sessions',
+      chartType: 'line',
+      dataSource: 'google-analytics-4 / traffic',
+      color: 'blue',
+      tooltip: 'Traffic sessions',
+      value: '12.4K',
+      change: '+12%',
+      up: true
+    },
+    {
+      id: `w_${Date.now()}_2`,
+      title: 'Conversions',
+      chartType: 'column',
+      dataSource: 'google-analytics-4 / conversions',
+      color: 'green',
+      tooltip: 'Total conversions',
+      value: '1.8K',
+      change: '+8%',
+      up: true
+    }
+  ]
+
+  setWidgets(templateWidgets)
+}}
           style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:14, padding:'30px 24px', background:ALLOY.white, border:'1px solid #e8e8e8', borderRadius:2, cursor:'pointer', textAlign:'center' as const }}>
           <div style={{ width:56, height:56, display:'flex', alignItems:'center', justifyContent:'center' }}>
             <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect x="4" y="4" width="12" height="12" rx="2" fill="#D0D0D0"/><rect x="20" y="4" width="12" height="12" rx="2" fill="#D0D0D0"/><rect x="4" y="20" width="12" height="7" rx="1.5" fill="#E8E8E8"/><rect x="20" y="20" width="12" height="7" rx="1.5" fill="#E8E8E8"/><circle cx="10" cy="30" r="2.5" fill="#48b5ea"/></svg>
@@ -2404,7 +2434,35 @@ Alloy Intelligence`)
           {isEmptyDash ? (
             // ── Empty canvas fills remaining height ──
             <div style={{ flex:1, display:'flex' }} onClick={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()}>
-              <NewDashCanvas onClone={handleOpenCloneModal} onTemplate={handleOpenTemplateModal} />
+              <NewDashCanvas onClone={handleOpenCloneModal} onTemplate={() => {
+
+  const templateWidgets = [
+    {
+      id: `w_${Date.now()}`,
+      title: 'Total Sessions',
+      chartType: 'line',
+      dataSource: 'google-analytics-4 / traffic',
+      color: 'blue',
+      tooltip: 'Traffic sessions',
+      value: '12.4K',
+      change: '+12%',
+      up: true
+    },
+    {
+      id: `w_${Date.now()}_2`,
+      title: 'Conversions',
+      chartType: 'column',
+      dataSource: 'google-analytics-4 / conversions',
+      color: 'green',
+      tooltip: 'Total conversions',
+      value: '1.8K',
+      change: '+8%',
+      up: true
+    }
+  ]
+
+  setWidgets(templateWidgets)
+}} />
             </div>
           ) : (
             // ── Real dashboard content ──
