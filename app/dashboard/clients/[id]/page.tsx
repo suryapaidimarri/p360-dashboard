@@ -802,10 +802,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [filterJustSaved, setFilterJustSaved] = useState(false)
   const [editingFilterName, setEditingFilterName] = useState<string|null>(null)
   const LS_SIZES_KEY = `alloy_widget_sizes_${clientId}`
-  const [widgetSizes, setWidgetSizes] = useState<{[id:string]:{w:number;h:number}}>(() => {
-    // Fast load from localStorage cache first (instant, no flash)
-    try { const v = localStorage.getItem(`alloy_widget_sizes_${clientId}`); return v ? JSON.parse(v) : {} } catch { return {} }
-  })
+  const [widgetSizes, setWidgetSizes] = useState<{[id:string]:{w:number;h:number}}>({})
   const [resizingId, setResizingId] = useState<string|null>(null)
   const [resizeOverlay, setResizeOverlay] = useState<{x:number;y:number;w:number;h:number}|null>(null)
   const [draggingId, setDraggingId] = useState<string|null>(null)
@@ -820,9 +817,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [selectedEventValues, setSelectedEventValues] = useState<{[idx: number]: string[]}>({})
   const [filterSearch, setFilterSearch] = useState('')
   const [ga4Filters, setGa4Filters] = useState<{name:string; type:'ga4'|'other'}[]>([])
-  const [userFilters, setUserFilters] = useState<any[]>(() => {
-    try { const v = localStorage.getItem('alloy_user_filters'); return v ? JSON.parse(v) : [] } catch { return [] }
-  })
+  const [userFilters, setUserFilters] = useState<any[]>([])
   const [loadingFilters, setLoadingFilters] = useState(false)
   const [showDimDropdown, setShowDimDropdown] = useState(false)
   const [showMetDropdown, setShowMetDropdown] = useState(false)
@@ -831,12 +826,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [metSearch, setMetSearch] = useState('')
   const [showShareMenu, setShowShareMenu] = useState(false)
   const LS_DATE_KEY = `alloy_custom_date_${clientId}`
-  const [activeFetchStart, setActiveFetchStart] = useState<string|null>(() => {
-    try { const v = localStorage.getItem(`alloy_custom_date_${clientId}`); return v ? JSON.parse(v).start || null : null } catch { return null }
-  })
-  const [activeFetchEnd, setActiveFetchEnd] = useState<string|null>(() => {
-    try { const v = localStorage.getItem(`alloy_custom_date_${clientId}`); return v ? JSON.parse(v).end || null : null } catch { return null }
-  })
+  const [activeFetchStart, setActiveFetchStart] = useState<string|null>(null)
+  const [activeFetchEnd, setActiveFetchEnd] = useState<string|null>(null)
   const [showCalendarPicker, setShowCalendarPicker] = useState(false)
   const [calAnchorRef, setCalAnchorRef] = useState<{top:number;left:number}|null>(null)
   const [calStartView, setCalStartView] = useState(new Date(2026, 3, 1))
@@ -870,21 +861,9 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const LS_CLONED_KEY = `alloy_cloned_dashboards_${clientId}`
   const LS_WIDGETS_KEY = `alloy_widgets_${clientId}`
 
-  const [dashboards, setDashboards] = useState<string[]>(() => {
-    if (typeof window === 'undefined') return INITIAL_DASHBOARDS
-    try {
-      const saved = localStorage.getItem(LS_KEY)
-      return saved ? JSON.parse(saved) : INITIAL_DASHBOARDS
-    } catch { return INITIAL_DASHBOARDS }
-  })
+  const [dashboards, setDashboards] = useState<string[]>(INITIAL_DASHBOARDS)
 
-  const [clonedDashboards, setClonedDashboards] = useState<string[]>(() => {
-    if (typeof window === 'undefined') return []
-    try {
-      const saved = localStorage.getItem(LS_CLONED_KEY)
-      return saved ? JSON.parse(saved) : []
-    } catch { return [] }
-  })
+  const [clonedDashboards, setClonedDashboards] = useState<string[]>([])
   const DEFAULT_WIDGETS: Widget[] = [
     {id:'w1',title:'Total Sessions',dataSource:'google-analytics-4 / traffic-analytics',chartType:'sparkline',tooltip:'Total sessions during the selected period.',color:'white',value:'120.5 K',change:'29%',up:true},
     {id:'w2',title:'Total Conversions',dataSource:'google-analytics-4 / conversions',chartType:'column',tooltip:'Total conversions tracked.',color:'blue',value:'3,610',change:'16%',up:false},
@@ -894,49 +873,11 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     {id:'d1',title:'Users By Device',dataSource:'google-analytics-4 / devices',chartType:'column',tooltip:'Users by device category.',color:'white',value:'',change:'',up:true},
     {id:'v1',title:'Website Views',dataSource:'google-analytics-4 / views',chartType:'area',tooltip:'Website views over time.',color:'white',value:'',change:'',up:true},
   ]
-  const [widgets, setWidgets] = useState<Widget[]>(() => {
-    if (typeof window === 'undefined') return DEFAULT_WIDGETS
-    try {
-      const saved = localStorage.getItem(LS_WIDGETS_KEY)
-      if (saved) {
-        const parsed: Widget[] = JSON.parse(saved)
-
-        // Restore default widgets with saved customizations
-        const defaults = DEFAULT_WIDGETS.map(def => {
-          const saved_w = parsed.find((s: Widget) => s.id === def.id)
-          if (!saved_w) return def
-          return {
-            ...def,
-            ...saved_w,
-            // Always restore original color/border for default widgets — never use cached values
-            color: def.color,
-            borderColor: undefined,
-            bgHex: undefined,
-            // Keep live GA4 values from default (value/change/up restored by fetchGA4)
-            value: def.value,
-            change: def.change,
-            up: def.up,
-          }
-        })
-
-        // Also restore any dynamically added widgets (IDs not in DEFAULT_WIDGETS)
-        const defaultIds = new Set(DEFAULT_WIDGETS.map(d => d.id))
-        const dynamic = parsed.filter((s: Widget) => !defaultIds.has(s.id))
-
-        return [...defaults, ...dynamic]
-      }
-    } catch {}
-    return DEFAULT_WIDGETS
-  })
+  const [widgets, setWidgets] = useState<Widget[]>(DEFAULT_WIDGETS)
 
   // Track removed static widget IDs separately — persists across refresh
   const LS_REMOVED_KEY = `alloy_removed_widgets_${clientId}`
-  const [removedWidgetIds, setRemovedWidgetIds] = useState<Set<string>>(() => {
-    try {
-      const saved = localStorage.getItem(`alloy_removed_widgets_${clientId}`)
-      return saved ? new Set(JSON.parse(saved) as string[]) : new Set<string>()
-    } catch { return new Set() }
-  })
+  const [removedWidgetIds, setRemovedWidgetIds] = useState<Set<string>>(new Set())
 
   // Helper — check if a widget id is removed
   const isWidgetRemoved = (id: string) => removedWidgetIds.has(id)
@@ -1108,6 +1049,48 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     } catch {}
     setLoadingFilters(false)
   }
+
+  // Load persisted state from localStorage after mount (avoids SSR hydration mismatch)
+  useEffect(() => {
+    try {
+      const savedDash = localStorage.getItem(LS_KEY)
+      if (savedDash) setDashboards(JSON.parse(savedDash))
+    } catch {}
+    try {
+      const savedCloned = localStorage.getItem(LS_CLONED_KEY)
+      if (savedCloned) setClonedDashboards(JSON.parse(savedCloned))
+    } catch {}
+    try {
+      const savedRemoved = localStorage.getItem(`alloy_removed_widgets_${clientId}`)
+      if (savedRemoved) setRemovedWidgetIds(new Set(JSON.parse(savedRemoved) as string[]))
+    } catch {}
+    try {
+      const saved = localStorage.getItem(LS_WIDGETS_KEY)
+      if (saved) {
+        const parsed: Widget[] = JSON.parse(saved)
+        const defaults = DEFAULT_WIDGETS.map(def => {
+          const saved_w = parsed.find((s: Widget) => s.id === def.id)
+          if (!saved_w) return def
+          return { ...def, ...saved_w, color: def.color, borderColor: undefined, bgHex: undefined, value: def.value, change: def.change, up: def.up }
+        })
+        const defaultIds = new Set(DEFAULT_WIDGETS.map(d => d.id))
+        const dynamic = parsed.filter((s: Widget) => !defaultIds.has(s.id))
+        setWidgets([...defaults, ...dynamic])
+      }
+    } catch {}
+    try {
+      const v = localStorage.getItem(`alloy_widget_sizes_${clientId}`)
+      if (v) setWidgetSizes(JSON.parse(v))
+    } catch {}
+    try {
+      const v = localStorage.getItem('alloy_user_filters')
+      if (v) setUserFilters(JSON.parse(v))
+    } catch {}
+    try {
+      const v = localStorage.getItem(`alloy_custom_date_${clientId}`)
+      if (v) { const d = JSON.parse(v); if (d.start) setActiveFetchStart(d.start); if (d.end) setActiveFetchEnd(d.end) }
+    } catch {}
+  }, [])
 
   useEffect(() => {
     loadClientInfo()
