@@ -502,7 +502,210 @@ function DynamicChart({ chartType, data, height = 80, dimensions = ['Date'], met
 }
 
 
+// ── Template Wizard Modal ─────────────────────────────────────────────────────
+const TEMPLATE_LIST = [
+  { name:'Website Performance', source:'Google Analytics 4', color:'#48B5EA', preview:[{l:'Sessions',v:'118.3K'},{l:'Users',v:'88.1K'},{l:'Bounce Rate',v:'39.4%'},{l:'Conversions',v:'1,838'}] },
+  { name:'Paid Media', source:'Google Ads', color:'#F9B62A', preview:[{l:'Ad Spend',v:'$12.4K'},{l:'ROAS',v:'3.2x'},{l:'Impressions',v:'842K'},{l:'CTR',v:'2.4%'}] },
+  { name:'Organic + AI Search', source:'Google Search Console', color:'#20BB71', preview:[{l:'Clicks',v:'24.5K'},{l:'Impressions',v:'310K'},{l:'Avg Position',v:'12.3'},{l:'CTR',v:'7.9%'}] },
+  { name:'Social Media', source:'Facebook / Instagram', color:'#F64674', preview:[{l:'Reach',v:'142K'},{l:'Engagement',v:'8.4%'},{l:'Followers',v:'12.3K'},{l:'Posts',v:'48'}] },
+  { name:'E-Commerce', source:'Google Analytics 4', color:'#9C27B0', preview:[{l:'Revenue',v:'$89.4K'},{l:'Orders',v:'1,240'},{l:'AOV',v:'$72.10'},{l:'Conv Rate',v:'3.2%'}] },
+  { name:'Donations Trend', source:'Google Analytics 4', color:'#FF7043', preview:[{l:'Total Raised',v:'$142K'},{l:'Donors',v:'3,210'},{l:'Avg Gift',v:'$44.20'},{l:'Recurring',v:'28%'}] },
+  { name:'Email Marketing', source:'ActiveCampaign', color:'#00ACC1', preview:[{l:'Open Rate',v:'24.5%'},{l:'Click Rate',v:'3.8%'},{l:'Subscribers',v:'18.4K'},{l:'Revenue',v:'$8.2K'}] },
+  { name:'Executive Summary', source:'All Sources', color:'#111111', preview:[{l:'Sessions',v:'118K'},{l:'Revenue',v:'$89K'},{l:'Conv Rate',v:'3.2%'},{l:'ROAS',v:'3.2x'}] },
+]
 
+function TemplateWizard({ step, selected, name, search, onStepChange, onSelectChange, onNameChange, onSearchChange, onCommit, onClose }: {
+  step: number; selected: string | null; name: string; search: string
+  onStepChange: (s: number) => void; onSelectChange: (s: string | null) => void
+  onNameChange: (s: string) => void; onSearchChange: (s: string) => void
+  onCommit: (name: string) => void; onClose: () => void
+}) {
+  const filtered = TEMPLATE_LIST.filter(t => t.name.toLowerCase().includes(search.toLowerCase()) || t.source.toLowerCase().includes(search.toLowerCase()))
+  const sel = TEMPLATE_LIST.find(t => t.name === selected)
+
+  const commit = (n: string) => {
+    onCommit(n)
+    onStepChange(3)
+    setTimeout(onClose, 900)
+  }
+
+  return (
+    <div style={{ width:'100%', height:'100%', display:'flex', flexDirection:'column' }}>
+      <button onClick={onClose} style={{ position:'absolute', top:16, right:16, width:36, height:36, borderRadius:'50%', background:'#fff', border:'1px solid #e5e5e5', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', zIndex:10 }}>
+        <X size={16} style={{ color:'#666' }}/>
+      </button>
+      <div style={{ width:'100%', maxWidth:960, margin:'20px auto', background:'#fff', borderRadius:8, boxShadow:'0 4px 24px rgba(0,0,0,0.1)', display:'flex', flexDirection:'column', overflow:'hidden', flex:1, maxHeight:'calc(100vh - 40px)' }}
+        onClick={e => e.stopPropagation()}>
+
+        {/* Step bar */}
+        <div style={{ padding:'20px 40px', borderBottom:'1px solid #e5e5e5', display:'flex', alignItems:'center', flexShrink:0 }}>
+          {['Choose Source','Pick a Name','Start Design'].map((label, i) => (
+            <React.Fragment key={i}>
+              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                <div style={{ width:26, height:26, borderRadius:'50%', background:step>i+1||step===i+1?'#48b5ea':'#e5e5e5', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  {step>i+1
+                    ? <svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="white" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    : <span style={{ fontSize:11, fontWeight:700, color:step===i+1?'#fff':'#999' }}>{i+1}</span>}
+                </div>
+                <span style={{ fontSize:13, color:step>=i+1?'#48b5ea':'#999', fontWeight:step===i+1?600:400 }}>{label}</span>
+              </div>
+              {i<2&&<div style={{ flex:1, height:1, background:'#e5e5e5', margin:'0 12px' }}/>}
+            </React.Fragment>
+          ))}
+        </div>
+
+        {/* Step 1: Choose */}
+        {step===1&&(
+          <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
+            <div style={{ width:300, borderRight:'1px solid #e5e5e5', display:'flex', flexDirection:'column', overflow:'hidden' }}>
+              <div style={{ padding:'24px 24px 12px', textAlign:'center' as const }}>
+                <h2 style={{ fontSize:18, fontWeight:700, color:'#1a1a1a', marginBottom:6 }}>Add Page Template</h2>
+                <p style={{ fontSize:12, color:'#888', lineHeight:1.6 }}>You can make changes after adding.</p>
+              </div>
+              <div style={{ height:1, background:'#e5e5e5', margin:'0 20px 8px' }}/>
+              <div style={{ padding:'0 16px 8px' }}>
+                <input value={search} onChange={e => onSearchChange(e.target.value)} placeholder="Search templates..."
+                  style={{ width:'100%', border:'1px solid #e5e5e5', borderRadius:6, padding:'7px 12px', fontSize:12, outline:'none', boxSizing:'border-box' as const }}/>
+              </div>
+              <div style={{ flex:1, overflowY:'auto' }}>
+                {filtered.map(t => (
+                  <div key={t.name} onClick={() => { onSelectChange(t.name); onNameChange(t.name) }}
+                    style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 20px', cursor:'pointer', background:selected===t.name?'#f0fdf4':'transparent', borderLeft:selected===t.name?'3px solid #20BB71':'3px solid transparent' }}>
+                    <div style={{ width:18, height:18, borderRadius:'50%', border:`2px solid ${selected===t.name?'#20BB71':'#ccc'}`, background:selected===t.name?'#20BB71':'#fff', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                      {selected===t.name&&<svg width="9" height="9" viewBox="0 0 9 9"><path d="M1.5 4.5l2 2 4-4" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>}
+                    </div>
+                    <span style={{ fontSize:13, color:selected===t.name?'#1a1a1a':'#555', fontWeight:selected===t.name?600:400 }}>{t.name}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ padding:16, borderTop:'1px solid #e5e5e5', display:'flex', gap:8 }}>
+                <button onClick={() => { if(selected) onStepChange(2) }} disabled={!selected}
+                  style={{ flex:1, background:selected?'#48b5ea':'#e5e5e5', border:'none', borderRadius:6, padding:'10px', fontSize:13, fontWeight:600, color:selected?'#fff':'#aaa', cursor:selected?'pointer':'not-allowed' }}>Continue</button>
+                <button onClick={onClose} style={{ padding:'10px 16px', background:'#fff', border:'1px solid #e5e5e5', borderRadius:6, fontSize:13, color:'#666', cursor:'pointer' }}>Cancel</button>
+              </div>
+            </div>
+            <div style={{ flex:1, overflowY:'auto', padding:24, background:'#f8f9fa' }}>
+              {sel ? (
+                <div>
+                  <div style={{ background:sel.color, borderRadius:8, padding:'16px 20px', marginBottom:16 }}>
+                    <h3 style={{ fontSize:18, fontWeight:700, color:'#fff' }}>{sel.name}</h3>
+                    <p style={{ fontSize:11, color:'rgba(255,255,255,0.8)', marginTop:2 }}>Source: {sel.source}</p>
+                  </div>
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+                    {sel.preview.map((p: any) => (
+                      <div key={p.l} style={{ background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, padding:16 }}>
+                        <p style={{ fontSize:11, color:'#999', marginBottom:6 }}>{p.l}</p>
+                        <p style={{ fontSize:26, fontWeight:300, color:'#1a1a1a' }}>{p.v}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100%', flexDirection:'column', gap:12 }}>
+                  <div style={{ fontSize:48 }}>📋</div>
+                  <p style={{ fontSize:13, color:'#aaa' }}>Select a template to preview</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Name */}
+        {step===2&&(
+          <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', padding:40 }}>
+            <div style={{ width:'100%', maxWidth:520 }}>
+              <h2 style={{ fontSize:22, fontWeight:700, color:'#1a1a1a', marginBottom:8, textAlign:'center' as const }}>What would you like your dashboard to be named?</h2>
+              <p style={{ fontSize:13, color:'#888', marginBottom:28, textAlign:'center' as const }}>This name will appear in your list of dashboards</p>
+              <div style={{ height:1, background:'#e5e5e5', marginBottom:28 }}/>
+              <input value={name} onChange={e => onNameChange(e.target.value)} autoFocus
+                onKeyDown={e => { if(e.key==='Enter'&&name.trim()) commit(name.trim()) }}
+                style={{ width:'100%', border:'1px solid #e5e5e5', borderRadius:6, padding:'12px 16px', fontSize:15, color:'#1a1a1a', outline:'none', boxSizing:'border-box' as const }}
+                placeholder="e.g. Website Performance"/>
+              <button onClick={() => { if(name.trim()) commit(name.trim()) }} disabled={!name.trim()}
+                style={{ marginTop:20, background:name.trim()?'#48b5ea':'#e5e5e5', border:'none', borderRadius:6, padding:'12px 28px', fontSize:13, fontWeight:600, color:name.trim()?'#fff':'#aaa', cursor:name.trim()?'pointer':'not-allowed' }}>Continue</button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Done */}
+        {step===3&&(
+          <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:16 }}>
+            <div style={{ width:64, height:64, borderRadius:'50%', background:'#f0fdf4', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <svg width="28" height="28" viewBox="0 0 28 28"><path d="M5 14l6 6 12-12" stroke="#20BB71" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
+            </div>
+            <h2 style={{ fontSize:20, fontWeight:700, color:'#1a1a1a' }}>Dashboard Created!</h2>
+            <p style={{ fontSize:13, color:'#888' }}>"{name}" added to your dashboards</p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Empty canvas shown for any dashboard not in REAL_DASHBOARDS ──────────────
+function NewDashCanvas({ onClone, onTemplate }: { onClone: () => void; onTemplate: () => void }) {
+  return (
+    <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', background:ALLOY.paper }}
+      onClick={e => e.stopPropagation()}
+      onMouseDown={e => e.stopPropagation()}>
+      <p style={{ fontSize:15, color:ALLOY.ink, marginBottom:2, fontFamily:ALLOY.fontDisplay }}>Start building by dragging widgets</p>
+      <p style={{ fontSize:13, color:ALLOY.mute, marginBottom:20, fontFamily:ALLOY.fontBody }}>or</p>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, width:520 }}>
+
+        {/* Add a page template */}
+        <button
+          data-action="open-template"
+          onMouseDown={e => { e.stopPropagation(); }}
+          onClick={e => { e.stopPropagation(); e.nativeEvent.stopImmediatePropagation(); onTemplate(); }}
+          style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:14, padding:'30px 24px', background:ALLOY.white, border:'1px solid #e8e8e8', borderRadius:2, cursor:'pointer', textAlign:'center' as const }}>
+          <div style={{ width:56, height:56, display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect x="4" y="4" width="12" height="12" rx="2" fill="#D0D0D0"/><rect x="20" y="4" width="12" height="12" rx="2" fill="#D0D0D0"/><rect x="4" y="20" width="12" height="7" rx="1.5" fill="#E8E8E8"/><rect x="20" y="20" width="12" height="7" rx="1.5" fill="#E8E8E8"/><circle cx="10" cy="30" r="2.5" fill="#48b5ea"/></svg>
+          </div>
+          <div>
+            <p style={{ fontSize:14, fontWeight:500, color:ALLOY.ink, marginBottom:6, fontFamily:ALLOY.fontBody }}>Add a page template</p>
+            <p style={{ fontSize:12, color:ALLOY.mute, lineHeight:1.6, fontFamily:ALLOY.fontBody }}>Choose from a ready-made template or one of your saved pages</p>
+          </div>
+        </button>
+
+        {/* Build a page using AI */}
+        <button style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:14, padding:'30px 24px', background:ALLOY.white, border:'1px solid #e8e8e8', borderRadius:2, cursor:'pointer', textAlign:'center' as const }}>
+          <div style={{ width:56, height:56, display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="12" stroke="#D0D0D0" strokeWidth="2"/><circle cx="18" cy="10" r="3" fill="#D0D0D0"/><path d="M14 18 L17 21 L23 15" stroke="#48b5ea" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M26 10 L28 14 L32 12" stroke="#D0D0D0" strokeWidth="1.5" strokeLinecap="round"/></svg>
+          </div>
+          <div>
+            <p style={{ fontSize:14, fontWeight:500, color:ALLOY.ink, marginBottom:6, fontFamily:ALLOY.fontBody }}>Build a page using AI</p>
+            <p style={{ fontSize:12, color:ALLOY.mute, lineHeight:1.6, fontFamily:ALLOY.fontBody }}>Tell AI what you're trying to achieve, and watch it build your page</p>
+          </div>
+        </button>
+
+        {/* Clone existing page */}
+        <button
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onClone(); }}
+          style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:14, padding:'30px 24px', background:ALLOY.white, border:'1px solid #e8e8e8', borderRadius:2, cursor:'pointer', textAlign:'center' as const }}>
+          <div style={{ width:56, height:56, display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect x="5" y="8" width="18" height="22" rx="2" stroke="#D0D0D0" strokeWidth="2"/><rect x="13" y="6" width="18" height="22" rx="2" stroke="#D0D0D0" strokeWidth="2" fill="#FAFAFA"/><path d="M18 13 h8" stroke="#E0E0E0" strokeWidth="1.5" strokeLinecap="round"/><path d="M18 17 h6" stroke="#E0E0E0" strokeWidth="1.5" strokeLinecap="round"/><path d="M18 21 h7" stroke="#E0E0E0" strokeWidth="1.5" strokeLinecap="round"/></svg>
+          </div>
+          <div>
+            <p style={{ fontSize:14, fontWeight:500, color:ALLOY.ink, marginBottom:6, fontFamily:ALLOY.fontBody }}>Clone existing page</p>
+            <p style={{ fontSize:12, color:ALLOY.mute, lineHeight:1.6, fontFamily:ALLOY.fontBody }}>Copy a page from another page</p>
+          </div>
+        </button>
+
+        {/* Smart Dashboard */}
+        <button style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:14, padding:'30px 24px', background:ALLOY.white, border:'1px solid #e8e8e8', borderRadius:2, cursor:'pointer', textAlign:'center' as const }}>
+          <div style={{ width:56, height:56, display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect x="4" y="9" width="28" height="18" rx="2" stroke="#D0D0D0" strokeWidth="2"/><path d="M4 15 h28" stroke="#D0D0D0" strokeWidth="1.5"/><rect x="8" y="19" width="7" height="5" rx="1" fill="#E0E0E0"/><rect x="20" y="19" width="7" height="5" rx="1" fill="#48b5ea" fillOpacity="0.35"/><rect x="14" y="27" width="8" height="2" rx="1" fill="#D0D0D0"/></svg>
+          </div>
+          <div>
+            <p style={{ fontSize:14, fontWeight:500, color:ALLOY.ink, marginBottom:6, fontFamily:ALLOY.fontBody }}>Smart Dashboard</p>
+            <p style={{ fontSize:12, color:ALLOY.mute, lineHeight:1.6, fontFamily:ALLOY.fontBody }}>Generate a dashboard from your connected integrations</p>
+          </div>
+        </button>
+
+      </div>
+    </div>
+  )
+}
 
 // ── Chart thumbnail SVGs (matches Looker Studio visual style) ─────────────────
 function ChartThumbSvg({ id, active }: { id: string; active: boolean }) {
@@ -644,6 +847,13 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [savingMapping, setSavingMapping] = useState(false)
   const [mappingSaved, setMappingSaved] = useState(false)
   const [showBuilder, setShowBuilder] = useState(false)
+  const [showCloneModal, setShowCloneModal] = useState(false)
+  const [showTemplateModal, setShowTemplateModal] = useState(false)
+
+  const [templateStep, setTemplateStep] = useState(1)
+  const [templateSelected, setTemplateSelected] = useState<string|null>(null)
+  const [templateName, setTemplateName] = useState('')
+  const [templateSearch, setTemplateSearch] = useState('')
   const [dashMenu, setDashMenu] = useState<string|null>(null)
   const [renamingDash, setRenamingDash] = useState<string|null>(null)
   const [renameValue, setRenameValue] = useState('')
@@ -652,14 +862,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const LS_WIDGETS_KEY = `alloy_widgets_${clientId}`
 
   const [dashboards, setDashboards] = useState<string[]>(INITIAL_DASHBOARDS)
-  const [clonedDashboards, setClonedDashboards] = useState<string[]>(() => {
-    // Load synchronously - this is client-only code, the 'use client' directive handles SSR
-    if (typeof window === 'undefined') return []
-    try {
-      const saved = localStorage.getItem(`alloy_cloned_dashboards_${clientId}`)
-      return saved ? JSON.parse(saved) : []
-    } catch { return [] }
-  })
+
+  const [clonedDashboards, setClonedDashboards] = useState<string[]>([])
   const DEFAULT_WIDGETS: Widget[] = [
     {id:'w1',title:'Total Sessions',dataSource:'google-analytics-4 / traffic-analytics',chartType:'sparkline',tooltip:'Total sessions during the selected period.',color:'white',value:'120.5 K',change:'29%',up:true},
     {id:'w2',title:'Total Conversions',dataSource:'google-analytics-4 / conversions',chartType:'column',tooltip:'Total conversions tracked.',color:'blue',value:'3,610',change:'16%',up:false},
@@ -679,6 +883,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const isWidgetRemoved = (id: string) => removedWidgetIds.has(id)
 
   // Empty canvas only for dashboards that have no content yet (not real, not cloned)
+  const isEmptyDash = !REAL_DASHBOARDS.includes(activeDash) && !clonedDashboards.includes(activeDash)
 
   // Resolve client name immediately from URL params or localStorage (for non-demo clients)
   useEffect(() => {
@@ -975,6 +1180,31 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     return () => document.removeEventListener('mousedown', onDown)
   }, [])
 
+  // ── Stable callbacks for NewDashCanvas (prevent stale closure on re-render) ──
+  const handleOpenCloneModal = React.useCallback(() => setShowCloneModal(true), [])
+  const handleOpenTemplateModal = React.useCallback(() => {
+    setShowTemplateModal(true)
+    setTemplateStep(1)
+    setTemplateSelected(null)
+    setTemplateName('')
+    setTemplateSearch('')
+  }, [])
+
+  // Fallback: catch template button click at document level in case React event is blocked
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      const btn = (e.target as HTMLElement).closest('[data-action="open-template"]')
+      if (btn) {
+        setShowTemplateModal(true)
+        setTemplateStep(1)
+        setTemplateSelected(null)
+        setTemplateName('')
+        setTemplateSearch('')
+      }
+    }
+    document.addEventListener('click', onDocClick, true) // capture phase
+    return () => document.removeEventListener('click', onDocClick, true)
+  }, [])
 
   // ── Core widget constants and helpers ───────────────────────────────────
   const STATIC_IDS = ['w1','w2','w3','w4','c1','c2','c3','d1','d2','d3','v1','bounce']
@@ -2185,10 +2415,17 @@ Alloy Intelligence`)
             <div style={{ width:16, height:16, border:`2px solid ${ALLOY.ink}`, borderRadius:2 }}/>
             <span style={{ fontSize:14, fontWeight:700, color:ALLOY.ink, fontFamily:ALLOY.fontDisplay }}>{activeDash}</span>
             {loadingData && <span style={{ fontSize:11, color:ALLOY.blue1, marginLeft:8, fontFamily:ALLOY.fontBody }}>↻ Loading...</span>}
-            {connection?.connected && !loadingData && <span style={{ fontSize:11, color:ALLOY.green1, marginLeft:8, fontFamily:ALLOY.fontLabel }}>● Live GA4 data</span>}
+            {connection?.connected && !loadingData && !isEmptyDash && <span style={{ fontSize:11, color:ALLOY.green1, marginLeft:8, fontFamily:ALLOY.fontLabel }}>● Live GA4 data</span>}
           </div>
 
-          <div style={{ padding:16 }}>
+          {isEmptyDash ? (
+            // ── Empty canvas fills remaining height ──
+            <div style={{ flex:1, display:'flex' }} onClick={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()}>
+              <NewDashCanvas onClone={handleOpenCloneModal} onTemplate={handleOpenTemplateModal} />
+            </div>
+          ) : (
+            // ── Real dashboard content ──
+            <div style={{ padding:16 }}>
               <div style={{ background:ALLOY.ink, borderRadius:2, padding:'18px 24px', marginBottom:12 }}>
                 <h2 style={{ fontSize:20, fontWeight:700, color:ALLOY.white, fontFamily:ALLOY.fontDisplay }}>{activeDash}</h2>
                 {connection?.connected && <p style={{ fontSize:11, color:ALLOY.mute, marginTop:4, fontFamily:ALLOY.fontLabel, letterSpacing:'0.04em' }}>REAL-TIME DATA · {connection.email}</p>}
@@ -2316,6 +2553,7 @@ Alloy Intelligence`)
               </div>
             )}
             </div>
+          )}
         </div>
 
         {/* Right panel */}
@@ -3165,9 +3403,10 @@ Alloy Intelligence`)
                     {[
                       {icon:'⊞', title:'Summarize your data with AI', desc:'Transform your data into clear, meaningful insights your clients will actually understand'},
                       {icon:'📊', title:'Build metrics with AI', desc:'Use natural prompts to find the right widgets and instantly add the metrics that matter most'},
+                      {icon:'⧉', title:'Clone existing page', desc:'Copy a dashboard from any client and use it as a starting point'},
                     ].map(item => (
                       <div key={item.title}
-
+                        onClick={item.title === 'Clone existing page' ? e => { e.stopPropagation(); setShowCloneModal(true) } : undefined}
                         style={{ display:'flex', alignItems:'flex-start', gap:12, padding:'16px 0', borderBottom:`1px solid ${ALLOY.line}`, cursor:'pointer' }}>
                         <div style={{ width:36, height:36, borderRadius:2, background:ALLOY.paper, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontFamily:ALLOY.fontBody, fontSize:16 }}>{item.icon}</div>
                         <div style={{ flex:1 }}><p style={{ fontFamily:ALLOY.fontBody, fontSize:15, fontWeight:700, color:ALLOY.ink, marginBottom:4 }}>{item.title}</p><p style={{ fontFamily:ALLOY.fontBody, fontSize:13, color:ALLOY.mute, lineHeight:1.5 }}>{item.desc}</p></div>
@@ -3360,8 +3599,65 @@ Alloy Intelligence`)
 
 
 
-      {/* Template Modal */}
+      {/* Template Wizard Modal */}
+      {showTemplateModal && (
+        <div style={{ position:'fixed', inset:0, zIndex:9999, background:'rgba(240,242,245,0.97)', display:'flex', flexDirection:'column' }}>
+          <TemplateWizard
+          step={templateStep}
+          selected={templateSelected}
+          name={templateName}
+          search={templateSearch}
+          onStepChange={setTemplateStep}
+          onSelectChange={setTemplateSelected}
+          onNameChange={setTemplateName}
+          onSearchChange={setTemplateSearch}
+          onCommit={(name: string) => {
+            setDashboards((prev: string[]) => [...prev, name])
+            setClonedDashboards((prev: string[]) => [...prev, name])
+            setActiveDash(name)
+          }}
+          onClose={() => { setShowTemplateModal(false); setTemplateStep(1); setTemplateSelected(null); setTemplateName(''); setTemplateSearch('') }}
+        />
+        </div>
+      )}
 
+      {showCloneModal && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:100, padding:16 }}
+          onClick={() => setShowCloneModal(false)}>
+          <div style={{ background:ALLOY.white, borderRadius:2, width:'100%', maxWidth:420, overflow:'hidden', boxShadow:'0 20px 60px rgba(0,0,0,0.15)' }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ height:3, background:ALLOY.blue1 }}/>
+            <div style={{ padding:28 }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
+                <h2 style={{ fontSize:15, fontWeight:700, color:ALLOY.ink, fontFamily:ALLOY.fontDisplay }}>Clone Dashboard</h2>
+                <button onClick={() => setShowCloneModal(false)} style={{ background:'none', border:'none', cursor:'pointer', color:ALLOY.mute, fontFamily:ALLOY.fontBody, fontSize:18 }}>✕</button>
+              </div>
+              <div style={{ marginBottom:16 }}>
+                <label style={{ display:'block', fontFamily:ALLOY.fontBody, fontSize:12, fontWeight:600, color:ALLOY.mute, marginBottom:6 }}>NEW DASHBOARD NAME</label>
+                <input
+                  defaultValue={activeDash + ' (Copy)'}
+                  id="clone-name-input"
+                  style={{ width:'100%', border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'9px 12px', fontFamily:ALLOY.fontBody, fontSize:13, color:ALLOY.ink, outline:'none', boxSizing:'border-box' as const }}
+                />
+              </div>
+              <div style={{ display:'flex', gap:8 }}>
+                <button onClick={() => setShowCloneModal(false)}
+                  style={{ flex:1, background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'9px', fontFamily:ALLOY.fontBody, fontSize:13, color:ALLOY.mute, cursor:'pointer' }}>Cancel</button>
+                <button onClick={() => {
+                  const input = document.getElementById('clone-name-input') as HTMLInputElement
+                  const newName = (input?.value || activeDash + ' (Copy)').trim()
+                  if (!newName) return
+                  setDashboards(prev => [...prev, newName])
+                  setClonedDashboards(prev => [...prev, newName])
+                  setActiveDash(newName)
+                  setShowCloneModal(false)
+                }}
+                  style={{ flex:2, background:ALLOY.blue1, border:'none', borderRadius:2, padding:'9px',  fontSize:13, fontWeight:600, color:ALLOY.white, cursor:'pointer' }}>Clone Dashboard</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create Filter Modal */}
       {showCreateFilter && (() => {
