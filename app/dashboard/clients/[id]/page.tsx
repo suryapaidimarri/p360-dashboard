@@ -870,7 +870,12 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     {id:'w3',title:'Referring Domains',dataSource:'google-analytics-4 / referring',chartType:'line',tooltip:'Unique domains sending traffic.',color:'white',value:'6,961',change:'',up:true},
     {id:'w4',title:'Engagement Rate',dataSource:'google-analytics-4 / engagement',chartType:'area',tooltip:'Percentage of engaged sessions.',color:'green',value:'60.77%',change:'3.97%',up:false},
     {id:'c1',title:'Sessions Over Time',dataSource:'google-analytics-4 / sessions',chartType:'line',tooltip:'Sessions over time.',color:'white',value:'',change:'',up:true},
+    {id:'c2',title:'Goal Completion',dataSource:'google-analytics-4 / goals',chartType:'donut',tooltip:'Goal completion rate.',color:'white',value:'',change:'',up:true},
+    {id:'c3',title:'Conversion Rate',dataSource:'google-analytics-4 / conversions',chartType:'scorecard',tooltip:'Conversion rate percentage.',color:'white',value:'3%',change:'34%',up:false},
+    {id:'bounce',title:'Bounce Rate',dataSource:'google-analytics-4 / engagement',chartType:'scorecard',tooltip:'Bounce rate percentage.',color:'red',value:'39.23%',change:'6.84%',up:true},
     {id:'d1',title:'Users By Device',dataSource:'google-analytics-4 / devices',chartType:'column',tooltip:'Users by device category.',color:'white',value:'',change:'',up:true},
+    {id:'d2',title:'Top Referral Sources',dataSource:'google-analytics-4 / sources',chartType:'donut',tooltip:'Top referral sources by sessions.',color:'white',value:'',change:'',up:true},
+    {id:'d3',title:'Traffic by Cities',dataSource:'google-analytics-4 / cities',chartType:'bar',tooltip:'Sessions by city.',color:'white',value:'',change:'',up:true},
     {id:'v1',title:'Website Views',dataSource:'google-analytics-4 / views',chartType:'area',tooltip:'Website views over time.',color:'white',value:'',change:'',up:true},
   ]
   const [widgets, setWidgets] = useState<Widget[]>(DEFAULT_WIDGETS)
@@ -1207,7 +1212,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   }, [])
 
   // ── Core widget constants and helpers ───────────────────────────────────
-  const STATIC_IDS = ['w1','w2','w3','w4','c1','c2','c3','d1','d2','d3','v1','bounce']
+  const STATIC_IDS = ['w1','w2','w3','w4','c1','c2','c3','bounce','d1','d2','d3','v1']
 
   // Computed GA4 data with static fallbacks
   const sessionData = ga4Data?.timeSeries?.rows?.map((r: any) => ({ d: r.dimensionValues[0].value.slice(4), v: parseInt(r.metricValues[0].value) })) || STATIC_SESSIONS
@@ -1788,7 +1793,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   }
 
   function ChartCard({ id, children }: { id: string; children: React.ReactNode }) {
-    const w = widgets.find(x => x.id === id) || widgets[0]
+    const w = widgets.find(x => x.id === id) ?? DEFAULT_WIDGETS.find(x => x.id === id) ?? widgets[0]
     const isSelected = editingWidget?.id === w.id
     const sz = widgetSizes[id]
     return (
