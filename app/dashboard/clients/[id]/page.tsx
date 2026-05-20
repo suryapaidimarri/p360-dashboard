@@ -530,7 +530,7 @@ function TemplateWizard({ step, selected, name, search, onStepChange, onSelectCh
   }
 
   return (
-    <div style={{ position:'absolute', inset:0, background:'rgba(240,242,245,0.97)', display:'flex', flexDirection:'column', zIndex:9999 }}>
+    <div style={{ position:'fixed', inset:0, background:'rgba(240,242,245,0.97)', display:'flex', flexDirection:'column', zIndex:9999 }}>
       <button onClick={onClose} style={{ position:'absolute', top:16, right:16, width:36, height:36, borderRadius:'50%', background:'#fff', border:'1px solid #e5e5e5', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', zIndex:10 }}>
         <X size={16} style={{ color:'#666' }}/>
       </button>
@@ -1933,7 +1933,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       /* Spin */
       .alloy-spin { animation: alloy-spin 0.8s linear infinite }
     `}</style>
-    <div style={{ display:'flex', flexDirection:'column', height:'100%', overflow:'hidden', background:ALLOY.white, fontFamily:ALLOY.fontBody, position:'relative' }}>
+    <div style={{ display:'flex', flexDirection:'column', height:'100%', background:ALLOY.white, fontFamily:ALLOY.fontBody, position:'relative' }}>
 
       {/* Edit mode bars */}
       {editMode && (
