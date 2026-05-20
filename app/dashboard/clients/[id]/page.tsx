@@ -861,8 +861,14 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const LS_WIDGETS_KEY = `alloy_widgets_${clientId}`
 
   const [dashboards, setDashboards] = useState<string[]>(INITIAL_DASHBOARDS)
-
-  const [clonedDashboards, setClonedDashboards] = useState<string[]>([])
+  const [clonedDashboards, setClonedDashboards] = useState<string[]>(() => {
+    // Load synchronously - this is client-only code, the 'use client' directive handles SSR
+    if (typeof window === 'undefined') return []
+    try {
+      const saved = localStorage.getItem(`alloy_cloned_dashboards_${clientId}`)
+      return saved ? JSON.parse(saved) : []
+    } catch { return [] }
+  })
   const DEFAULT_WIDGETS: Widget[] = [
     {id:'w1',title:'Total Sessions',dataSource:'google-analytics-4 / traffic-analytics',chartType:'sparkline',tooltip:'Total sessions during the selected period.',color:'white',value:'120.5 K',change:'29%',up:true},
     {id:'w2',title:'Total Conversions',dataSource:'google-analytics-4 / conversions',chartType:'column',tooltip:'Total conversions tracked.',color:'blue',value:'3,610',change:'16%',up:false},
