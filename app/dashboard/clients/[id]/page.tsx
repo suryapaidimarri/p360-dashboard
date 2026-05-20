@@ -3599,22 +3599,29 @@ Alloy Intelligence`)
                   <button key={name} onClick={() => {
 
   const templateWidgets = [
-    {
-      id: `w_${Date.now()}`,
-      title: 'Total Sessions',
-      chartType: 'line',
-      dataSource: 'google-analytics-4 / traffic',
-      color: 'blue'
-    },
-    {
-      id: `w_${Date.now()}_2`,
-      title: 'Conversions',
-      chartType: 'column',
-      dataSource: 'google-analytics-4 / conversions',
-      color: 'green'
-    }
-  ]
-
+  {
+    id: `w_${Date.now()}`,
+    title: 'Total Sessions',
+    chartType: 'line',
+    dataSource: 'google-analytics-4 / traffic',
+    color: 'blue',
+    tooltip: 'Traffic sessions',
+    value: '12.4K',
+    change: '+12%',
+    up: true
+  },
+  {
+    id: `w_${Date.now()}_2`,
+    title: 'Conversions',
+    chartType: 'column',
+    dataSource: 'google-analytics-4 / conversions',
+    color: 'green',
+    tooltip: 'Total conversions',
+    value: '1.8K',
+    change: '+8%',
+    up: true
+  }
+]
   setDashboards((prev: string[]) => [...prev, name])
 
   setWidgets(templateWidgets)
