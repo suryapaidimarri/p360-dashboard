@@ -2972,35 +2972,53 @@ Alloy Intelligence`)
                             </button>
                           </div>
                           {showDimDropdown && (
-                            <div style={{ position:'absolute' as const, top:'100%', left:0, right:0, background:ALLOY.white, border:'1px solid #e0e0e0', borderRadius:2, boxShadow:'0 8px 24px rgba(0,0,0,0.14)', zIndex:200, overflow:'hidden', maxHeight:340 }}>
-                              <div style={{ padding:'10px 12px', borderBottom:`1px solid ${ALLOY.line}`, position:'sticky' as const, top:0, background:ALLOY.white }}>
-                                <div style={{ display:'flex', alignItems:'center', gap:8, background:ALLOY.paper, borderRadius:2, padding:'7px 12px', border:`1px solid ${ALLOY.line}` }}>
-                                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4.5" stroke="#999" strokeWidth="1.5"/><path d="M9.5 9.5 L12 12" stroke="#999" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                                  <input autoFocus value={dimSearch} onChange={e=>setDimSearch(e.target.value)} placeholder="Search" style={{ background:'transparent', border:'none', outline:'none', fontSize:12, color:ALLOY.ink, fontFamily:ALLOY.fontBody, width:'100%' }}/>
+                            <>
+                              {/* Backdrop — click outside to close */}
+                              <div style={{ position:'fixed' as const, inset:0, zIndex:199 }} onClick={() => setShowDimDropdown(false)}/>
+                              <div style={{ position:'absolute' as const, top:'100%', left:0, right:0, background:ALLOY.white, border:'1px solid #e0e0e0', borderRadius:2, boxShadow:'0 8px 24px rgba(0,0,0,0.14)', zIndex:200, overflow:'hidden', maxHeight:340 }}>
+                                <div style={{ padding:'10px 12px', borderBottom:`1px solid ${ALLOY.line}`, position:'sticky' as const, top:0, background:ALLOY.white }}>
+                                  <div style={{ display:'flex', alignItems:'center', gap:8, background:ALLOY.paper, borderRadius:2, padding:'7px 12px', border:`1px solid ${ALLOY.line}` }}>
+                                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4.5" stroke="#999" strokeWidth="1.5"/><path d="M9.5 9.5 L12 12" stroke="#999" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                                    <input autoFocus value={dimSearch} onChange={e=>setDimSearch(e.target.value)} placeholder="Search" style={{ background:'transparent', border:'none', outline:'none', fontSize:12, color:ALLOY.ink, fontFamily:ALLOY.fontBody, width:'100%' }}/>
+                                  </div>
+                                </div>
+                                <div style={{ overflowY:'auto' as const, maxHeight:240 }}>
+                                  <p style={{ fontFamily:ALLOY.fontLabel, fontSize:9, color:ALLOY.mute, padding:'8px 14px 4px', fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'0.08em' }}>Default group</p>
+                                  {ALL_GA4_DIMENSIONS.filter((d:string) => d.toLowerCase().includes(dimSearch.toLowerCase()) && !dimensions.includes(d)).map((dim:string) => (
+                                    <div key={dim} onClick={() => { updateField('dimensions', [...dimensions, dim]); setShowDimDropdown(false); setDimSearch('') }}
+                                      style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 14px', cursor:'pointer' }}
+                                      onMouseEnter={e=>(e.currentTarget as HTMLDivElement).style.background=ALLOY.green4}
+                                      onMouseLeave={e=>(e.currentTarget as HTMLDivElement).style.background='transparent'}>
+                                      <span style={{ fontFamily:ALLOY.fontLabel, fontSize:10, fontWeight:700, color:ALLOY.green1, background:ALLOY.green4, borderRadius:3, padding:'1px 5px', flexShrink:0 }}>ABC</span>
+                                      <span style={{ fontSize:12, color:ALLOY.ink, fontFamily:ALLOY.fontBody }}>{dim}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                                <div style={{ padding:'8px 14px', borderTop:`1px solid ${ALLOY.line}` }}>
+                                  {[{icon:'⊕',label:'Add calculated field'},{icon:'⊕',label:'Add group'},{icon:'⊕',label:'Add bin'}].map(a => (
+                                    <div key={a.label} style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 0', color:ALLOY.blue1, cursor:'pointer', fontFamily:ALLOY.fontBody, fontSize:13, fontWeight:500 }}>
+                                      <span>{a.icon}</span>{a.label}
+                                    </div>
+                                  ))}
                                 </div>
                               </div>
-                              <div style={{ overflowY:'auto' as const, maxHeight:240 }}>
-                                <p style={{ fontFamily:ALLOY.fontLabel, fontSize:9, color:ALLOY.mute, padding:'8px 14px 4px', fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'0.08em' }}>Default group</p>
-                                {ALL_GA4_DIMENSIONS.filter((d:string) => d.toLowerCase().includes(dimSearch.toLowerCase()) && !dimensions.includes(d)).map((dim:string) => (
-                                  <div key={dim} onClick={() => { updateField('dimensions', [...dimensions, dim]); setShowDimDropdown(false); setDimSearch('') }}
-                                    style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 14px', cursor:'pointer' }}
-                                    onMouseEnter={e=>(e.currentTarget as HTMLDivElement).style.background=ALLOY.green4}
-                                    onMouseLeave={e=>(e.currentTarget as HTMLDivElement).style.background='transparent'}>
-                                    <span style={{ fontFamily:ALLOY.fontLabel, fontSize:10, fontWeight:700, color:ALLOY.green1, background:ALLOY.green4, borderRadius:3, padding:'1px 5px', flexShrink:0 }}>ABC</span>
-                                    <span style={{ fontSize:12, color:ALLOY.ink, fontFamily:ALLOY.fontBody }}>{dim}</span>
-                                  </div>
+                            </>
+                          )}
+                          {/* Drill down toggle + level selector */}
+                          <Toggle label="Drill down" on={!!(widgetData as any).drillDown} onChange={v => updateField('drillDown', v)}/>
+                          {!!(widgetData as any).drillDown && dimensions.length > 0 && (
+                            <div style={{ marginTop:10, padding:'10px 12px', background:ALLOY.blue4, border:`1px solid ${ALLOY.blue1}`, borderRadius:2 }}>
+                              <p style={{ fontFamily:ALLOY.fontLabel, fontSize:9, fontWeight:600, color:ALLOY.blue1, marginBottom:8, textTransform:'uppercase' as const, letterSpacing:'0.08em' }}>Default drill down level</p>
+                              <select
+                                value={(widgetData as any).drillDownLevel || dimensions[0]}
+                                onChange={e => updateField('drillDownLevel', e.target.value)}
+                                style={{ width:'100%', border:`1px solid ${ALLOY.blue1}`, borderRadius:2, padding:'8px 12px', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, background:ALLOY.white, cursor:'pointer', outline:'none' }}>
+                                {dimensions.map((d: string) => (
+                                  <option key={d} value={d}>{d}</option>
                                 ))}
-                              </div>
-                              <div style={{ padding:'8px 14px', borderTop:`1px solid ${ALLOY.line}` }}>
-                                {[{icon:'⊕',label:'Add calculated field'},{icon:'⊕',label:'Add group'},{icon:'⊕',label:'Add bin'}].map(a => (
-                                  <div key={a.label} style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 0', color:ALLOY.blue1, cursor:'pointer', fontFamily:ALLOY.fontBody, fontSize:13, fontWeight:500 }}>
-                                    <span>{a.icon}</span>{a.label}
-                                  </div>
-                                ))}
-                              </div>
+                              </select>
                             </div>
                           )}
-                          <Toggle label="Drill down" on={!!(widgetData as any).drillDown} onChange={v => updateField('drillDown', v)}/>
                         </div>
 
                         {/* Metric */}
@@ -3020,33 +3038,76 @@ Alloy Intelligence`)
                             </button>
                           </div>
                           {showMetDropdown && (
-                            <div style={{ position:'absolute' as const, top:'100%', left:0, right:0, background:ALLOY.white, border:'1px solid #e0e0e0', borderRadius:2, boxShadow:'0 8px 24px rgba(0,0,0,0.14)', zIndex:200, overflow:'hidden', maxHeight:340 }}>
-                              <div style={{ padding:'10px 12px', borderBottom:`1px solid ${ALLOY.line}`, position:'sticky' as const, top:0, background:ALLOY.white }}>
-                                <div style={{ display:'flex', alignItems:'center', gap:8, background:ALLOY.paper, borderRadius:2, padding:'7px 12px', border:`1px solid ${ALLOY.line}` }}>
-                                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4.5" stroke="#999" strokeWidth="1.5"/><path d="M9.5 9.5 L12 12" stroke="#999" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                                  <input autoFocus value={metSearch} onChange={e=>setMetSearch(e.target.value)} placeholder="Search" style={{ background:'transparent', border:'none', outline:'none', fontSize:12, color:ALLOY.ink, fontFamily:ALLOY.fontBody, width:'100%' }}/>
-                                </div>
-                              </div>
-                              <div style={{ overflowY:'auto' as const, maxHeight:240 }}>
-                                <p style={{ fontFamily:ALLOY.fontLabel, fontSize:9, color:ALLOY.mute, padding:'8px 14px 4px', fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'0.08em' }}>Default group</p>
-                                {ALL_GA4_METRICS.filter((m:string) => m.toLowerCase().includes(metSearch.toLowerCase()) && !metrics.includes(m)).map((met:string) => (
-                                  <div key={met} onClick={() => { updateField('metrics', [...metrics, met]); setShowMetDropdown(false); setMetSearch('') }}
-                                    style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 14px', cursor:'pointer' }}
-                                    onMouseEnter={e=>(e.currentTarget as HTMLDivElement).style.background=ALLOY.blue4}
-                                    onMouseLeave={e=>(e.currentTarget as HTMLDivElement).style.background='transparent'}>
-                                    <span style={{ fontSize:10, fontWeight:700, color:ALLOY.blue1, background:ALLOY.blue4, borderRadius:2, padding:'1px 5px', flexShrink:0, fontFamily:ALLOY.fontLabel }}>123</span>
-                                    <span style={{ fontSize:12, color:ALLOY.ink, fontFamily:ALLOY.fontBody }}>{met}</span>
+                            <>
+                              <div style={{ position:'fixed' as const, inset:0, zIndex:199 }} onClick={() => setShowMetDropdown(false)}/>
+                              <div style={{ position:'absolute' as const, top:'100%', left:0, right:0, background:ALLOY.white, border:'1px solid #e0e0e0', borderRadius:2, boxShadow:'0 8px 24px rgba(0,0,0,0.14)', zIndex:200, overflow:'hidden', maxHeight:340 }}>
+                                <div style={{ padding:'10px 12px', borderBottom:`1px solid ${ALLOY.line}`, position:'sticky' as const, top:0, background:ALLOY.white }}>
+                                  <div style={{ display:'flex', alignItems:'center', gap:8, background:ALLOY.paper, borderRadius:2, padding:'7px 12px', border:`1px solid ${ALLOY.line}` }}>
+                                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4.5" stroke="#999" strokeWidth="1.5"/><path d="M9.5 9.5 L12 12" stroke="#999" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                                    <input autoFocus value={metSearch} onChange={e=>setMetSearch(e.target.value)} placeholder="Search" style={{ background:'transparent', border:'none', outline:'none', fontSize:12, color:ALLOY.ink, fontFamily:ALLOY.fontBody, width:'100%' }}/>
                                   </div>
-                                ))}
-                              </div>
-                              <div style={{ padding:'8px 14px', borderTop:`1px solid ${ALLOY.line}` }}>
-                                <div style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 0', color:ALLOY.blue1, cursor:'pointer', fontFamily:ALLOY.fontBody, fontSize:13, fontWeight:500 }}>
-                                  <span>⊕</span> Add calculated field
                                 </div>
+                                <div style={{ overflowY:'auto' as const, maxHeight:240 }}>
+                                  {/* Chart fields — already added metrics shown at top */}
+                                  {metrics.length > 0 && (
+                                    <>
+                                      <p style={{ fontFamily:ALLOY.fontLabel, fontSize:9, color:ALLOY.mute, padding:'8px 14px 4px', fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'0.08em' }}>Chart fields</p>
+                                      {metrics.filter((m:string) => m.toLowerCase().includes(metSearch.toLowerCase())).map((met:string) => (
+                                        <div key={met+'_current'}
+                                          style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 14px', background:ALLOY.blue4 }}>
+                                          <span style={{ fontSize:10, fontWeight:700, color:ALLOY.blue1, background:ALLOY.blue4, borderRadius:2, padding:'1px 5px', flexShrink:0, fontFamily:ALLOY.fontLabel }}>123</span>
+                                          <span style={{ fontSize:12, color:ALLOY.ink, fontFamily:ALLOY.fontBody, flex:1 }}>{met}</span>
+                                          <span style={{ fontSize:10, color:ALLOY.blue1, fontFamily:ALLOY.fontLabel }}>✓</span>
+                                        </div>
+                                      ))}
+                                    </>
+                                  )}
+                                  <p style={{ fontFamily:ALLOY.fontLabel, fontSize:9, color:ALLOY.mute, padding:'8px 14px 4px', fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'0.08em' }}>Default group</p>
+                                  {ALL_GA4_METRICS.filter((m:string) => m.toLowerCase().includes(metSearch.toLowerCase()) && !metrics.includes(m)).map((met:string) => (
+                                    <div key={met} onClick={() => { updateField('metrics', [...metrics, met]); setShowMetDropdown(false); setMetSearch('') }}
+                                      style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 14px', cursor:'pointer' }}
+                                      onMouseEnter={e=>(e.currentTarget as HTMLDivElement).style.background=ALLOY.blue4}
+                                      onMouseLeave={e=>(e.currentTarget as HTMLDivElement).style.background='transparent'}>
+                                      <span style={{ fontSize:10, fontWeight:700, color:ALLOY.blue1, background:ALLOY.blue4, borderRadius:2, padding:'1px 5px', flexShrink:0, fontFamily:ALLOY.fontLabel }}>123</span>
+                                      <span style={{ fontSize:12, color:ALLOY.ink, fontFamily:ALLOY.fontBody }}>{met}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                                <div style={{ padding:'8px 14px', borderTop:`1px solid ${ALLOY.line}` }}>
+                                  <div style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 0', color:ALLOY.blue1, cursor:'pointer', fontFamily:ALLOY.fontBody, fontSize:13, fontWeight:500 }}>
+                                    <span>⊕</span> Add calculated field
+                                  </div>
+                                </div>
+                              </div>
+                            </>
+                          )}
+                          {/* Optional metrics — when on, show metric picker inline */}
+                          <Toggle label="Optional metrics" on={!!(widgetData as any).optionalMetrics} onChange={v => updateField('optionalMetrics', v)}/>
+                          {!!(widgetData as any).optionalMetrics && (
+                            <div style={{ marginTop:10, padding:'10px 12px', background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:2 }}>
+                              <p style={{ fontFamily:ALLOY.fontLabel, fontSize:9, fontWeight:600, color:ALLOY.mute, marginBottom:8, textTransform:'uppercase' as const, letterSpacing:'0.08em' }}>Optional metrics shown to viewers</p>
+                              <div style={{ display:'flex', flexDirection:'column' as const, gap:4, maxHeight:160, overflowY:'auto' as const }}>
+                                {ALL_GA4_METRICS.slice(0,20).map((m:string) => {
+                                  const optMets: string[] = (widgetData as any).optionalMetricsList || []
+                                  const checked = optMets.includes(m)
+                                  return (
+                                    <div key={m} onClick={() => {
+                                      const cur: string[] = (widgetData as any).optionalMetricsList || []
+                                      updateField('optionalMetricsList', checked ? cur.filter((x:string)=>x!==m) : [...cur, m])
+                                    }} style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 8px', cursor:'pointer', borderRadius:2 }}
+                                      onMouseEnter={e=>(e.currentTarget as HTMLDivElement).style.background=ALLOY.blue4}
+                                      onMouseLeave={e=>(e.currentTarget as HTMLDivElement).style.background='transparent'}>
+                                      <div style={{ width:15, height:15, border:`2px solid ${checked?ALLOY.blue1:ALLOY.line}`, borderRadius:3, background:checked?ALLOY.blue1:ALLOY.white, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                                        {checked && <span style={{ color:ALLOY.white, fontSize:9, fontWeight:700 }}>✓</span>}
+                                      </div>
+                                      <span style={{ fontSize:11, fontFamily:ALLOY.fontLabel, fontSize:10 as any, fontWeight:700, color:ALLOY.blue1, background:ALLOY.blue4, borderRadius:2, padding:'1px 5px' }}>123</span>
+                                      <span style={{ fontSize:12, color:ALLOY.ink, fontFamily:ALLOY.fontBody }}>{m}</span>
+                                    </div>
+                                  )
+                                })}
                               </div>
                             </div>
                           )}
-                          <Toggle label="Optional metrics" on={!!(widgetData as any).optionalMetrics} onChange={v => updateField('optionalMetrics', v)}/>
                           <Toggle label="Metric sliders" on={!!(widgetData as any).metricSliders} onChange={v => updateField('metricSliders', v)}/>
                         </div>
 
@@ -3251,9 +3312,91 @@ Alloy Intelligence`)
                               </div></>)}
                             </div>)
                           })()}
-                          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:8}}>
-                            <span style={{fontFamily:ALLOY.fontBody,fontSize:12,color:ALLOY.ink}}>Comparison date range</span>
-                            <div style={{width:36,height:20,borderRadius:2,background:ALLOY.line,position:'relative',cursor:'pointer'}}><div style={{width:16,height:16,borderRadius:'50%',background:ALLOY.white,position:'absolute',top:2,left:2,boxShadow:'0 1px 3px rgba(0,0,0,0.2)'}}/></div>
+                          <div style={{marginTop:10}}>
+                            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
+                              <span style={{fontFamily:ALLOY.fontBody,fontSize:12,color:ALLOY.ink,fontWeight:500}}>Comparison date range</span>
+                              <div onClick={() => updateField('comparisonEnabled', !(widgetData as any).comparisonEnabled)}
+                                style={{width:40,height:22,borderRadius:11,background:(widgetData as any).comparisonEnabled?ALLOY.blue1:ALLOY.line,position:'relative',cursor:'pointer',transition:'background 0.2s'}}>
+                                <div style={{width:18,height:18,borderRadius:'50%',background:ALLOY.white,position:'absolute',top:2,left:(widgetData as any).comparisonEnabled?20:2,transition:'left 0.2s',boxShadow:'0 1px 3px rgba(0,0,0,0.25)'}}/>
+                              </div>
+                            </div>
+                            {!!(widgetData as any).comparisonEnabled && (
+                              <div style={{background:ALLOY.paper,border:`1px solid ${ALLOY.line}`,borderRadius:2,overflow:'hidden'}}>
+                                <select
+                                  value={(widgetData as any).comparisonType || 'none'}
+                                  onChange={e => updateField('comparisonType', e.target.value)}
+                                  style={{width:'100%',border:'none',borderBottom:`1px solid ${ALLOY.line}`,padding:'10px 14px',fontFamily:ALLOY.fontBody,fontSize:13,color:ALLOY.ink,background:ALLOY.white,cursor:'pointer',outline:'none',appearance:'auto'}}>
+                                  <option value="none">None</option>
+                                  <option value="previous_period">Previous period</option>
+                                  <option value="previous_year">Same period last year</option>
+                                  <option value="custom">Custom</option>
+                                </select>
+                                {(widgetData as any).comparisonType === 'custom' && (() => {
+                                  const cs2 = (widgetData as any).compStart || '2026-03-01'
+                                  const ce2 = (widgetData as any).compEnd || '2026-03-31'
+                                  const fmtLbl2 = (s:string) => { if(!s) return ''; const[y,m,dd]=s.split('-'); return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(m)-1]+' '+parseInt(dd)+', '+y }
+                                  return (
+                                    <div style={{padding:'10px 14px'}}>
+                                      <p style={{fontFamily:ALLOY.fontLabel,fontSize:9,fontWeight:600,color:ALLOY.mute,marginBottom:6,textTransform:'uppercase' as const,letterSpacing:'0.08em'}}>Comparison range</p>
+                                      <button onClick={e=>{
+                                        e.stopPropagation()
+                                        setCalTempStart(cs2); setCalTempEnd(ce2); setCalClickCount(0)
+                                        const[sy,sm]=cs2.split('-').map(Number)
+                                        const[ey,em]=ce2.split('-').map(Number)
+                                        setCalStartView(new Date(sy,sm-1,1)); setCalEndView(new Date(ey,em-1,1))
+                                        const r=(e.currentTarget as HTMLButtonElement).getBoundingClientRect()
+                                        setCalAnchorRef({top:r.bottom+8,left:r.left})
+                                        setShowCalendarPicker(v=>!v)
+                                      }} style={{width:'100%',display:'flex',alignItems:'center',gap:8,background:ALLOY.white,border:`1px solid ${ALLOY.line}`,borderRadius:2,padding:'8px 12px',cursor:'pointer',fontFamily:ALLOY.fontBody,fontSize:12,color:ALLOY.ink}}>
+                                        <span style={{fontSize:14}}>📅</span>
+                                        <span style={{flex:1,textAlign:'left' as const}}>{fmtLbl2(cs2)} — {fmtLbl2(ce2)}</span>
+                                        <ChevronDown size={12} style={{color:ALLOY.mute}}/>
+                                      </button>
+                                      {showCalendarPicker && (<>
+                                        <div style={{position:'fixed' as const,inset:0,zIndex:1000}} onClick={()=>{setShowCalendarPicker(false)}}/>
+                                        <div className="alloy-calendar" style={{position:'fixed' as const,top:calAnchorRef?Math.min(calAnchorRef.top,window.innerHeight-540):200,left:calAnchorRef?Math.max(10,Math.min(calAnchorRef.left,window.innerWidth-640)):200,zIndex:1001,background:ALLOY.white,border:`1px solid ${ALLOY.line}`,borderRadius:4,boxShadow:'0 12px 40px rgba(0,0,0,0.18)',padding:20,width:620}} onClick={e=>e.stopPropagation()}>
+                                          <p style={{fontFamily:ALLOY.fontBody,fontSize:11,color:ALLOY.mute,textAlign:'center' as const,marginBottom:12}}>{calClickCount===0?'Click a start date':calClickCount===1?'Now click an end date':`${fmtLbl2(calTempStart)} — ${fmtLbl2(calTempEnd)}`}</p>
+                                          <div style={{display:'flex',gap:8}}>
+                                            {(() => {
+                                              const renderCompMon=(view:Date,lbl:string)=>{
+                                                const y=view.getFullYear(),m=view.getMonth(),fd=new Date(y,m,1).getDay(),dim=new Date(y,m+1,0).getDate()
+                                                const nav=(d:number)=>{if(lbl==='Start Date')setCalStartView(new Date(y,m+d,1));else setCalEndView(new Date(y,m+d,1))}
+                                                const fmtIso=(d:Date)=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')
+                                                const tIso=new Date().toISOString().split('T')[0]
+                                                const aS=calTempStart||cs2, aE=calTempEnd||ce2
+                                                const MOS=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
+                                                const cells:React.ReactNode[]=[]
+                                                for(let i=0;i<fd;i++)cells.push(<div key={'e'+i} style={{height:34}}/>)
+                                                for(let d=1;d<=dim;d++){
+                                                  const t=new Date(y,m,d),iso=fmtIso(t),isSt=iso===aS,isEn=iso===aE&&!!aE,inR=!!aS&&!!aE&&iso>aS&&iso<aE
+                                                  cells.push(<div key={d} onClick={()=>{if(calClickCount===0){setCalTempStart(iso);setCalTempEnd('');setCalClickCount(1)}else{const fs=iso<calTempStart?iso:calTempStart;const fe=iso<calTempStart?calTempStart:iso;setCalTempStart(fs);setCalTempEnd(fe);setCalClickCount(2)}}} style={{height:34,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,cursor:'pointer',fontWeight:isSt||isEn?700:400,background:isSt||isEn?ALLOY.blue1:inR?ALLOY.blue4:'none',color:isSt||isEn?ALLOY.white:inR?ALLOY.blue1:ALLOY.ink,border:iso===tIso&&!isSt&&!isEn?`1px solid ${ALLOY.mute}`:'none'}} onMouseEnter={e=>{if(!isSt&&!isEn)(e.currentTarget as HTMLDivElement).style.background=ALLOY.blue4}} onMouseLeave={e=>{if(!isSt&&!isEn)(e.currentTarget as HTMLDivElement).style.background=inR?ALLOY.blue4:'none'}}>{d}</div>)
+                                                }
+                                                return(<div style={{flex:1}}><p style={{fontFamily:ALLOY.fontBody,fontSize:13,fontWeight:700,color:ALLOY.ink,marginBottom:10,textAlign:'center' as const}}>{lbl}</p><div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}><span style={{fontFamily:ALLOY.fontBody,fontSize:12,fontWeight:700}}>{MOS[m]} {y}</span><div style={{display:'flex'}}><button onClick={()=>nav(-1)} style={{background:'none',border:'none',cursor:'pointer',fontSize:16,color:ALLOY.ink,padding:'2px 6px',lineHeight:1}}>‹</button><button onClick={()=>nav(1)} style={{background:'none',border:'none',cursor:'pointer',fontSize:16,color:ALLOY.ink,padding:'2px 6px',lineHeight:1}}>›</button></div></div><div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',marginBottom:4}}>{['S','M','T','W','T','F','S'].map((d,i)=><div key={i} style={{textAlign:'center' as const,fontSize:11,color:ALLOY.mute,fontWeight:500,paddingBottom:5}}>{d}</div>)}</div><div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',rowGap:2}}>{cells}</div></div>)
+                                              }
+                                              return <>{renderCompMon(calStartView,'Start Date')}<div style={{width:1,background:ALLOY.line,flexShrink:0}}/>{renderCompMon(calEndView,'End Date')}</>
+                                            })()}
+                                          </div>
+                                          <div style={{display:'flex',justifyContent:'flex-end',alignItems:'center',gap:14,borderTop:`1px solid ${ALLOY.line}`,paddingTop:14,marginTop:16}}>
+                                            <button onClick={()=>setShowCalendarPicker(false)} style={{background:'none',border:'none',color:ALLOY.blue1,cursor:'pointer',fontFamily:ALLOY.fontBody,fontSize:14,fontWeight:600,padding:'6px 12px'}}>Cancel</button>
+                                            <button disabled={calClickCount<2} onClick={()=>{
+                                              const fs=calTempStart||cs2, fe=calTempEnd||ce2
+                                              updateMulti({compStart:fs,compEnd:fe})
+                                              setShowCalendarPicker(false)
+                                            }} style={{background:calClickCount<2?ALLOY.line:ALLOY.blue1,border:'none',borderRadius:999,color:calClickCount<2?ALLOY.mute:ALLOY.white,cursor:calClickCount<2?'not-allowed':'pointer',fontFamily:ALLOY.fontBody,fontSize:14,fontWeight:600,padding:'10px 28px'}}>Apply</button>
+                                          </div>
+                                        </div>
+                                      </>)}
+                                    </div>
+                                  )
+                                })()}
+                                {/* Show computed comparison label for non-custom types */}
+                                {(widgetData as any).comparisonType && (widgetData as any).comparisonType !== 'none' && (widgetData as any).comparisonType !== 'custom' && (
+                                  <div style={{padding:'8px 14px',fontFamily:ALLOY.fontBody,fontSize:11,color:ALLOY.mute}}>
+                                    {(widgetData as any).comparisonType === 'previous_period' ? '↩ Previous period (auto)' : '↩ Same period last year'}
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
 
