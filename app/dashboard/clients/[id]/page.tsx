@@ -1058,7 +1058,11 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
   // ── Stable callbacks for NewDashCanvas ──────────────────────────────────
   const handleOpenCloneModal = React.useCallback(() => setShowCloneModal(true), [])
-  const handleOpenTemplateModal = React.useCallback(() => setShowTemplateModal(true), [])
+  const handleOpenTemplateModal = React.useCallback(() => {
+  console.log('Opening template modal'); // Debug log
+  setShowTemplateModal(true);
+}, [])
+  
 
   // ── Core widget constants and helpers ───────────────────────────────────
   const STATIC_IDS = ['w1','w2','w3','w4','c1','c2','c3','d1','d2','d3','v1','bounce']
