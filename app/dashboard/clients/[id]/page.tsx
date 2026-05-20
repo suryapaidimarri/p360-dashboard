@@ -3601,23 +3601,25 @@ Alloy Intelligence`)
 
       {/* Template Wizard Modal */}
       {showTemplateModal && (
-        <div style={{ position:'fixed', inset:0, zIndex:9999, background:'rgba(240,242,245,0.97)', display:'flex', flexDirection:'column' }}>
-          <TemplateWizard
-          step={templateStep}
-          selected={templateSelected}
-          name={templateName}
-          search={templateSearch}
-          onStepChange={setTemplateStep}
-          onSelectChange={setTemplateSelected}
-          onNameChange={setTemplateName}
-          onSearchChange={setTemplateSearch}
-          onCommit={(name: string) => {
-            setDashboards((prev: string[]) => [...prev, name])
-            setClonedDashboards((prev: string[]) => [...prev, name])
-            setActiveDash(name)
-          }}
-          onClose={() => { setShowTemplateModal(false); setTemplateStep(1); setTemplateSelected(null); setTemplateName(''); setTemplateSearch('') }}
-        />
+        <div style={{ position:'fixed', inset:0, zIndex:9999, background:'rgba(240,242,245,0.97)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <div style={{ background:'#fff', borderRadius:8, padding:40, maxWidth:500, width:'100%', textAlign:'center' as const, boxShadow:'0 4px 24px rgba(0,0,0,0.15)' }}>
+            <h2 style={{ fontSize:20, fontWeight:700, marginBottom:12 }}>Add Page Template</h2>
+            <p style={{ fontSize:13, color:'#888', marginBottom:24 }}>Select a template to get started</p>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:24 }}>
+              {['Website Performance','Paid Media','Organic + AI Search','Social Media','E-Commerce','Executive Summary'].map(name => (
+                <button key={name} onClick={() => {
+                  const n = name
+                  setDashboards((prev: string[]) => [...prev, n])
+                  setClonedDashboards((prev: string[]) => [...prev, n])
+                  setActiveDash(n)
+                  setShowTemplateModal(false)
+                }} style={{ padding:'12px', background:'#f8f9fa', border:'1px solid #e5e5e5', borderRadius:6, cursor:'pointer', fontSize:13, fontWeight:500 }}>
+                  {name}
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setShowTemplateModal(false)} style={{ padding:'10px 24px', background:'#e5e5e5', border:'none', borderRadius:6, cursor:'pointer', fontSize:13 }}>Cancel</button>
+          </div>
         </div>
       )}
 
