@@ -501,6 +501,148 @@ function DynamicChart({ chartType, data, height = 80, dimensions = ['Date'], met
   )
 }
 
+
+// ── Template Wizard Modal ─────────────────────────────────────────────────────
+const TEMPLATE_LIST = [
+  { name:'Website Performance', source:'Google Analytics 4', color:'#48B5EA', preview:[{l:'Sessions',v:'118.3K'},{l:'Users',v:'88.1K'},{l:'Bounce Rate',v:'39.4%'},{l:'Conversions',v:'1,838'}] },
+  { name:'Paid Media', source:'Google Ads', color:'#F9B62A', preview:[{l:'Ad Spend',v:'$12.4K'},{l:'ROAS',v:'3.2x'},{l:'Impressions',v:'842K'},{l:'CTR',v:'2.4%'}] },
+  { name:'Organic + AI Search', source:'Google Search Console', color:'#20BB71', preview:[{l:'Clicks',v:'24.5K'},{l:'Impressions',v:'310K'},{l:'Avg Position',v:'12.3'},{l:'CTR',v:'7.9%'}] },
+  { name:'Social Media', source:'Facebook / Instagram', color:'#F64674', preview:[{l:'Reach',v:'142K'},{l:'Engagement',v:'8.4%'},{l:'Followers',v:'12.3K'},{l:'Posts',v:'48'}] },
+  { name:'E-Commerce', source:'Google Analytics 4', color:'#9C27B0', preview:[{l:'Revenue',v:'$89.4K'},{l:'Orders',v:'1,240'},{l:'AOV',v:'$72.10'},{l:'Conv Rate',v:'3.2%'}] },
+  { name:'Donations Trend', source:'Google Analytics 4', color:'#FF7043', preview:[{l:'Total Raised',v:'$142K'},{l:'Donors',v:'3,210'},{l:'Avg Gift',v:'$44.20'},{l:'Recurring',v:'28%'}] },
+  { name:'Email Marketing', source:'ActiveCampaign', color:'#00ACC1', preview:[{l:'Open Rate',v:'24.5%'},{l:'Click Rate',v:'3.8%'},{l:'Subscribers',v:'18.4K'},{l:'Revenue',v:'$8.2K'}] },
+  { name:'Executive Summary', source:'All Sources', color:'#111111', preview:[{l:'Sessions',v:'118K'},{l:'Revenue',v:'$89K'},{l:'Conv Rate',v:'3.2%'},{l:'ROAS',v:'3.2x'}] },
+]
+
+function TemplateWizard({ step, selected, name, search, onStepChange, onSelectChange, onNameChange, onSearchChange, onCommit, onClose }: {
+  step: number; selected: string | null; name: string; search: string
+  onStepChange: (s: number) => void; onSelectChange: (s: string | null) => void
+  onNameChange: (s: string) => void; onSearchChange: (s: string) => void
+  onCommit: (name: string) => void; onClose: () => void
+}) {
+  const filtered = TEMPLATE_LIST.filter(t => t.name.toLowerCase().includes(search.toLowerCase()) || t.source.toLowerCase().includes(search.toLowerCase()))
+  const sel = TEMPLATE_LIST.find(t => t.name === selected)
+
+  const commit = (n: string) => {
+    onCommit(n)
+    onStepChange(3)
+    setTimeout(onClose, 900)
+  }
+
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(240,242,245,0.97)', display:'flex', flexDirection:'column', zIndex:9999 }}
+      onClick={onClose}>
+      <button onClick={onClose} style={{ position:'absolute', top:16, right:16, width:36, height:36, borderRadius:'50%', background:'#fff', border:'1px solid #e5e5e5', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', zIndex:10 }}>
+        <X size={16} style={{ color:'#666' }}/>
+      </button>
+      <div style={{ width:'100%', maxWidth:960, margin:'20px auto', background:'#fff', borderRadius:8, boxShadow:'0 4px 24px rgba(0,0,0,0.1)', display:'flex', flexDirection:'column', overflow:'hidden', flex:1, maxHeight:'calc(100vh - 40px)' }}
+        onClick={e => e.stopPropagation()}>
+
+        {/* Step bar */}
+        <div style={{ padding:'20px 40px', borderBottom:'1px solid #e5e5e5', display:'flex', alignItems:'center', flexShrink:0 }}>
+          {['Choose Source','Pick a Name','Start Design'].map((label, i) => (
+            <React.Fragment key={i}>
+              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                <div style={{ width:26, height:26, borderRadius:'50%', background:step>i+1||step===i+1?'#48b5ea':'#e5e5e5', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  {step>i+1
+                    ? <svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="white" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    : <span style={{ fontSize:11, fontWeight:700, color:step===i+1?'#fff':'#999' }}>{i+1}</span>}
+                </div>
+                <span style={{ fontSize:13, color:step>=i+1?'#48b5ea':'#999', fontWeight:step===i+1?600:400 }}>{label}</span>
+              </div>
+              {i<2&&<div style={{ flex:1, height:1, background:'#e5e5e5', margin:'0 12px' }}/>}
+            </React.Fragment>
+          ))}
+        </div>
+
+        {/* Step 1: Choose */}
+        {step===1&&(
+          <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
+            <div style={{ width:300, borderRight:'1px solid #e5e5e5', display:'flex', flexDirection:'column', overflow:'hidden' }}>
+              <div style={{ padding:'24px 24px 12px', textAlign:'center' as const }}>
+                <h2 style={{ fontSize:18, fontWeight:700, color:'#1a1a1a', marginBottom:6 }}>Add Page Template</h2>
+                <p style={{ fontSize:12, color:'#888', lineHeight:1.6 }}>You can make changes after adding.</p>
+              </div>
+              <div style={{ height:1, background:'#e5e5e5', margin:'0 20px 8px' }}/>
+              <div style={{ padding:'0 16px 8px' }}>
+                <input value={search} onChange={e => onSearchChange(e.target.value)} placeholder="Search templates..."
+                  style={{ width:'100%', border:'1px solid #e5e5e5', borderRadius:6, padding:'7px 12px', fontSize:12, outline:'none', boxSizing:'border-box' as const }}/>
+              </div>
+              <div style={{ flex:1, overflowY:'auto' }}>
+                {filtered.map(t => (
+                  <div key={t.name} onClick={() => { onSelectChange(t.name); onNameChange(t.name) }}
+                    style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 20px', cursor:'pointer', background:selected===t.name?'#f0fdf4':'transparent', borderLeft:selected===t.name?'3px solid #20BB71':'3px solid transparent' }}>
+                    <div style={{ width:18, height:18, borderRadius:'50%', border:`2px solid ${selected===t.name?'#20BB71':'#ccc'}`, background:selected===t.name?'#20BB71':'#fff', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                      {selected===t.name&&<svg width="9" height="9" viewBox="0 0 9 9"><path d="M1.5 4.5l2 2 4-4" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>}
+                    </div>
+                    <span style={{ fontSize:13, color:selected===t.name?'#1a1a1a':'#555', fontWeight:selected===t.name?600:400 }}>{t.name}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ padding:16, borderTop:'1px solid #e5e5e5', display:'flex', gap:8 }}>
+                <button onClick={() => { if(selected) onStepChange(2) }} disabled={!selected}
+                  style={{ flex:1, background:selected?'#48b5ea':'#e5e5e5', border:'none', borderRadius:6, padding:'10px', fontSize:13, fontWeight:600, color:selected?'#fff':'#aaa', cursor:selected?'pointer':'not-allowed' }}>Continue</button>
+                <button onClick={onClose} style={{ padding:'10px 16px', background:'#fff', border:'1px solid #e5e5e5', borderRadius:6, fontSize:13, color:'#666', cursor:'pointer' }}>Cancel</button>
+              </div>
+            </div>
+            <div style={{ flex:1, overflowY:'auto', padding:24, background:'#f8f9fa' }}>
+              {sel ? (
+                <div>
+                  <div style={{ background:sel.color, borderRadius:8, padding:'16px 20px', marginBottom:16 }}>
+                    <h3 style={{ fontSize:18, fontWeight:700, color:'#fff' }}>{sel.name}</h3>
+                    <p style={{ fontSize:11, color:'rgba(255,255,255,0.8)', marginTop:2 }}>Source: {sel.source}</p>
+                  </div>
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+                    {sel.preview.map((p: any) => (
+                      <div key={p.l} style={{ background:'#fff', border:'1px solid #e5e5e5', borderRadius:8, padding:16 }}>
+                        <p style={{ fontSize:11, color:'#999', marginBottom:6 }}>{p.l}</p>
+                        <p style={{ fontSize:26, fontWeight:300, color:'#1a1a1a' }}>{p.v}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100%', flexDirection:'column', gap:12 }}>
+                  <div style={{ fontSize:48 }}>📋</div>
+                  <p style={{ fontSize:13, color:'#aaa' }}>Select a template to preview</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Name */}
+        {step===2&&(
+          <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', padding:40 }}>
+            <div style={{ width:'100%', maxWidth:520 }}>
+              <h2 style={{ fontSize:22, fontWeight:700, color:'#1a1a1a', marginBottom:8, textAlign:'center' as const }}>What would you like your dashboard to be named?</h2>
+              <p style={{ fontSize:13, color:'#888', marginBottom:28, textAlign:'center' as const }}>This name will appear in your list of dashboards</p>
+              <div style={{ height:1, background:'#e5e5e5', marginBottom:28 }}/>
+              <input value={name} onChange={e => onNameChange(e.target.value)} autoFocus
+                onKeyDown={e => { if(e.key==='Enter'&&name.trim()) commit(name.trim()) }}
+                style={{ width:'100%', border:'1px solid #e5e5e5', borderRadius:6, padding:'12px 16px', fontSize:15, color:'#1a1a1a', outline:'none', boxSizing:'border-box' as const }}
+                placeholder="e.g. Website Performance"/>
+              <button onClick={() => { if(name.trim()) commit(name.trim()) }} disabled={!name.trim()}
+                style={{ marginTop:20, background:name.trim()?'#48b5ea':'#e5e5e5', border:'none', borderRadius:6, padding:'12px 28px', fontSize:13, fontWeight:600, color:name.trim()?'#fff':'#aaa', cursor:name.trim()?'pointer':'not-allowed' }}>Continue</button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Done */}
+        {step===3&&(
+          <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:16 }}>
+            <div style={{ width:64, height:64, borderRadius:'50%', background:'#f0fdf4', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <svg width="28" height="28" viewBox="0 0 28 28"><path d="M5 14l6 6 12-12" stroke="#20BB71" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
+            </div>
+            <h2 style={{ fontSize:20, fontWeight:700, color:'#1a1a1a' }}>Dashboard Created!</h2>
+            <p style={{ fontSize:13, color:'#888' }}>"{name}" added to your dashboards</p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Empty canvas shown for any dashboard not in REAL_DASHBOARDS ──────────────
 function NewDashCanvas({ onClone, onTemplate }: { onClone: () => void; onTemplate: () => void }) {
   return (
@@ -2285,7 +2427,7 @@ Alloy Intelligence`)
 
         {/* Canvas — click background to close edit panel */}
         <div id="alloy-canvas"
-          style={{ flex:1, display:'flex', flexDirection:'column', overflowY: isEmptyDash ? 'hidden' : 'auto', background:ALLOY.paper }}
+          style={{ flex:1, display:'flex', flexDirection:'column', overflowY: 'auto', background:ALLOY.paper }}
           onClick={e => { if (editingWidget && !(e.target as HTMLElement).closest('button,input,select')) setEditingWidget(null) }}
         >
           <div style={{ padding:'14px 20px', borderBottom:`1px solid ${ALLOY.line}`, background:ALLOY.white, display:'flex', alignItems:'center', gap:8 }}>
@@ -3477,182 +3619,25 @@ Alloy Intelligence`)
 
 
       {/* Template Wizard Modal */}
-      {showTemplateModal && typeof document !== 'undefined' && createPortal((() => {
-        const TEMPLATES = [
-          { name:'Website Performance', desc:'Sessions, users, bounce rate, conversions', source:'Google Analytics 4', color:'#48B5EA', preview:[{l:'Sessions',v:'118.3K'},{l:'Users',v:'88.1K'},{l:'Bounce Rate',v:'39.4%'},{l:'Conversions',v:'1,838'}] },
-          { name:'Paid Media', desc:'Ad spend, ROAS, impressions, clicks & CPA', source:'Google Ads', color:'#F9B62A', preview:[{l:'Ad Spend',v:'$12.4K'},{l:'ROAS',v:'3.2x'},{l:'Impressions',v:'842K'},{l:'CTR',v:'2.4%'}] },
-          { name:'Organic + AI Search', desc:'Keywords, rankings, clicks & impressions', source:'Google Search Console', color:'#20BB71', preview:[{l:'Clicks',v:'24.5K'},{l:'Impressions',v:'310K'},{l:'Avg Position',v:'12.3'},{l:'CTR',v:'7.9%'}] },
-          { name:'Social Media', desc:'Reach, engagement, followers & posts', source:'Facebook / Instagram', color:'#F64674', preview:[{l:'Reach',v:'142K'},{l:'Engagement',v:'8.4%'},{l:'Followers',v:'12.3K'},{l:'Posts',v:'48'}] },
-          { name:'E-Commerce', desc:'Revenue, orders, AOV & conversion rate', source:'Google Analytics 4', color:'#9C27B0', preview:[{l:'Revenue',v:'$89.4K'},{l:'Orders',v:'1,240'},{l:'AOV',v:'$72.10'},{l:'Conv Rate',v:'3.2%'}] },
-          { name:'Donations Trend', desc:'Donation volume, recurring giving & campaigns', source:'Google Analytics 4', color:'#FF7043', preview:[{l:'Total Raised',v:'$142K'},{l:'Donors',v:'3,210'},{l:'Avg Gift',v:'$44.20'},{l:'Recurring',v:'28%'}] },
-          { name:'Email Marketing', desc:'Open rate, click rate, subscribers & revenue', source:'ActiveCampaign', color:'#00ACC1', preview:[{l:'Open Rate',v:'24.5%'},{l:'Click Rate',v:'3.8%'},{l:'Subscribers',v:'18.4K'},{l:'Revenue',v:'$8.2K'}] },
-          { name:'Executive Summary', desc:'High-level KPIs across all channels', source:'All Sources', color:'#111111', preview:[{l:'Sessions',v:'118K'},{l:'Revenue',v:'$89K'},{l:'Conv Rate',v:'3.2%'},{l:'ROAS',v:'3.2x'}] },
-        ]
-        const filtered = TEMPLATES.filter(t => t.name.toLowerCase().includes(templateSearch.toLowerCase()) || t.source.toLowerCase().includes(templateSearch.toLowerCase()))
-        const selected = TEMPLATES.find(t => t.name === templateSelected)
-
-        const closeModal = () => { setShowTemplateModal(false); setTemplateStep(1); setTemplateSelected(null); setTemplateName(''); setTemplateSearch('') }
-
-        const StepBar = () => (
-          <div style={{ padding:'20px 40px', borderBottom:`1px solid ${ALLOY.line}`, display:'flex', alignItems:'center', gap:0, background:ALLOY.white, flexShrink:0 }}>
-            {[{n:1,label:'Choose Source'},{n:2,label:'Pick a Name'},{n:3,label:'Start Design'}].map((s,i) => (
-              <React.Fragment key={s.n}>
-                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                  <div style={{ width:26, height:26, borderRadius:'50%', background: templateStep > s.n ? ALLOY.blue1 : templateStep === s.n ? ALLOY.blue1 : ALLOY.line, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                    {templateStep > s.n
-                      ? <svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
-                      : <span style={{ fontSize:11, fontWeight:700, color: templateStep === s.n ? ALLOY.white : ALLOY.mute, fontFamily:ALLOY.fontLabel }}>{s.n}</span>}
-                  </div>
-                  <span style={{ fontSize:13, color: templateStep === s.n ? ALLOY.blue1 : templateStep > s.n ? ALLOY.blue1 : ALLOY.mute, fontWeight: templateStep === s.n ? 600 : 400, fontFamily:ALLOY.fontBody }}>{s.label}</span>
-                </div>
-                {i < 2 && <div style={{ flex:1, height:1, background:ALLOY.line, margin:'0 12px', minWidth:40 }}/>}
-              </React.Fragment>
-            ))}
-          </div>
-        )
-
-        return (
-          <div style={{ position:'fixed', inset:0, background:'rgba(240,242,245,0.95)', display:'flex', flexDirection:'column', zIndex:9999 }}
-            onClick={closeModal}>
-            {/* Close button */}
-            <button onClick={closeModal} style={{ position:'absolute', top:16, right:16, width:36, height:36, borderRadius:'50%', background:ALLOY.white, border:`1px solid ${ALLOY.line}`, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', zIndex:10 }}>
-              <X size={16} style={{ color:ALLOY.mute }}/>
-            </button>
-
-            <div style={{ width:'100%', maxWidth:960, margin:'20px auto', background:ALLOY.white, borderRadius:4, boxShadow:'0 4px 24px rgba(0,0,0,0.1)', display:'flex', flexDirection:'column', overflow:'hidden', flex:1, maxHeight:'calc(100vh - 40px)' }}
-              onClick={e => e.stopPropagation()}>
-
-              <StepBar/>
-
-              {/* Step 1 — Choose Source */}
-              {templateStep === 1 && (
-                <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
-                  {/* Left — template list */}
-                  <div style={{ width:300, minWidth:300, borderRight:`1px solid ${ALLOY.line}`, display:'flex', flexDirection:'column', overflow:'hidden' }}>
-                    <div style={{ padding:'24px 24px 16px', textAlign:'center' as const }}>
-                      <h2 style={{ fontSize:20, fontWeight:700, color:ALLOY.ink, marginBottom:8, fontFamily:ALLOY.fontDisplay }}>Add Page Template</h2>
-                      <p style={{ fontSize:13, color:ALLOY.mute, lineHeight:1.6, fontFamily:ALLOY.fontBody }}>You can make changes after it's added to your dashboard.</p>
-                    </div>
-                    <div style={{ height:1, background:ALLOY.line, margin:'0 24px' }}/>
-                    {/* Filter */}
-                    <div style={{ padding:'12px 16px' }}>
-                      <select style={{ width:'100%', border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'7px 10px', fontSize:12, fontFamily:ALLOY.fontBody, color:ALLOY.ink, background:ALLOY.white, outline:'none' }}>
-                        <option>All Templates</option>
-                        <option>Google Analytics 4</option>
-                        <option>Google Ads</option>
-                        <option>Search Console</option>
-                      </select>
-                    </div>
-                    {/* Search */}
-                    <div style={{ padding:'0 16px 8px', position:'relative' }}>
-                      <input value={templateSearch} onChange={e => setTemplateSearch(e.target.value)} placeholder="Search..." style={{ width:'100%', border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'7px 32px 7px 10px', fontSize:12, fontFamily:ALLOY.fontBody, color:ALLOY.ink, outline:'none', boxSizing:'border-box' as const }} />
-                      <Search size={13} style={{ position:'absolute', right:26, top:'50%', transform:'translateY(-50%)', color:ALLOY.mute }}/>
-                    </div>
-                    {/* List */}
-                    <div style={{ flex:1, overflowY:'auto' }}>
-                      {filtered.map(t => (
-                        <div key={t.name} onClick={() => { setTemplateSelected(t.name); setTemplateName(t.name) }}
-                          style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 20px', cursor:'pointer', background: templateSelected === t.name ? ALLOY.green4 : 'transparent', borderLeft: templateSelected === t.name ? `3px solid ${ALLOY.green1}` : '3px solid transparent' }}>
-                          <div style={{ width:20, height:20, borderRadius:'50%', border:`2px solid ${templateSelected === t.name ? ALLOY.green1 : ALLOY.line}`, background: templateSelected === t.name ? ALLOY.green1 : ALLOY.white, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                            {templateSelected === t.name && <svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5l2.5 2.5 3.5-4" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>}
-                          </div>
-                          <span style={{ fontSize:13, color: templateSelected === t.name ? ALLOY.ink : ALLOY.mute, fontWeight: templateSelected === t.name ? 600 : 400, fontFamily:ALLOY.fontBody }}>{t.name}</span>
-                        </div>
-                      ))}
-                    </div>
-                    {/* Footer buttons */}
-                    <div style={{ padding:16, borderTop:`1px solid ${ALLOY.line}`, display:'flex', gap:8 }}>
-                      <button onClick={() => { if (templateSelected) { setTemplateStep(2); setTemplateName(templateSelected) } }}
-                        disabled={!templateSelected}
-                        style={{ flex:1, background: templateSelected ? ALLOY.blue1 : ALLOY.line, border:'none', borderRadius:2, padding:'10px', fontSize:13, fontWeight:600, color: templateSelected ? ALLOY.white : ALLOY.mute, cursor: templateSelected ? 'pointer' : 'not-allowed', fontFamily:ALLOY.fontBody }}>
-                        Continue
-                      </button>
-                      <button onClick={closeModal} style={{ padding:'10px 16px', background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, fontSize:13, color:ALLOY.mute, cursor:'pointer', fontFamily:ALLOY.fontBody }}>Cancel</button>
-                    </div>
-                  </div>
-
-                  {/* Right — preview */}
-                  <div style={{ flex:1, overflowY:'auto', padding:24, background:ALLOY.paper }}>
-                    {selected ? (
-                      <div>
-                        <div style={{ background:selected.color, borderRadius:2, padding:'16px 20px', marginBottom:16 }}>
-                          <h3 style={{ fontSize:18, fontWeight:700, color:ALLOY.white, fontFamily:ALLOY.fontDisplay }}>{selected.name}</h3>
-                          <p style={{ fontSize:11, color:'rgba(255,255,255,0.8)', marginTop:4, fontFamily:ALLOY.fontLabel, letterSpacing:'0.06em' }}>SOURCE: {selected.source.toUpperCase()}</p>
-                        </div>
-                        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:16 }}>
-                          {selected.preview.map((p: any) => (
-                            <div key={p.l} style={{ background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'16px' }}>
-                              <p style={{ fontSize:11, color:ALLOY.mute, fontFamily:ALLOY.fontLabel, letterSpacing:'0.06em', marginBottom:8 }}>{p.l.toUpperCase()}</p>
-                              <p style={{ fontSize:28, fontWeight:300, color:ALLOY.ink, fontFamily:ALLOY.fontDisplay, letterSpacing:'-0.5px' }}>{p.v}</p>
-                            </div>
-                          ))}
-                        </div>
-                        <div style={{ background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:16 }}>
-                          <p style={{ fontSize:12, fontWeight:600, color:ALLOY.ink, marginBottom:8, fontFamily:ALLOY.fontBody }}>Sessions Over Time</p>
-                          <div style={{ height:80, background:`linear-gradient(180deg, ${selected.color}22 0%, transparent 100%)`, borderRadius:2, display:'flex', alignItems:'flex-end', padding:'0 4px 4px', gap:3 }}>
-                            {[40,55,45,70,60,80,65,75,55,85,70,90,75,88,72].map((h,i) => (
-                              <div key={i} style={{ flex:1, height:`${h}%`, background:selected.color, borderRadius:'1px 1px 0 0', opacity:0.7 }}/>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100%', flexDirection:'column', gap:12 }}>
-                        <div style={{ width:60, height:60, borderRadius:'50%', background:ALLOY.line, display:'flex', alignItems:'center', justifyContent:'center', fontSize:24 }}>📋</div>
-                        <p style={{ fontSize:13, color:ALLOY.mute, fontFamily:ALLOY.fontBody }}>Select a template to preview</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Step 2 — Pick a Name */}
-              {templateStep === 2 && (
-                <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', padding:40 }}>
-                  <div style={{ width:'100%', maxWidth:540 }}>
-                    <h2 style={{ fontSize:24, fontWeight:700, color:ALLOY.ink, marginBottom:10, fontFamily:ALLOY.fontDisplay, textAlign:'center' as const }}>What would you like your dashboard to be named?</h2>
-                    <p style={{ fontSize:13, color:ALLOY.mute, marginBottom:32, fontFamily:ALLOY.fontBody, textAlign:'center' as const }}>This name will appear in your list of dashboards</p>
-                    <div style={{ height:1, background:ALLOY.line, marginBottom:32 }}/>
-                    <input
-                      value={templateName}
-                      onChange={e => setTemplateName(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter' && templateName.trim()) { setDashboards(prev => [...prev, templateName.trim()]); setClonedDashboards(prev => [...prev, templateName.trim()]); setActiveDash(templateName.trim()); setTemplateStep(3); setTimeout(() => closeModal(), 800) } }}
-                      autoFocus
-                      style={{ width:'100%', border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'12px 16px', fontSize:15, fontFamily:ALLOY.fontBody, color:ALLOY.ink, outline:'none', boxSizing:'border-box' as const }}
-                      placeholder="e.g. Website Performance"
-                    />
-                    <button
-                      onClick={() => {
-                        if (!templateName.trim()) return
-                        setDashboards(prev => [...prev, templateName.trim()])
-                        setClonedDashboards(prev => [...prev, templateName.trim()])
-                        setActiveDash(templateName.trim())
-                        setTemplateStep(3)
-                        setTimeout(() => closeModal(), 800)
-                      }}
-                      disabled={!templateName.trim()}
-                      style={{ marginTop:20, background: templateName.trim() ? ALLOY.blue1 : ALLOY.line, border:'none', borderRadius:2, padding:'12px 28px', fontSize:13, fontWeight:600, color: templateName.trim() ? ALLOY.white : ALLOY.mute, cursor: templateName.trim() ? 'pointer' : 'not-allowed', fontFamily:ALLOY.fontBody }}>
-                      Continue
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 3 — Done */}
-              {templateStep === 3 && (
-                <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:16 }}>
-                  <div style={{ width:64, height:64, borderRadius:'50%', background:ALLOY.green4, display:'flex', alignItems:'center', justifyContent:'center' }}>
-                    <svg width="28" height="28" viewBox="0 0 28 28"><path d="M5 14l6 6 12-12" stroke={ALLOY.green1} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
-                  </div>
-                  <h2 style={{ fontSize:20, fontWeight:700, color:ALLOY.ink, fontFamily:ALLOY.fontDisplay }}>Dashboard Created!</h2>
-                  <p style={{ fontSize:13, color:ALLOY.mute, fontFamily:ALLOY.fontBody }}>"{templateName}" has been added to your dashboards</p>
-                </div>
-              )}
-
-            </div>
-          </div>
-        )
-      })(), document.body)}
+      {showTemplateModal && typeof document !== 'undefined' && createPortal(
+        <TemplateWizard
+          step={templateStep}
+          selected={templateSelected}
+          name={templateName}
+          search={templateSearch}
+          onStepChange={setTemplateStep}
+          onSelectChange={setTemplateSelected}
+          onNameChange={setTemplateName}
+          onSearchChange={setTemplateSearch}
+          onCommit={(name: string) => {
+            setDashboards((prev: string[]) => [...prev, name])
+            setClonedDashboards((prev: string[]) => [...prev, name])
+            setActiveDash(name)
+          }}
+          onClose={() => { setShowTemplateModal(false); setTemplateStep(1); setTemplateSelected(null); setTemplateName(''); setTemplateSearch('') }}
+        />,
+        document.body
+      )}
 
       {showCloneModal && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:100, padding:16 }}
