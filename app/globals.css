@@ -22,34 +22,46 @@
   src: url("/fonts/Aeonik-Bold.woff2") format("woff2"), url("/fonts/Aeonik-Bold.woff") format("woff");
 }
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   RESET & BASE
+───────────────────────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --alloy-black: #000000;
-  --alloy-ink: #111111;
-  --alloy-white: #FFFFFF;
-  --alloy-paper: #FAFAFA;
-  --alloy-line: #E6E6E6;
-  --alloy-mute: #6B6B6B;
-  --alloy-green-1: #20BB71;
-  --alloy-green-2: #3FDB90;
-  --alloy-green-3: #6FF5B5;
-  --alloy-green-4: #C2FFE2;
-  --alloy-blue-1: #48B5EA;
-  --alloy-blue-2: #5BD1F2;
-  --alloy-blue-3: #A4E6F3;
-  --alloy-blue-4: #E1F7FF;
+  --alloy-black:    #000000;
+  --alloy-ink:      #111111;
+  --alloy-white:    #FFFFFF;
+  --alloy-paper:    #FAFAFA;
+  --alloy-line:     #E6E6E6;
+  --alloy-mute:     #6B6B6B;
+  --alloy-green-1:  #20BB71;
+  --alloy-green-2:  #3FDB90;
+  --alloy-green-3:  #6FF5B5;
+  --alloy-green-4:  #C2FFE2;
+  --alloy-blue-1:   #48B5EA;
+  --alloy-blue-2:   #5BD1F2;
+  --alloy-blue-3:   #A4E6F3;
+  --alloy-blue-4:   #E1F7FF;
   --alloy-yellow-1: #F9B62A;
   --alloy-yellow-2: #FDC550;
   --alloy-yellow-3: #FFD98B;
   --alloy-yellow-4: #FFEECA;
-  --alloy-red-1: #F53619;
-  --alloy-red-2: #F64674;
-  --alloy-red-3: #FFA9C3;
-  --alloy-red-4: #FFCFDC;
-  --font-display: "Aeonik", "DM Sans", system-ui, sans-serif;
-  --font-body: "DM Sans", system-ui, sans-serif;
-  --font-label: "Barlow", "DM Sans", system-ui, sans-serif;
+  --alloy-red-1:    #F53619;
+  --alloy-red-2:    #F64674;
+  --alloy-red-3:    #FFA9C3;
+  --alloy-red-4:    #FFCFDC;
+  --font-display:   "Aeonik", "DM Sans", system-ui, sans-serif;
+  --font-body:      "DM Sans", system-ui, sans-serif;
+  --font-label:     "Barlow", "DM Sans", system-ui, sans-serif;
+
+  /* Motion tokens */
+  --ease-spring:    cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out:       cubic-bezier(0.0, 0.0, 0.2, 1);
+  --ease-in-out:    cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-fast:       120ms;
+  --dur-base:       180ms;
+  --dur-slow:       260ms;
+  --dur-spring:     320ms;
 }
 
 html, body {
@@ -60,6 +72,555 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-::-webkit-scrollbar { width: 3px; height: 3px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--alloy-line); }
+/* ─────────────────────────────────────────────────────────────────────────────
+   SCROLLBAR
+───────────────────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar               { width: 4px; height: 4px; }
+::-webkit-scrollbar-track         { background: transparent; }
+::-webkit-scrollbar-thumb         { background: var(--alloy-line); border-radius: 2px; transition: background var(--dur-base) ease; }
+::-webkit-scrollbar-thumb:hover   { background: var(--alloy-mute); }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   KEYFRAMES
+───────────────────────────────────────────────────────────────────────────── */
+@keyframes a-fadein    { from { opacity: 0 }                          to { opacity: 1 } }
+@keyframes a-fadeout   { from { opacity: 1 }                          to { opacity: 0 } }
+@keyframes a-slideup   { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: translateY(0) } }
+@keyframes a-slidedown { from { opacity: 0; transform: translateY(-8px) } to { opacity: 1; transform: translateY(0) } }
+@keyframes a-slideleft { from { opacity: 0; transform: translateX(20px) } to { opacity: 1; transform: translateX(0) } }
+@keyframes a-slideright{ from { opacity: 0; transform: translateX(-20px) } to { opacity: 1; transform: translateX(0) } }
+@keyframes a-scalein   { from { opacity: 0; transform: scale(0.95) }  to { opacity: 1; transform: scale(1) } }
+@keyframes a-scaleup   { from { opacity: 0; transform: scale(1.04) }  to { opacity: 1; transform: scale(1) } }
+@keyframes a-toast     { from { opacity: 0; transform: translateX(-50%) translateY(14px) } to { opacity: 1; transform: translateX(-50%) translateY(0) } }
+@keyframes a-spin      { to   { transform: rotate(360deg) } }
+@keyframes a-pulse     { 0%,100% { opacity: 1 }  50% { opacity: 0.4 } }
+@keyframes a-shimmer   {
+  0%   { background-position: -400px 0 }
+  100% { background-position:  400px 0 }
+}
+@keyframes a-badge     { 
+  0%   { opacity: 0; transform: scale(0.7) translateY(-4px) }
+  60%  { transform: scale(1.08) translateY(0) }
+  100% { opacity: 1; transform: scale(1) translateY(0) }
+}
+@keyframes a-stagger-1 { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: translateY(0) } }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ANIMATION UTILITY CLASSES  
+───────────────────────────────────────────────────────────────────────────── */
+.a-fadein      { animation: a-fadein    var(--dur-base)   var(--ease-out)    both }
+.a-slideup     { animation: a-slideup   var(--dur-slow)   var(--ease-spring) both }
+.a-slidedown   { animation: a-slidedown var(--dur-base)   var(--ease-spring) both }
+.a-slideleft   { animation: a-slideleft var(--dur-spring) var(--ease-spring) both }
+.a-slideright  { animation: a-slideright var(--dur-slow)  var(--ease-spring) both }
+.a-scalein     { animation: a-scalein   var(--dur-slow)   var(--ease-spring) both }
+.a-toast       { animation: a-toast     280ms             var(--ease-spring) both }
+.a-spin        { animation: a-spin      700ms linear infinite }
+.a-pulse       { animation: a-pulse     1.4s  ease-in-out infinite }
+.a-badge       { animation: a-badge     240ms var(--ease-spring) both }
+
+/* Stagger delays for lists */
+.a-stagger > *:nth-child(1)  { animation-delay:  0ms }
+.a-stagger > *:nth-child(2)  { animation-delay: 40ms }
+.a-stagger > *:nth-child(3)  { animation-delay: 80ms }
+.a-stagger > *:nth-child(4)  { animation-delay:120ms }
+.a-stagger > *:nth-child(5)  { animation-delay:160ms }
+.a-stagger > *:nth-child(6)  { animation-delay:200ms }
+.a-stagger > *:nth-child(7)  { animation-delay:240ms }
+.a-stagger > *:nth-child(8)  { animation-delay:280ms }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   GLOBAL TRANSITIONS — applied to every interactive element
+───────────────────────────────────────────────────────────────────────────── */
+
+/* Every button, link, input gets smooth transitions */
+button, a, input, select, textarea {
+  transition:
+    background  var(--dur-base) var(--ease-out),
+    color       var(--dur-base) var(--ease-out),
+    border-color var(--dur-base) var(--ease-out),
+    box-shadow  var(--dur-base) var(--ease-out),
+    opacity     var(--dur-base) var(--ease-out);
+}
+
+button:active { transform: scale(0.97); }
+button[data-modal]:active,
+button[data-action]:active { transform: none !important; }
+button { cursor: pointer; }
+a { text-decoration: none; transition: color var(--dur-base) ease, opacity var(--dur-base) ease; }
+
+/* Focus ring — smooth and accessible */
+:focus-visible {
+  outline: 2px solid var(--alloy-blue-1);
+  outline-offset: 2px;
+  transition: outline-offset var(--dur-fast) ease;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   SIDEBAR NAV (dashboard/layout.tsx)
+───────────────────────────────────────────────────────────────────────────── */
+
+/* Black icon rail links */
+.alloy-rail-link {
+  transition:
+    background  var(--dur-base) var(--ease-out),
+    color       var(--dur-base) var(--ease-out),
+    transform   var(--dur-fast) var(--ease-out) !important;
+}
+.alloy-rail-link:hover { transform: scale(1.1); }
+
+/* White nav panel links */
+.alloy-nav-link {
+  transition:
+    background   var(--dur-base) var(--ease-out),
+    color        var(--dur-base) var(--ease-out),
+    border-color var(--dur-base) var(--ease-out),
+    padding-left var(--dur-base) var(--ease-out) !important;
+  position: relative;
+}
+.alloy-nav-link::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 2px;
+  background: var(--alloy-green-1);
+  transform: scaleY(0);
+  transition: transform var(--dur-base) var(--ease-spring);
+  transform-origin: center;
+}
+.alloy-nav-link:hover::before  { transform: scaleY(0.6); }
+.alloy-nav-link.active::before { transform: scaleY(1); }
+.alloy-nav-link:hover  { background: var(--alloy-green-4) !important; color: var(--alloy-ink) !important; }
+
+/* Nav badge */
+.alloy-nav-badge {
+  transition: background var(--dur-base) ease, color var(--dur-base) ease;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   CLIENT CARDS (clients/page.tsx)
+───────────────────────────────────────────────────────────────────────────── */
+.alloy-client-card {
+  transition:
+    border-color  var(--dur-base) var(--ease-out),
+    box-shadow    var(--dur-base) var(--ease-out),
+    transform     var(--dur-base) var(--ease-spring) !important;
+  will-change: transform;
+}
+.alloy-client-card:hover {
+  border-color: var(--alloy-green-1) !important;
+  box-shadow: 0 6px 24px rgba(32, 187, 113, 0.14) !important;
+  transform: translateY(-2px) !important;
+}
+.alloy-client-card:active { transform: translateY(0) scale(0.98) !important; }
+
+/* Color stripe on top of client card */
+.alloy-card-stripe {
+  transition: opacity var(--dur-base) ease;
+}
+
+/* KPI cards in clients page */
+.alloy-kpi-card {
+  transition: box-shadow var(--dur-base) ease, transform var(--dur-base) var(--ease-spring);
+}
+.alloy-kpi-card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  transform: translateY(-1px);
+}
+
+/* Progress bars */
+.alloy-progress-bar {
+  transition: width 0.6s var(--ease-out);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   LOGIN PAGE
+───────────────────────────────────────────────────────────────────────────── */
+.alloy-login-card {
+  animation: a-scalein var(--dur-spring) var(--ease-spring) both;
+}
+.alloy-login-logo {
+  animation: a-slidedown var(--dur-slow) var(--ease-spring) both;
+  animation-delay: 60ms;
+}
+.alloy-login-form {
+  animation: a-slideup var(--dur-slow) var(--ease-spring) both;
+  animation-delay: 120ms;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   DASHBOARD TOPBAR & TABS
+───────────────────────────────────────────────────────────────────────────── */
+.alloy-tab {
+  position: relative;
+  transition: color var(--dur-base) ease !important;
+}
+.alloy-tab::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: 0; right: 0;
+  height: 2px;
+  background: var(--alloy-blue-1);
+  transform: scaleX(0);
+  transition: transform var(--dur-base) var(--ease-spring);
+  transform-origin: left;
+}
+.alloy-tab.active::after  { transform: scaleX(1); }
+.alloy-tab:hover::after   { transform: scaleX(0.5); opacity: 0.5; }
+
+/* Connected status badge */
+.alloy-connected-badge {
+  animation: a-fadein var(--dur-base) ease both;
+  transition: background var(--dur-base) ease, border-color var(--dur-base) ease;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   WIDGET CARDS (dashboard canvas)
+───────────────────────────────────────────────────────────────────────────── */
+.alloy-widget {
+  transition:
+    border-color var(--dur-base) ease,
+    box-shadow   var(--dur-slow) var(--ease-spring),
+    opacity      var(--dur-base) ease,
+    transform    var(--dur-base) var(--ease-spring) !important;
+  will-change: transform, opacity;
+}
+
+/* View mode — subtle lift on hover */
+.alloy-widget-view:hover {
+  box-shadow: 0 6px 20px rgba(0,0,0,0.09) !important;
+  transform: translateY(-1px) !important;
+}
+.alloy-widget-view:active {
+  transform: translateY(0) !important;
+}
+
+/* Edit mode — selected ring */
+.alloy-widget-selected {
+  border-color: var(--alloy-green-1) !important;
+  box-shadow: 0 0 0 4px var(--alloy-green-4), 0 8px 28px rgba(32,187,113,0.2) !important;
+}
+
+/* Dimmed when another widget is editing */
+.alloy-widget-dimmed {
+  opacity: 0.42 !important;
+  filter: saturate(0.7);
+  transition: opacity var(--dur-base) ease, filter var(--dur-base) ease !important;
+}
+
+/* Editing badge — bouncy entrance */
+.alloy-editing-badge {
+  animation: a-badge 260ms var(--ease-spring) both;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   EDIT PANEL (slides in from right)
+───────────────────────────────────────────────────────────────────────────── */
+.alloy-edit-panel {
+  animation: a-slideleft var(--dur-spring) var(--ease-spring) both;
+}
+
+/* Edit panel tabs */
+.alloy-edit-tab {
+  transition: color var(--dur-base) ease, border-bottom-color var(--dur-base) ease !important;
+}
+
+/* Right icon strip */
+.alloy-icon-btn {
+  transition: background var(--dur-base) ease, transform var(--dur-fast) var(--ease-spring) !important;
+}
+.alloy-icon-btn:hover  { background: var(--alloy-paper) !important; transform: scale(1.08); }
+.alloy-icon-btn.active { background: var(--alloy-paper) !important; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   DROPDOWNS & CONTEXT MENUS
+───────────────────────────────────────────────────────────────────────────── */
+.alloy-dropdown {
+  animation: a-slidedown var(--dur-base) var(--ease-spring) both;
+  transform-origin: top right;
+}
+.alloy-dropdown-item {
+  transition:
+    background   var(--dur-fast) ease,
+    color        var(--dur-fast) ease,
+    border-left  var(--dur-fast) ease,
+    padding-left var(--dur-fast) ease !important;
+}
+.alloy-dropdown-item:hover {
+  background: var(--alloy-green-4) !important;
+  color: var(--alloy-green-1) !important;
+  padding-left: 18px !important;
+}
+.alloy-dropdown-item-danger:hover {
+  background: var(--alloy-red-4) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   MODALS & OVERLAYS
+───────────────────────────────────────────────────────────────────────────── */
+.alloy-modal-bg {
+  animation: a-fadein var(--dur-base) ease both;
+}
+.alloy-modal-card {
+  animation: a-scalein var(--dur-spring) var(--ease-spring) both;
+}
+
+/* Calendar popup */
+.alloy-calendar {
+  animation: a-slidedown 200ms var(--ease-spring) both;
+  transform-origin: top center;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   TOAST NOTIFICATION
+───────────────────────────────────────────────────────────────────────────── */
+.alloy-toast {
+  animation: a-toast 280ms var(--ease-spring) both;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   TOGGLE SWITCHES  
+───────────────────────────────────────────────────────────────────────────── */
+.alloy-toggle-track {
+  transition: background 220ms var(--ease-spring) !important;
+}
+.alloy-toggle-thumb {
+  transition: left 220ms var(--ease-spring), box-shadow var(--dur-base) ease !important;
+}
+.alloy-toggle-track:hover .alloy-toggle-thumb {
+  box-shadow: 0 0 0 4px rgba(32,187,113,0.15) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   BUTTONS
+───────────────────────────────────────────────────────────────────────────── */
+.alloy-btn-primary {
+  transition: background var(--dur-base) ease, transform var(--dur-fast) ease, box-shadow var(--dur-base) ease !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+.alloy-btn-primary:hover  { box-shadow: 0 4px 12px rgba(0,0,0,0.16) !important; transform: translateY(-1px) !important; }
+.alloy-btn-primary:active { transform: scale(0.97) translateY(0) !important; box-shadow: 0 1px 3px rgba(0,0,0,0.12) !important; }
+
+.alloy-btn-secondary {
+  transition: background var(--dur-base) ease, border-color var(--dur-base) ease, color var(--dur-base) ease, transform var(--dur-fast) ease !important;
+}
+.alloy-btn-secondary:hover  { background: var(--alloy-green-4) !important; border-color: var(--alloy-green-1) !important; color: var(--alloy-green-1) !important; }
+.alloy-btn-secondary:active { transform: scale(0.97) !important; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   INPUTS & SELECTS
+───────────────────────────────────────────────────────────────────────────── */
+input, select, textarea {
+  transition: border-color var(--dur-base) ease, box-shadow var(--dur-base) ease !important;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--alloy-blue-1) !important;
+  box-shadow: 0 0 0 3px var(--alloy-blue-4) !important;
+  outline: none;
+}
+
+/* Search input */
+.alloy-search:focus-within {
+  border-color: var(--alloy-green-1) !important;
+  box-shadow: 0 0 0 2px var(--alloy-green-4) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   DATA SOURCES SIDEBAR ITEMS
+───────────────────────────────────────────────────────────────────────────── */
+.alloy-dash-item {
+  transition: background var(--dur-base) ease, border-left-color var(--dur-base) var(--ease-spring) !important;
+}
+.alloy-dash-item:hover { background: var(--alloy-paper) !important; }
+
+/* Chevron rotation */
+.alloy-chevron {
+  transition: transform 200ms var(--ease-spring) !important;
+}
+.alloy-chevron.open { transform: rotate(90deg) !important; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   LOADING / SKELETON STATES
+───────────────────────────────────────────────────────────────────────────── */
+.alloy-skeleton {
+  background: linear-gradient(90deg, var(--alloy-line) 25%, #f5f5f5 50%, var(--alloy-line) 75%);
+  background-size: 400px 100%;
+  animation: a-shimmer 1.4s ease-in-out infinite;
+  border-radius: 2px;
+}
+.alloy-loading-dot {
+  animation: a-pulse 1.2s ease-in-out infinite;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   DRILL DOWN PANEL (slides in from right)
+───────────────────────────────────────────────────────────────────────────── */
+.alloy-drilldown {
+  animation: a-slideleft var(--dur-spring) var(--ease-spring) both;
+}
+.alloy-drilldown-bg {
+  animation: a-fadein var(--dur-base) ease both;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   CHART HEADER HOVER (show-on-hover mode)
+───────────────────────────────────────────────────────────────────────────── */
+.alloy-hover-title {
+  opacity: 0;
+  transition: opacity var(--dur-base) ease !important;
+}
+[data-widget-id]:hover .alloy-hover-title {
+  opacity: 1 !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   LIVE INDICATOR DOT
+───────────────────────────────────────────────────────────────────────────── */
+.alloy-live-dot::before {
+  content: '';
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--alloy-green-1);
+  margin-right: 5px;
+  animation: a-pulse 2s ease-in-out infinite;
+  vertical-align: middle;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   MAPPED / CONNECTED BADGE
+───────────────────────────────────────────────────────────────────────────── */
+.alloy-mapped-badge {
+  transition: background var(--dur-base) ease, border-color var(--dur-base) ease, transform var(--dur-fast) ease;
+  animation: a-fadein var(--dur-slow) ease both;
+}
+.alloy-mapped-badge:hover { transform: scale(1.02); }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   PAGE-LEVEL TRANSITIONS
+───────────────────────────────────────────────────────────────────────────── */
+
+/* Main content area fades in on route change */
+main, [data-main-content] {
+  animation: a-fadein var(--dur-slow) ease both;
+}
+
+/* Sidebar panel entrance */
+[data-sidebar] {
+  animation: a-slideright var(--dur-spring) var(--ease-spring) both;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   CHART THUMBNAILS IN EDIT MODE
+───────────────────────────────────────────────────────────────────────────── */
+.alloy-chart-thumb {
+  transition: border-color var(--dur-base) ease, background var(--dur-base) ease, transform var(--dur-fast) var(--ease-spring) !important;
+}
+.alloy-chart-thumb:hover  { border-color: var(--alloy-blue-1) !important; transform: scale(1.04) !important; }
+.alloy-chart-thumb.active { border-color: var(--alloy-green-1) !important; background: var(--alloy-green-4) !important; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   SHARE MENU
+───────────────────────────────────────────────────────────────────────────── */
+.alloy-share-item {
+  transition: background var(--dur-fast) ease, color var(--dur-fast) ease, border-left-color var(--dur-fast) ease !important;
+  border-left: 2px solid transparent;
+}
+.alloy-share-item:hover {
+  background: var(--alloy-green-4) !important;
+  color: var(--alloy-green-1) !important;
+  border-left-color: var(--alloy-green-1) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   UTILITY: SMOOTH COLOR SWATCH
+───────────────────────────────────────────────────────────────────────────── */
+.alloy-swatch {
+  transition: transform var(--dur-fast) var(--ease-spring), box-shadow var(--dur-base) ease !important;
+}
+.alloy-swatch:hover  { transform: scale(1.15) !important; box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important; }
+.alloy-swatch.active { transform: scale(1.2) !important; box-shadow: 0 0 0 3px white, 0 0 0 5px var(--alloy-ink) !important; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   RESIZE HANDLE
+───────────────────────────────────────────────────────────────────────────── */
+.alloy-resize-handle {
+  opacity: 0;
+  transition: opacity var(--dur-base) ease !important;
+}
+[data-widget-id]:hover .alloy-resize-handle { opacity: 1; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   PROGRESS / SPARKLINES
+───────────────────────────────────────────────────────────────────────────── */
+.alloy-bar-progress {
+  transition: width 0.6s var(--ease-out) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   EDIT MODE TOGGLE — canvas fades + slides
+───────────────────────────────────────────────────────────────────────────── */
+.alloy-edit-topbar {
+  animation: a-slidedown var(--dur-base) var(--ease-spring) both;
+}
+.alloy-canvas-enter {
+  animation: a-fadein var(--dur-base) ease both;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   COLOR PICKER POPOVER
+───────────────────────────────────────────────────────────────────────────── */
+.alloy-color-picker {
+  animation: a-scalein var(--dur-base) var(--ease-spring) both;
+  transform-origin: top right;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   SELECTION BOX (drag select)
+───────────────────────────────────────────────────────────────────────────── */
+.alloy-select-box {
+  animation: a-fadein var(--dur-fast) ease both;
+  pointer-events: none;
+}
+
+/* ── Inline animation classes (previously injected via <style> tag) ── */
+@keyframes alloy-fadein    { from { opacity:0 } to { opacity:1 } }
+@keyframes alloy-slideup   { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:translateY(0) } }
+@keyframes alloy-slidedown { from { opacity:0; transform:translateY(-6px) } to { opacity:1; transform:translateY(0) } }
+@keyframes alloy-slidein-right { from { opacity:0; transform:translateX(18px) } to { opacity:1; transform:translateX(0) } }
+@keyframes alloy-slidein-left  { from { opacity:0; transform:translateX(-18px) } to { opacity:1; transform:translateX(0) } }
+@keyframes alloy-scalein   { from { opacity:0; transform:scale(0.96) } to { opacity:1; transform:scale(1) } }
+@keyframes alloy-toast     { from { opacity:0; transform:translateX(-50%) translateY(12px) } to { opacity:1; transform:translateX(-50%) translateY(0) } }
+@keyframes alloy-spin      { to   { transform:rotate(360deg) } }
+@keyframes alloy-pulse     { 0%,100%{opacity:1} 50%{opacity:0.45} }
+
+.alloy-fadein       { animation: alloy-fadein       0.18s ease both }
+.alloy-slideup      { animation: alloy-slideup      0.22s cubic-bezier(0.16,1,0.3,1) both }
+.alloy-slidedown    { animation: alloy-slidedown    0.18s ease both }
+.alloy-slidein-r    { animation: alloy-slidein-right 0.22s cubic-bezier(0.16,1,0.3,1) both }
+.alloy-slidein-l    { animation: alloy-slidein-left  0.20s cubic-bezier(0.16,1,0.3,1) both }
+.alloy-scalein      { animation: alloy-scalein      0.18s cubic-bezier(0.16,1,0.3,1) both }
+.alloy-toast        { animation: alloy-toast        0.28s cubic-bezier(0.16,1,0.3,1) both }
+.alloy-toast-in     { animation: alloy-toast        0.28s cubic-bezier(0.16,1,0.3,1) both }
+.alloy-loading      { animation: alloy-pulse        1.2s  ease-in-out infinite }
+.alloy-spin         { animation: alloy-spin         0.8s  linear infinite }
+
+.alloy-card-hover   { transition: box-shadow 0.18s ease, transform 0.18s ease, opacity 0.18s ease, border-color 0.15s ease !important }
+.alloy-card-hover:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10) !important; transform: translateY(-1px) }
+.alloy-nav-item     { transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease !important }
+.alloy-btn          { transition: background 0.15s ease, opacity 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease !important }
+.alloy-btn:active   { transform: scale(0.97) !important }
+.alloy-panel-slide  { animation: alloy-slidein-right 0.24s cubic-bezier(0.16,1,0.3,1) both }
+.alloy-edit-panel   { animation: alloy-slidein-right 0.24s cubic-bezier(0.16,1,0.3,1) both }
+.alloy-tab          { transition: color 0.15s ease, border-bottom-color 0.15s ease !important }
+.alloy-dropdown     { animation: alloy-slidedown 0.16s cubic-bezier(0.16,1,0.3,1) both }
+.alloy-modal-bg     { animation: alloy-fadein    0.18s ease both }
+.alloy-modal-card   { animation: alloy-scalein   0.22s cubic-bezier(0.16,1,0.3,1) both }
+.alloy-editing-badge { animation: alloy-scalein  0.20s cubic-bezier(0.16,1,0.3,1) both }
+.alloy-calendar     { animation: alloy-slidedown 0.20s cubic-bezier(0.16,1,0.3,1) both }
+.alloy-drilldown    { animation: alloy-slidein-right 0.28s cubic-bezier(0.16,1,0.3,1) both }
+.alloy-drilldown-bg { animation: alloy-fadein    0.18s ease both }
+.alloy-toggle-track { transition: background 0.2s ease !important }
+.alloy-toggle-thumb { transition: left 0.2s cubic-bezier(0.16,1,0.3,1) !important }
+.alloy-hover-title  { opacity:0; transition: opacity 0.18s ease !important }
+[data-widget-id]:hover .alloy-hover-title { opacity:1 !important }
