@@ -145,6 +145,7 @@ button, a, input, select, textarea {
 
 button:active { transform: scale(0.97); }
 button[data-modal]:active,
+button[data-action]:active { transform: none !important; }
 button { cursor: pointer; }
 a { text-decoration: none; transition: color var(--dur-base) ease, opacity var(--dur-base) ease; }
 
