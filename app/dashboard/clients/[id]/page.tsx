@@ -655,8 +655,7 @@ function NewDashCanvas({ onClone, onTemplate }: { onClone: () => void; onTemplat
         {/* Add a page template */}
         <button
           data-action="open-template"
-          onMouseDown={e => { e.stopPropagation(); }}
-          onClick={e => { e.stopPropagation(); e.nativeEvent.stopImmediatePropagation(); onTemplate(); }}
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onTemplate(); }}
           style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:14, padding:'30px 24px', background:ALLOY.white, border:'1px solid #e8e8e8', borderRadius:2, cursor:'pointer', textAlign:'center' as const }}>
           <div style={{ width:56, height:56, display:'flex', alignItems:'center', justifyContent:'center' }}>
             <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect x="4" y="4" width="12" height="12" rx="2" fill="#D0D0D0"/><rect x="20" y="4" width="12" height="12" rx="2" fill="#D0D0D0"/><rect x="4" y="20" width="12" height="7" rx="1.5" fill="#E8E8E8"/><rect x="20" y="20" width="12" height="7" rx="1.5" fill="#E8E8E8"/><circle cx="10" cy="30" r="2.5" fill="#48b5ea"/></svg>
@@ -1180,31 +1179,9 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     return () => document.removeEventListener('mousedown', onDown)
   }, [])
 
-  // ── Stable callbacks for NewDashCanvas (prevent stale closure on re-render) ──
+  // ── Stable callbacks for NewDashCanvas ──────────────────────────────────
   const handleOpenCloneModal = React.useCallback(() => setShowCloneModal(true), [])
-  const handleOpenTemplateModal = React.useCallback(() => {
-    setShowTemplateModal(true)
-    setTemplateStep(1)
-    setTemplateSelected(null)
-    setTemplateName('')
-    setTemplateSearch('')
-  }, [])
-
-  // Fallback: catch template button click at document level in case React event is blocked
-  useEffect(() => {
-    function onDocClick(e: MouseEvent) {
-      const btn = (e.target as HTMLElement).closest('[data-action="open-template"]')
-      if (btn) {
-        setShowTemplateModal(true)
-        setTemplateStep(1)
-        setTemplateSelected(null)
-        setTemplateName('')
-        setTemplateSearch('')
-      }
-    }
-    document.addEventListener('click', onDocClick, true) // capture phase
-    return () => document.removeEventListener('click', onDocClick, true)
-  }, [])
+  const handleOpenTemplateModal = React.useCallback(() => setShowTemplateModal(true), [])
 
   // ── Core widget constants and helpers ───────────────────────────────────
   const STATIC_IDS = ['w1','w2','w3','w4','c1','c2','c3','d1','d2','d3','v1','bounce']
@@ -3599,26 +3576,35 @@ Alloy Intelligence`)
 
 
 
-      {/* Template Wizard Modal */}
+      {/* Template Modal */}
       {showTemplateModal && (
-        <div style={{ position:'fixed', inset:0, zIndex:9999, background:'rgba(240,242,245,0.97)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-          <div style={{ background:'#fff', borderRadius:8, padding:40, maxWidth:500, width:'100%', textAlign:'center' as const, boxShadow:'0 4px 24px rgba(0,0,0,0.15)' }}>
-            <h2 style={{ fontSize:20, fontWeight:700, marginBottom:12 }}>Add Page Template</h2>
-            <p style={{ fontSize:13, color:'#888', marginBottom:24 }}>Select a template to get started</p>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:24 }}>
-              {['Website Performance','Paid Media','Organic + AI Search','Social Media','E-Commerce','Executive Summary'].map(name => (
-                <button key={name} onClick={() => {
-                  const n = name
-                  setDashboards((prev: string[]) => [...prev, n])
-                  setClonedDashboards((prev: string[]) => [...prev, n])
-                  setActiveDash(n)
-                  setShowTemplateModal(false)
-                }} style={{ padding:'12px', background:'#f8f9fa', border:'1px solid #e5e5e5', borderRadius:6, cursor:'pointer', fontSize:13, fontWeight:500 }}>
-                  {name}
-                </button>
-              ))}
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:100, padding:16 }}
+          onClick={() => setShowTemplateModal(false)}>
+          <div style={{ background:ALLOY.white, borderRadius:2, width:'100%', maxWidth:600, overflow:'hidden', boxShadow:'0 20px 60px rgba(0,0,0,0.15)' }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ height:3, background:ALLOY.green1 }}/>
+            <div style={{ padding:28 }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
+                <h2 style={{ fontSize:15, fontWeight:700, color:ALLOY.ink, fontFamily:ALLOY.fontDisplay }}>Add Page Template</h2>
+                <button onClick={() => setShowTemplateModal(false)} style={{ background:'none', border:'none', cursor:'pointer', color:ALLOY.mute, fontSize:18 }}>✕</button>
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10, marginBottom:24 }}>
+                {['Website Performance','Paid Media','Organic + AI Search','Social Media','E-Commerce','Executive Summary'].map(name => (
+                  <button key={name} onClick={() => {
+                    setDashboards((prev: string[]) => [...prev, name])
+                    setClonedDashboards((prev: string[]) => [...prev, name])
+                    setActiveDash(name)
+                    setShowTemplateModal(false)
+                  }} style={{ padding:'14px 10px', background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:2, cursor:'pointer', fontSize:12, fontWeight:500, color:ALLOY.ink, fontFamily:ALLOY.fontBody, textAlign:'center' as const }}>
+                    {name}
+                  </button>
+                ))}
+              </div>
+              <div style={{ display:'flex', gap:8 }}>
+                <button onClick={() => setShowTemplateModal(false)}
+                  style={{ flex:1, background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'9px', fontFamily:ALLOY.fontBody, fontSize:13, color:ALLOY.mute, cursor:'pointer' }}>Cancel</button>
+              </div>
             </div>
-            <button onClick={() => setShowTemplateModal(false)} style={{ padding:'10px 24px', background:'#e5e5e5', border:'none', borderRadius:6, cursor:'pointer', fontSize:13 }}>Cancel</button>
           </div>
         </div>
       )}
