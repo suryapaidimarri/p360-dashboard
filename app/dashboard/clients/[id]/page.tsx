@@ -1212,8 +1212,6 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     function onDocClick(e: MouseEvent) {
       const btn = (e.target as HTMLElement).closest('[data-action="open-template"]')
       if (btn) {
-        e.preventDefault()
-        e.stopPropagation()
         setShowTemplateModal(true)
         setTemplateStep(1)
         setTemplateSelected(null)
@@ -1280,17 +1278,17 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   // ── Drag & Drop reorder ──────────────────────────────────────────────────
   // ── Drag & Drop ──────────────────────────────────────────────────────────
   // ── Drag & Drop (HTML5 native) ──────────────────────────────────────────
-  const dragSrcId = React.useRef<string|null>(null)
+  const dragSrcId = React.useRef(null as string | null)
 
   function onDragStart(e: React.DragEvent, dragId: string) {
     if (!editMode) return
     dragSrcId.current = dragId
     setDraggingId(dragId)
-    // Set drag image to the card itself
     const card = e.currentTarget as HTMLElement
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('text/plain', dragId)
-    // Slight delay so browser captures card before we dim it
+    // Set drag image explicitly so browser uses the card
+    try { e.dataTransfer.setDragImage(card, 20, 20) } catch {}
     setTimeout(() => {
       card.style.opacity = '0.25'
       card.style.outline = '2px dashed #20BB71'
