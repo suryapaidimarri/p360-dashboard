@@ -530,7 +530,7 @@ function TemplateWizard({ step, selected, name, search, onStepChange, onSelectCh
   }
 
   return (
-    <div style={{ position:'fixed', inset:0, background:'rgba(240,242,245,0.97)', display:'flex', flexDirection:'column', zIndex:9999, pointerEvents:'auto' }}>
+    <div style={{ width:'100%', height:'100%', display:'flex', flexDirection:'column' }}>
       <button onClick={onClose} style={{ position:'absolute', top:16, right:16, width:36, height:36, borderRadius:'50%', background:'#fff', border:'1px solid #e5e5e5', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', zIndex:10 }}>
         <X size={16} style={{ color:'#666' }}/>
       </button>
@@ -659,11 +659,8 @@ function NewDashCanvas({ onClone, onTemplate }: { onClone: () => void; onTemplat
           onClick={e => {
             e.stopPropagation();
             e.nativeEvent.stopImmediatePropagation();
-            console.log('[TEMPLATE] button clicked');
-            console.log('[TEMPLATE] portalNode:', (window as any).__alloyPortal);
-            console.log('[TEMPLATE] calling onTemplate...');
+            console.log('[TEMPLATE] button clicked, calling onTemplate');
             onTemplate();
-            console.log('[TEMPLATE] onTemplate called');
           }}
           style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:14, padding:'30px 24px', background:ALLOY.white, border:'1px solid #e8e8e8', borderRadius:2, cursor:'pointer', textAlign:'center' as const }}>
           <div style={{ width:56, height:56, display:'flex', alignItems:'center', justifyContent:'center' }}>
@@ -866,17 +863,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [showBuilder, setShowBuilder] = useState(false)
   const [showCloneModal, setShowCloneModal] = useState(false)
   const [showTemplateModal, setShowTemplateModal] = useState(false)
-  const [portalNode, setPortalNode] = useState<HTMLElement|null>(null)
-  useEffect(() => {
-    const el = document.createElement('div')
-    el.id = 'alloy-template-portal'
-    el.style.cssText = 'position:fixed;inset:0;z-index:9999;pointer-events:none;'
-    document.body.appendChild(el)
-    ;(window as any).__alloyPortal = el
-    console.log('[PORTAL] created and appended to body:', el)
-    setPortalNode(el)
-    return () => { document.body.removeChild(el) }
-  }, [])
+
   const [templateStep, setTemplateStep] = useState(1)
   const [templateSelected, setTemplateSelected] = useState<string|null>(null)
   const [templateName, setTemplateName] = useState('')
@@ -3637,10 +3624,11 @@ Alloy Intelligence`)
 
 
 
-      {/* Template Wizard Modal — portal to dedicated DOM node outside React tree */}
-      {showTemplateModal && console.log('[TEMPLATE] showTemplateModal=true, portalNode=', portalNode) as any}
-      {showTemplateModal && portalNode && createPortal(
-        <TemplateWizard
+      {/* Template Wizard Modal */}
+      {showTemplateModal && console.log('[TEMPLATE] showTemplateModal=true, rendering modal') as any}
+      {showTemplateModal && (
+        <div style={{ position:'fixed', inset:0, zIndex:9999, background:'rgba(240,242,245,0.97)', display:'flex', flexDirection:'column' }}>
+          <TemplateWizard
           step={templateStep}
           selected={templateSelected}
           name={templateName}
@@ -3655,8 +3643,8 @@ Alloy Intelligence`)
             setActiveDash(name)
           }}
           onClose={() => { setShowTemplateModal(false); setTemplateStep(1); setTemplateSelected(null); setTemplateName(''); setTemplateSearch('') }}
-        />,
-        portalNode
+        />
+        </div>
       )}
 
       {showCloneModal && (
