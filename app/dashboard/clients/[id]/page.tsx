@@ -836,6 +836,8 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
 
   const [showDimDropdown, setShowDimDropdown] = useState(false)
   const [showMetDropdown, setShowMetDropdown] = useState(false)
+  const [showOptMetDropdown, setShowOptMetDropdown] = useState(false)
+  const [comparisonData, setComparisonData] = useState<{[wid:string]: any[]}>({}) 
   const [dsSearch, setDsSearch] = useState('')
   const [dimSearch, setDimSearch] = useState('')
   const [metSearch, setMetSearch] = useState('')
@@ -1320,7 +1322,15 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     }
   }, [widgets, connection, selectedProperty])
 
-  // Auto-fetch filtered data for widgets that have filters applied
+  // Auto-fetch comparison data for widgets that have comparison enabled
+  useEffect(() => {
+    if (!connection?.connected || !selectedProperty) return
+    widgets.forEach(w => {
+      if ((w as any).comparisonEnabled && (w as any).comparisonType && (w as any).comparisonType !== 'none') {
+        fetchComparisonData(w)
+      }
+    })
+  }, [widgets, connection, selectedProperty, dateRange, activeFetchStart, activeFetchEnd])
   useEffect(() => {
     if (!connection?.connected || !selectedProperty) return
     widgets.forEach(w => {
@@ -1395,20 +1405,60 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     if (ga4Data?.timeSeries?.rows) return sessionData
     return sessionData
   }
+  // Fetch comparison period data for a widget
+  async function fetchComparisonData(widget: Widget) {
+    const pid = selectedProperty
+    if (!pid || !connection?.connected) return
+    const type = (widget as any).comparisonType
+    if (!type || type === 'none') return
+
+    // Compute comparison date range
+    const mainStart = activeFetchStart || dateRange
+    const mainEnd = activeFetchEnd || 'today'
+
+    let compStart = '', compEnd = ''
+    if (type === 'custom') {
+      compStart = (widget as any).compStart || '2026-03-01'
+      compEnd = (widget as any).compEnd || '2026-03-31'
+    } else if (type === 'previous_period') {
+      // Calculate previous period with same duration
+      const endDate = mainEnd === 'today' ? new Date() : new Date(mainEnd)
+      const startDate = mainStart.endsWith('daysAgo')
+        ? new Date(Date.now() - parseInt(mainStart) * 86400000)
+        : new Date(mainStart)
+      const duration = Math.round((endDate.getTime() - startDate.getTime()) / 86400000)
+      const prevEnd = new Date(startDate.getTime() - 86400000)
+      const prevStart = new Date(prevEnd.getTime() - duration * 86400000)
+      compStart = prevStart.toISOString().split('T')[0]
+      compEnd = prevEnd.toISOString().split('T')[0]
+    } else if (type === 'previous_year') {
+      const endDate = mainEnd === 'today' ? new Date() : new Date(mainEnd)
+      const startDate = mainStart.endsWith('daysAgo')
+        ? new Date(Date.now() - parseInt(mainStart) * 86400000)
+        : new Date(mainStart)
+      compStart = new Date(startDate.getFullYear() - 1, startDate.getMonth(), startDate.getDate()).toISOString().split('T')[0]
+      compEnd = new Date(endDate.getFullYear() - 1, endDate.getMonth(), endDate.getDate()).toISOString().split('T')[0]
+    }
+
+    if (!compStart || !compEnd) return
+
+    try {
+      const res = await fetch(`/api/ga4?client_id=${clientId}&property_id=${pid}&start_date=${compStart}&end_date=${compEnd}`)
+      const data = await res.json()
+      if (data.connected && data.timeSeries?.rows) {
+        const rows = data.timeSeries.rows.map((r: any) => ({
+          d: r.dimensionValues?.[0]?.value?.slice(4) || '',
+          v: parseInt(r.metricValues?.[0]?.value || '0'),
+        }))
+        setComparisonData(prev => ({ ...prev, [widget.id]: rows }))
+      }
+    } catch {}
+  }
+
   function getComparisonData(w: Partial<Widget>): any[] | undefined {
     if (!(w as any).comparisonEnabled || !(w as any).comparisonType || (w as any).comparisonType === 'none') return undefined
-    if (!ga4Data?.timeSeries?.rows) return undefined
-    const rows = ga4Data.timeSeries.rows
-    const type = (w as any).comparisonType
-    const offset = type === 'previous_year' ? 365 : rows.length
-    return rows.map((r: any, i: number) => {
-      const srcIdx = i - offset
-      const srcRow = srcIdx >= 0 ? rows[srcIdx] : null
-      return {
-        d: r.dimensionValues?.[0]?.value?.slice(4) || String(i),
-        v: srcRow ? parseInt(srcRow.metricValues?.[0]?.value || '0') : 0,
-      }
-    })
+    const wid = (w as Widget).id
+    return wid ? comparisonData[wid] : undefined
   }
   const dynamicWidgets = widgets.filter(w => !STATIC_IDS.includes(w.id))
   const cloningRef = React.useRef(false)
@@ -3109,7 +3159,7 @@ Alloy Intelligence`)
                             </>
                           )}
                           {/* Optional metrics — when on, show metric picker inline */}
-                          <Toggle label="Optional metrics" on={!!(widgetData as any).optionalMetrics} onChange={v => { updateField('optionalMetrics', v); if (!v) setShowMetDropdown(false) }}/>
+                          <Toggle label="Optional metrics" on={!!(widgetData as any).optionalMetrics} onChange={v => { updateField('optionalMetrics', v); if (!v) setShowOptMetDropdown(false) }}/>
                           {!!(widgetData as any).optionalMetrics && (
                             <div style={{ marginTop:8, position:'relative' as const }}>
                               {/* Show selected optional metrics */}
@@ -3125,15 +3175,13 @@ Alloy Intelligence`)
                                   </div>
                                 ))}
                               </div>
-                              {/* Add optional metric button — same style as Add Metric */}
-                              <button onClick={() => { setShowMetDropdown(!showMetDropdown); setMetSearch('') }}
+                              <button onClick={() => { setShowOptMetDropdown(!showOptMetDropdown); setMetSearch('') }}
                                 style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:`1px dashed ${ALLOY.line}`, borderRadius:2, padding:'6px 12px', cursor:'pointer', color:ALLOY.green1, fontSize:9, fontWeight:700, fontFamily:ALLOY.fontLabel, letterSpacing:'0.06em', textTransform:'uppercase' as const }}>
                                 <Plus size={13}/> Add optional metric
                               </button>
-                              {/* Reuse same metric dropdown */}
-                              {showMetDropdown && (
+                              {showOptMetDropdown && (
                                 <>
-                                  <div style={{ position:'fixed' as const, inset:0, zIndex:199 }} onClick={() => setShowMetDropdown(false)}/>
+                                  <div style={{ position:'fixed' as const, inset:0, zIndex:199 }} onClick={() => setShowOptMetDropdown(false)}/>
                                   <div style={{ position:'absolute' as const, top:'100%', left:0, right:0, background:ALLOY.white, border:'1px solid #e0e0e0', borderRadius:2, boxShadow:'0 8px 24px rgba(0,0,0,0.14)', zIndex:200, overflow:'hidden', maxHeight:300 }}>
                                     <div style={{ padding:'10px 12px', borderBottom:`1px solid ${ALLOY.line}`, position:'sticky' as const, top:0, background:ALLOY.white }}>
                                       <div style={{ display:'flex', alignItems:'center', gap:8, background:ALLOY.paper, borderRadius:2, padding:'7px 12px', border:`1px solid ${ALLOY.line}` }}>
@@ -3147,7 +3195,7 @@ Alloy Intelligence`)
                                         <div key={met} onClick={() => {
                                           const cur: string[] = (widgetData as any).optionalMetricsList || []
                                           updateField('optionalMetricsList', [...cur, met])
-                                          setShowMetDropdown(false); setMetSearch('')
+                                          setShowOptMetDropdown(false); setMetSearch('')
                                         }}
                                           style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 14px', cursor:'pointer' }}
                                           onMouseEnter={e=>(e.currentTarget as HTMLDivElement).style.background=ALLOY.blue4}
