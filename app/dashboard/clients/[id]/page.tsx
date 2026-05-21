@@ -3552,7 +3552,6 @@ Alloy Intelligence`)
                                       {showCompCalendar && (<>
                                         <div style={{position:'fixed' as const,inset:0,zIndex:1000}} onClick={()=>{setShowCompCalendar(false)}}/>
                                         <div className="alloy-calendar" style={{position:'fixed' as const,top:compCalAnchorRef?Math.min(compCalAnchorRef.top,window.innerHeight-540):200,left:compCalAnchorRef?Math.max(10,Math.min(compCalAnchorRef.left,window.innerWidth-640)):200,zIndex:1001,background:ALLOY.white,border:`1px solid ${ALLOY.line}`,borderRadius:4,boxShadow:'0 12px 40px rgba(0,0,0,0.18)',padding:20,width:620}} onClick={e=>e.stopPropagation()}>
-                                        <div className="alloy-calendar" style={{position:'fixed' as const,top:calAnchorRef?Math.min(calAnchorRef.top,window.innerHeight-540):200,left:calAnchorRef?Math.max(10,Math.min(calAnchorRef.left,window.innerWidth-640)):200,zIndex:1001,background:ALLOY.white,border:`1px solid ${ALLOY.line}`,borderRadius:4,boxShadow:'0 12px 40px rgba(0,0,0,0.18)',padding:20,width:620}} onClick={e=>e.stopPropagation()}>
                                           <p style={{fontFamily:ALLOY.fontBody,fontSize:11,color:ALLOY.mute,textAlign:'center' as const,marginBottom:12}}>{calClickCount===0?'Click a start date':calClickCount===1?'Now click an end date':`${fmtLbl2(calTempStart)} — ${fmtLbl2(calTempEnd)}`}</p>
                                           <div style={{display:'flex',gap:8}}>
                                             {(() => {
