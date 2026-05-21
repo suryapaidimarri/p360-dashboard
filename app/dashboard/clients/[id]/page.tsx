@@ -1400,8 +1400,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     if (!ga4Data?.timeSeries?.rows) return undefined
     const rows = ga4Data.timeSeries.rows
     const type = (w as any).comparisonType
-    const offset = type === 'previous_year' ? 365 : rows.length // previous period = shift by data length
-    // Return shifted data (same shape, offset by period)
+    const offset = type === 'previous_year' ? 365 : rows.length
     return rows.map((r: any, i: number) => {
       const srcIdx = i - offset
       const srcRow = srcIdx >= 0 ? rows[srcIdx] : null
@@ -1411,6 +1410,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
       }
     })
   }
+  const dynamicWidgets = widgets.filter(w => !STATIC_IDS.includes(w.id))
   const cloningRef = React.useRef(false)
 
   function startEdit(w: Widget) {
