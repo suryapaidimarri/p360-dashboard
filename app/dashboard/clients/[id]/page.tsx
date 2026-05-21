@@ -1464,6 +1464,28 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     const wid = (w as Widget).id
     return wid ? comparisonData[wid] : undefined
   }
+  // Preset date range calculator — used by Fixed dropdown in calendar
+  function getPresetDates(label: string): [string, string] {
+    const now = new Date()
+    const fmt = (d: Date) => d.toISOString().split('T')[0]
+    const dAgo = (n: number) => new Date(Date.now() - n * 86400000)
+    if (label === 'Last 7 days') return [fmt(dAgo(7)), fmt(dAgo(1))]
+    if (label === 'Last 14 days') return [fmt(dAgo(14)), fmt(dAgo(1))]
+    if (label === 'Last 28 days') return [fmt(dAgo(28)), fmt(dAgo(1))]
+    if (label === 'Last 30 days') return [fmt(dAgo(30)), fmt(dAgo(1))]
+    if (label === 'Last month') { const f = new Date(now.getFullYear(), now.getMonth() - 1, 1), l = new Date(now.getFullYear(), now.getMonth(), 0); return [fmt(f), fmt(l)] }
+    if (label === 'Last quarter') { const q = Math.floor(now.getMonth() / 3), qs = new Date(now.getFullYear(), q * 3 - 3, 1), qe = new Date(now.getFullYear(), q * 3, 0); return [fmt(qs), fmt(qe)] }
+    if (label === 'Last year') return [fmt(new Date(now.getFullYear() - 1, 0, 1)), fmt(new Date(now.getFullYear() - 1, 11, 31))]
+    if (label === 'This month') return [fmt(new Date(now.getFullYear(), now.getMonth(), 1)), fmt(new Date(now.getFullYear(), now.getMonth() + 1, 0))]
+    if (label === 'This month to date') return [fmt(new Date(now.getFullYear(), now.getMonth(), 1)), fmt(now)]
+    if (label === 'This quarter') { const q = Math.floor(now.getMonth() / 3); return [fmt(new Date(now.getFullYear(), q * 3, 1)), fmt(new Date(now.getFullYear(), q * 3 + 3, 0))] }
+    if (label === 'This quarter to date') { const q = Math.floor(now.getMonth() / 3); return [fmt(new Date(now.getFullYear(), q * 3, 1)), fmt(now)] }
+    if (label === 'This year') return [fmt(new Date(now.getFullYear(), 0, 1)), fmt(new Date(now.getFullYear(), 11, 31))]
+    if (label === 'This year to date') return [fmt(new Date(now.getFullYear(), 0, 1)), fmt(now)]
+    if (label.includes('Last week')) { const day = now.getDay(), offset = label.includes('Monday') ? (day === 0 ? 6 : day - 1) : day; const s = new Date(now.getTime() - (offset + 7) * 86400000), e = new Date(now.getTime() - (offset + 1) * 86400000); return [fmt(s), fmt(e)] }
+    if (label.includes('This week')) { const day = now.getDay(), offset = label.includes('Monday') ? (day === 0 ? 6 : day - 1) : day; const s = new Date(now.getTime() - offset * 86400000); return [fmt(s), label.includes('to date') ? fmt(now) : fmt(new Date(s.getTime() + 6 * 86400000))] }
+    return [fmt(dAgo(30)), fmt(dAgo(1))]
+  }
   const dynamicWidgets = widgets.filter(w => !STATIC_IDS.includes(w.id))
   const cloningRef = React.useRef(false)
 
@@ -3452,30 +3474,9 @@ Alloy Intelligence`)
                                             {item.submenu && dateTypeSubmenu === item.label && (
                                               <div style={{position:'absolute' as const,left:'100%',top:0,background:ALLOY.white,border:`1px solid ${ALLOY.line}`,borderRadius:4,boxShadow:'0 8px 24px rgba(0,0,0,0.15)',zIndex:1003,minWidth:280,padding:'4px 0'}}>
                                                 {item.submenu.map((opt: string) => {
-                                                  const getPresetDates = (label: string): [string,string] => {
-                                                    const now = new Date()
-                                                    const fmt = (d: Date) => d.toISOString().split('T')[0]
-                                                    const d = (n: number) => new Date(Date.now() - n*86400000)
-                                                    if (label==='Last 7 days') return [fmt(d(7)),fmt(d(1))]
-                                                    if (label==='Last 14 days') return [fmt(d(14)),fmt(d(1))]
-                                                    if (label==='Last 28 days') return [fmt(d(28)),fmt(d(1))]
-                                                    if (label==='Last 30 days') return [fmt(d(30)),fmt(d(1))]
-                                                    if (label==='Last month') { const f=new Date(now.getFullYear(),now.getMonth()-1,1),l=new Date(now.getFullYear(),now.getMonth(),0); return [fmt(f),fmt(l)] }
-                                                    if (label==='Last quarter') { const q=Math.floor(now.getMonth()/3),qs=new Date(now.getFullYear(),q*3-3,1),qe=new Date(now.getFullYear(),q*3,0); return [fmt(qs),fmt(qe)] }
-                                                    if (label==='Last year') return [fmt(new Date(now.getFullYear()-1,0,1)),fmt(new Date(now.getFullYear()-1,11,31))]
-                                                    if (label==='This month') { return [fmt(new Date(now.getFullYear(),now.getMonth(),1)),fmt(new Date(now.getFullYear(),now.getMonth()+1,0))] }
-                                                    if (label==='This month to date') return [fmt(new Date(now.getFullYear(),now.getMonth(),1)),fmt(now)]
-                                                    if (label==='This quarter') { const q=Math.floor(now.getMonth()/3); return [fmt(new Date(now.getFullYear(),q*3,1)),fmt(new Date(now.getFullYear(),q*3+3,0))] }
-                                                    if (label==='This quarter to date') { const q=Math.floor(now.getMonth()/3); return [fmt(new Date(now.getFullYear(),q*3,1)),fmt(now)] }
-                                                    if (label==='This year') return [fmt(new Date(now.getFullYear(),0,1)),fmt(new Date(now.getFullYear(),11,31))]
-                                                    if (label==='This year to date') return [fmt(new Date(now.getFullYear(),0,1)),fmt(now)]
-                                                    if (label.includes('Last week')) { const day=now.getDay(),offset=label.includes('Monday')?day===0?6:day-1:day; const s=new Date(now.getTime()-(offset+7)*86400000),e=new Date(now.getTime()-(offset+1)*86400000); return [fmt(s),fmt(e)] }
-                                                    if (label.includes('This week')) { const day=now.getDay(),offset=label.includes('Monday')?day===0?6:day-1:day; const s=new Date(now.getTime()-offset*86400000); return [fmt(s),label.includes('to date')?fmt(now):fmt(new Date(s.getTime()+6*86400000))] }
-                                                    return [fmt(d(30)),fmt(d(1))]
-                                                  }
                                                   return (
                                                     <div key={opt} onClick={()=>{
-                                                      const [s,e]=getPresetDates(opt)
+                                                      const [s,e] = getPresetDates(opt)
                                                       setCalTempStart(s); setCalTempEnd(e); setCalClickCount(2)
                                                       updateMulti({dateStart:s,dateEnd:e})
                                                       setActiveFetchStart(s); setActiveFetchEnd(e)
