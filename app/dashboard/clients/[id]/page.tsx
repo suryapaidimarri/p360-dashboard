@@ -2069,7 +2069,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
               </div>
             </div>
           )}
-          <DynamicChart chartType={w.chartType} data={getWidgetData(w)} height={activeFilters.length > 0 ? 80 : 90} dimensions={(w as any).dimensions} metrics={(w as any).metrics} opts={{showSummaryRow:(w as any).showSummaryRow, rowsType:(w as any).rowsType, rowsPerPage:(w as any).rowsPerPage, topNRows:(w as any).topNRows, groupOthers:(w as any).groupOthers, tableShowHeader:(w as any).tableShowHeader, tableRowNumbers:(w as any).tableRowNumbers, tableFontSize:(w as any).tableFontSize, tableFontFamily:(w as any).tableFontFamily, tableHeaderBg:(w as any).tableHeaderBg, tableOddRow:(w as any).tableOddRow, tableEvenRow:(w as any).tableEvenRow, tableCellBorder:(w as any).tableCellBorder, tableMissingData:(w as any).tableMissingData, dimAlign:(w as any).dimAlign}} compData={getComparisonData(w)}/>
+          <DynamicChart chartType={w.chartType} data={getWidgetData(w)} height={activeFilters.length > 0 ? 80 : 90} dimensions={(w as any).dimensions} metrics={(w as any).metrics} opts={{showSummaryRow:(w as any).showSummaryRow, ignoreFiltersForSummary:(w as any).ignoreFiltersForSummary, rowsType:(w as any).rowsType, rowsPerPage:(w as any).rowsPerPage, topNRows:(w as any).topNRows, groupOthers:(w as any).groupOthers, tableShowHeader:(w as any).tableShowHeader, tableRowNumbers:(w as any).tableRowNumbers, tableFontSize:(w as any).tableFontSize, tableFontFamily:(w as any).tableFontFamily, tableHeaderBg:(w as any).tableHeaderBg, tableOddRow:(w as any).tableOddRow, tableEvenRow:(w as any).tableEvenRow, tableCellBorder:(w as any).tableCellBorder, tableMissingData:(w as any).tableMissingData, dimAlign:(w as any).dimAlign}} compData={getComparisonData(w)}/>
         </div>
       )
     }
@@ -2108,7 +2108,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
         {connection?.connected && <p style={{ fontSize:9, color:isWhite?ALLOY.green1:'rgba(255,255,255,0.7)', marginTop:4, fontFamily:ALLOY.fontLabel }}>● Live</p>}
         {w.chartType === 'sparkline' && (
           <div style={{ marginTop:6 }}>
-            <DynamicChart chartType="sparkline" data={getWidgetData(w)} height={35} dimensions={(w as any).dimensions} metrics={(w as any).metrics} compData={getComparisonData(w)}/>
+            <DynamicChart chartType="sparkline" data={getWidgetData(w)} height={35} dimensions={(w as any).dimensions} metrics={(w as any).metrics} opts={{rowsType:(w as any).rowsType,topNRows:(w as any).topNRows,rowsPerPage:(w as any).rowsPerPage,groupOthers:(w as any).groupOthers}} compData={getComparisonData(w)}/>
           </div>
         )}
       </div>
@@ -2767,7 +2767,7 @@ Alloy Intelligence`)
                     <span style={{ fontSize:11, color:ALLOY.mute, fontWeight:500, fontFamily:ALLOY.fontBody }}>{widgets.find(x=>x.id==='c1')?.title || 'Sessions Over Time'}</span>
                     {connection?.connected && <span style={{ fontSize:9, color:ALLOY.green1, fontWeight:600, fontFamily:ALLOY.fontLabel }}>● Live</span>}
                   </div>
-                  <DynamicChart chartType={widgets.find(x=>x.id==='c1')?.chartType || 'line'} data={getWidgetData(widgets.find(x=>x.id==='c1') || {})} height={80} dimensions={(widgets.find(x=>x.id==='c1') as any)?.dimensions} metrics={(widgets.find(x=>x.id==='c1') as any)?.metrics} compData={getComparisonData(widgets.find(x=>x.id==='c1') || {})}/>
+                  <DynamicChart chartType={widgets.find(x=>x.id==='c1')?.chartType || 'line'} data={getWidgetData(widgets.find(x=>x.id==='c1') || {})} height={80} dimensions={(widgets.find(x=>x.id==='c1') as any)?.dimensions} metrics={(widgets.find(x=>x.id==='c1') as any)?.metrics} opts={{showSummaryRow:(widgets.find(x=>x.id==='c1') as any)?.showSummaryRow, ignoreFiltersForSummary:(widgets.find(x=>x.id==='c1') as any)?.ignoreFiltersForSummary, rowsType:(widgets.find(x=>x.id==='c1') as any)?.rowsType, rowsPerPage:(widgets.find(x=>x.id==='c1') as any)?.rowsPerPage, topNRows:(widgets.find(x=>x.id==='c1') as any)?.topNRows, groupOthers:(widgets.find(x=>x.id==='c1') as any)?.groupOthers}} compData={getComparisonData(widgets.find(x=>x.id==='c1') || {})}/>
                 </ChartCard>}
                 {!isWidgetRemoved('c2') && <ChartCard id="c2">
                   <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:110 }}>
@@ -2808,7 +2808,7 @@ Alloy Intelligence`)
                     <span style={{ fontSize:11, fontWeight:600, fontFamily:ALLOY.fontBody }}>{widgets.find(x=>x.id==='d1')?.title || 'Users By Device'}</span>
                     {connection?.connected && <span style={{ fontSize:9, color:ALLOY.green1, fontWeight:600, fontFamily:ALLOY.fontLabel }}>● Live</span>}
                   </div>
-                  <DynamicChart chartType={widgets.find(x=>x.id==='d1')?.chartType || 'column'} data={getWidgetData(widgets.find(x=>x.id==='d1') || {})} height={110} dimensions={(widgets.find(x=>x.id==='d1') as any)?.dimensions} metrics={(widgets.find(x=>x.id==='d1') as any)?.metrics} compData={getComparisonData(widgets.find(x=>x.id==='d1') || {})}/>
+                  <DynamicChart chartType={widgets.find(x=>x.id==='d1')?.chartType || 'column'} data={getWidgetData(widgets.find(x=>x.id==='d1') || {})} height={110} dimensions={(widgets.find(x=>x.id==='d1') as any)?.dimensions} metrics={(widgets.find(x=>x.id==='d1') as any)?.metrics} opts={{showSummaryRow:(widgets.find(x=>x.id==='d1') as any)?.showSummaryRow, ignoreFiltersForSummary:(widgets.find(x=>x.id==='d1') as any)?.ignoreFiltersForSummary, rowsType:(widgets.find(x=>x.id==='d1') as any)?.rowsType, rowsPerPage:(widgets.find(x=>x.id==='d1') as any)?.rowsPerPage, topNRows:(widgets.find(x=>x.id==='d1') as any)?.topNRows, groupOthers:(widgets.find(x=>x.id==='d1') as any)?.groupOthers}} compData={getComparisonData(widgets.find(x=>x.id==='d1') || {})}/>
                 </ChartCard>}
                 {!isWidgetRemoved('d2') && <ChartCard id="d2">
                   <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
@@ -2841,7 +2841,7 @@ Alloy Intelligence`)
                   <span style={{ fontSize:12, fontWeight:600, fontFamily:ALLOY.fontBody }}>{widgets.find(x=>x.id==='v1')?.title || 'Website Views'}</span>
                   {connection?.connected && <span style={{ fontSize:9, color:ALLOY.green1, fontWeight:600, fontFamily:ALLOY.fontLabel }}>● Live GA4</span>}
                 </div>
-                <DynamicChart chartType={widgets.find(x=>x.id==='v1')?.chartType || 'area'} data={getWidgetData(widgets.find(x=>x.id==='v1') || {})} height={130} dimensions={(widgets.find(x=>x.id==='v1') as any)?.dimensions} metrics={(widgets.find(x=>x.id==='v1') as any)?.metrics} compData={getComparisonData(widgets.find(x=>x.id==='v1') || {})}/>
+                <DynamicChart chartType={widgets.find(x=>x.id==='v1')?.chartType || 'area'} data={getWidgetData(widgets.find(x=>x.id==='v1') || {})} height={130} dimensions={(widgets.find(x=>x.id==='v1') as any)?.dimensions} metrics={(widgets.find(x=>x.id==='v1') as any)?.metrics} opts={{showSummaryRow:(widgets.find(x=>x.id==='v1') as any)?.showSummaryRow, ignoreFiltersForSummary:(widgets.find(x=>x.id==='v1') as any)?.ignoreFiltersForSummary, rowsType:(widgets.find(x=>x.id==='v1') as any)?.rowsType, rowsPerPage:(widgets.find(x=>x.id==='v1') as any)?.rowsPerPage, topNRows:(widgets.find(x=>x.id==='v1') as any)?.topNRows, groupOthers:(widgets.find(x=>x.id==='v1') as any)?.groupOthers}} compData={getComparisonData(widgets.find(x=>x.id==='v1') || {})}/>
               </ChartCard>}
 
             {/* Dynamically added / cloned widgets */}
@@ -2875,7 +2875,7 @@ Alloy Intelligence`)
                       <span style={{ fontSize:12, fontWeight:600, color:ALLOY.ink, fontFamily:ALLOY.fontBody }}>{w.title}</span>
                       {connection?.connected && <span style={{ fontSize:9, color:ALLOY.green1, fontWeight:600, fontFamily:ALLOY.fontLabel }}>● Live</span>}
                     </div>
-                    <DynamicChart chartType={w.chartType} data={getWidgetData(w)} height={100} dimensions={(w as any).dimensions} metrics={(w as any).metrics} opts={{showSummaryRow:(w as any).showSummaryRow, rowsType:(w as any).rowsType, rowsPerPage:(w as any).rowsPerPage, topNRows:(w as any).topNRows, groupOthers:(w as any).groupOthers, tableShowHeader:(w as any).tableShowHeader, tableRowNumbers:(w as any).tableRowNumbers}} compData={getComparisonData(w)}/>
+                    <DynamicChart chartType={w.chartType} data={getWidgetData(w)} height={100} dimensions={(w as any).dimensions} metrics={(w as any).metrics} opts={{showSummaryRow:(w as any).showSummaryRow, ignoreFiltersForSummary:(w as any).ignoreFiltersForSummary, rowsType:(w as any).rowsType, rowsPerPage:(w as any).rowsPerPage, topNRows:(w as any).topNRows, groupOthers:(w as any).groupOthers, tableShowHeader:(w as any).tableShowHeader, tableRowNumbers:(w as any).tableRowNumbers}} compData={getComparisonData(w)}/>
                   </div>
                 )})}
               </div>
