@@ -1991,8 +1991,6 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
               </div>
             </div>
           )}
-            </div>
-          )}
           <DynamicChart chartType={w.chartType} data={getWidgetData(w)} height={activeFilters.length > 0 ? 80 : 90} dimensions={(w as any).dimensions} metrics={(w as any).metrics} compData={getComparisonData(w)}/>
         </div>
       )
