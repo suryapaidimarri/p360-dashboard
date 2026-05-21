@@ -846,7 +846,11 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [activeFetchStart, setActiveFetchStart] = useState<string|null>(null)
   const [activeFetchEnd, setActiveFetchEnd] = useState<string|null>(null)
   const [showCalendarPicker, setShowCalendarPicker] = useState(false)
+  const [showCompCalendar, setShowCompCalendar] = useState(false)
   const [calAnchorRef, setCalAnchorRef] = useState<{top:number;left:number}|null>(null)
+  const [compCalAnchorRef, setCompCalAnchorRef] = useState<{top:number;left:number}|null>(null)
+  const [dateTypeDropdown, setDateTypeDropdown] = useState(false)
+  const [dateTypeSubmenu, setDateTypeSubmenu] = useState<string|null>(null)
   const [calStartView, setCalStartView] = useState(new Date(2026, 3, 1))
   const [calEndView,   setCalEndView]   = useState(new Date(2026, 4, 1))
   const [calTempStart, setCalTempStart] = useState('')
@@ -1970,6 +1974,23 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
                   <span>≡</span> {f}
                 </span>
               ))}
+            </div>
+          )}
+          {/* Comparison legend — shows which period is being compared */}
+          {(w as any).comparisonEnabled && getComparisonData(w) && (
+            <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:6, padding:'4px 0' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+                <div style={{ width:16, height:2, background:ALLOY.blue1, borderRadius:1 }}/>
+                <span style={{ fontSize:9, color:ALLOY.mute, fontFamily:ALLOY.fontLabel, fontWeight:600 }}>CURRENT</span>
+              </div>
+              <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+                <svg width="16" height="4"><line x1="0" y1="2" x2="16" y2="2" stroke={ALLOY.blue1} strokeWidth="2" strokeDasharray="4 2" strokeOpacity="0.5"/></svg>
+                <span style={{ fontSize:9, color:ALLOY.mute, fontFamily:ALLOY.fontLabel, fontWeight:600 }}>
+                  {(w as any).comparisonType === 'previous_period' ? 'PREV PERIOD' : (w as any).comparisonType === 'previous_year' ? 'PREV YEAR' : 'COMPARISON'}
+                </span>
+              </div>
+            </div>
+          )}
             </div>
           )}
           <DynamicChart chartType={w.chartType} data={getWidgetData(w)} height={activeFilters.length > 0 ? 80 : 90} dimensions={(w as any).dimensions} metrics={(w as any).metrics} compData={getComparisonData(w)}/>
@@ -3400,16 +3421,90 @@ Alloy Intelligence`)
                               return(<div style={{flex:1}}><p style={{fontFamily:ALLOY.fontBody,fontSize:13,fontWeight:700,color:ALLOY.ink,marginBottom:10,textAlign:'center' as const}}>{lbl}</p><div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}><span style={{fontFamily:ALLOY.fontBody,fontSize:12,fontWeight:700}}>{MOS[m]} {y}</span><div style={{display:'flex'}}><button onClick={()=>nav(-1)} style={{background:'none',border:'none',cursor:'pointer',fontSize:16,color:ALLOY.ink,padding:'2px 6px',lineHeight:1}}>‹</button><button onClick={()=>nav(1)} style={{background:'none',border:'none',cursor:'pointer',fontSize:16,color:ALLOY.ink,padding:'2px 6px',lineHeight:1}}>›</button></div></div><div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',marginBottom:4}}>{['S','M','T','W','T','F','S'].map((d,i)=><div key={i} style={{textAlign:'center' as const,fontSize:11,color:ALLOY.mute,fontWeight:500,paddingBottom:5}}>{d}</div>)}</div><div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',rowGap:2}}>{cells}</div></div>)
                             }
                             return(<div style={{marginTop:8}}>
-                              <button onClick={e=>{e.stopPropagation();if(!showCalendarPicker){setCalTempStart(cs);setCalTempEnd(ce);setCalClickCount(0);const[sy,sm]=cs.split('-').map(Number);const[ey,em]=ce.split('-').map(Number);setCalStartView(new Date(sy,sm-1,1));setCalEndView(new Date(ey,em-1,1));const r=(e.currentTarget as HTMLButtonElement).getBoundingClientRect();setCalAnchorRef({top:r.bottom+8,left:r.left})};setShowCalendarPicker(v=>!v)}} style={{width:'100%',display:'flex',alignItems:'center',gap:8,background:ALLOY.white,border:`1px solid ${ALLOY.line}`,borderRadius:2,padding:'8px 12px',cursor:'pointer',fontFamily:ALLOY.fontBody,fontSize:12,color:ALLOY.ink}}>
+                              <button onClick={e=>{e.stopPropagation();setShowCompCalendar(false);if(!showCalendarPicker){setCalTempStart(cs);setCalTempEnd(ce);setCalClickCount(0);const[sy,sm]=cs.split('-').map(Number);const[ey,em]=ce.split('-').map(Number);setCalStartView(new Date(sy,sm-1,1));setCalEndView(new Date(ey,em-1,1));const r=(e.currentTarget as HTMLButtonElement).getBoundingClientRect();setCalAnchorRef({top:r.bottom+8,left:r.left})};setShowCalendarPicker(v=>!v)}} style={{width:'100%',display:'flex',alignItems:'center',gap:8,background:ALLOY.white,border:`1px solid ${ALLOY.line}`,borderRadius:2,padding:'8px 12px',cursor:'pointer',fontFamily:ALLOY.fontBody,fontSize:12,color:ALLOY.ink}}>
                                 <span style={{fontSize:14}}>📅</span><span style={{flex:1,textAlign:'left' as const}}>{fmtLbl(cs)} — {fmtLbl(ce)}</span><ChevronDown size={12} style={{color:ALLOY.mute}}/>
                               </button>
-                              {showCalendarPicker&&(<><div style={{position:'fixed' as const,inset:0,zIndex:1000}} onClick={()=>{setShowCalendarPicker(false);setCalTempStart(cs);setCalTempEnd(ce)}}/><div className="alloy-calendar" style={{position:'fixed' as const,top:calAnchorRef?Math.min(calAnchorRef.top,window.innerHeight-540):200,left:calAnchorRef?Math.max(10,Math.min(calAnchorRef.left,window.innerWidth-640)):200,zIndex:1001,background:ALLOY.white,border:`1px solid ${ALLOY.line}`,borderRadius:4,boxShadow:'0 12px 40px rgba(0,0,0,0.18)',padding:20,width:620}} onClick={e=>e.stopPropagation()}>
-                                <div style={{display:'flex',justifyContent:'flex-end',marginBottom:14}}><div style={{display:'flex',alignItems:'center',gap:6,background:ALLOY.paper,border:`1px solid ${ALLOY.line}`,borderRadius:2,padding:'6px 14px',fontFamily:ALLOY.fontBody,fontSize:12,color:ALLOY.ink,cursor:'pointer'}}>Fixed <ChevronDown size={12} style={{color:ALLOY.mute}}/></div></div>
+                              {showCalendarPicker&&(<><div style={{position:'fixed' as const,inset:0,zIndex:1000}} onClick={()=>{setShowCalendarPicker(false);setCalTempStart(cs);setCalTempEnd(ce);setDateTypeDropdown(false);setDateTypeSubmenu(null)}}/><div className="alloy-calendar" style={{position:'fixed' as const,top:calAnchorRef?Math.min(calAnchorRef.top,window.innerHeight-540):200,left:calAnchorRef?Math.max(10,Math.min(calAnchorRef.left,window.innerWidth-660)):200,zIndex:1001,background:ALLOY.white,border:`1px solid ${ALLOY.line}`,borderRadius:4,boxShadow:'0 12px 40px rgba(0,0,0,0.18)',padding:20,width:640}} onClick={e=>e.stopPropagation()}>
+                                {/* Fixed / preset dropdown */}
+                                <div style={{display:'flex',justifyContent:'flex-end',marginBottom:14,position:'relative' as const}}>
+                                  <div onClick={e=>{e.stopPropagation();setDateTypeDropdown(v=>!v);setDateTypeSubmenu(null)}}
+                                    style={{display:'flex',alignItems:'center',gap:6,background:ALLOY.paper,border:`1px solid ${ALLOY.line}`,borderRadius:2,padding:'6px 14px',fontFamily:ALLOY.fontBody,fontSize:12,color:ALLOY.ink,cursor:'pointer',userSelect:'none' as const}}>
+                                    Fixed <ChevronDown size={12} style={{color:ALLOY.mute}}/>
+                                  </div>
+                                  {dateTypeDropdown && (
+                                    <>
+                                      <div style={{position:'fixed' as const,inset:0,zIndex:1}} onClick={()=>{setDateTypeDropdown(false);setDateTypeSubmenu(null)}}/>
+                                      <div style={{position:'absolute' as const,top:'100%',right:0,background:ALLOY.white,border:`1px solid ${ALLOY.line}`,borderRadius:4,boxShadow:'0 8px 24px rgba(0,0,0,0.15)',zIndex:1002,minWidth:200,padding:'4px 0'}} onClick={e=>e.stopPropagation()}>
+                                        {[
+                                          {label:'Fixed'},
+                                          {label:'Today', action:()=>{const t=new Date().toISOString().split('T')[0];setCalTempStart(t);setCalTempEnd(t);setCalClickCount(2);setDateTypeDropdown(false)}},
+                                          {label:'Yesterday', action:()=>{const y=new Date(Date.now()-86400000).toISOString().split('T')[0];setCalTempStart(y);setCalTempEnd(y);setCalClickCount(2);setDateTypeDropdown(false)}},
+                                          {label:'This month', submenu:['This month','This month to date']},
+                                          {label:'Last 7 days', submenu:['Last 7 days','Last 14 days','Last 28 days','Last 30 days','Last week (starts Sunday)','Last week (starts Monday)','Last month','Last quarter','Last year']},
+                                          {label:'Advanced', submenu:['This week (starts Sunday)','This week to date (starts Sunday)','This week (starts Monday)','This week to date (starts Monday)','This month','This month to date','This quarter','This quarter to date','This year','This year to date']},
+                                        ].map((item: any) => (
+                                          <div key={item.label}
+                                            onMouseEnter={()=>{if(item.submenu) setDateTypeSubmenu(item.label); else setDateTypeSubmenu(null)}}
+                                            onClick={()=>{if(item.action){item.action()}}}
+                                            style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 16px',fontSize:14,fontFamily:ALLOY.fontBody,color:ALLOY.ink,cursor:'pointer',background:dateTypeSubmenu===item.label?ALLOY.paper:'transparent',position:'relative' as const}}
+                                            onMouseLeave={()=>{if(!item.submenu) setDateTypeSubmenu(null)}}>
+                                            {item.label}
+                                            {item.submenu && <span style={{fontSize:10}}>▶</span>}
+                                            {/* Submenu */}
+                                            {item.submenu && dateTypeSubmenu === item.label && (
+                                              <div style={{position:'absolute' as const,left:'100%',top:0,background:ALLOY.white,border:`1px solid ${ALLOY.line}`,borderRadius:4,boxShadow:'0 8px 24px rgba(0,0,0,0.15)',zIndex:1003,minWidth:280,padding:'4px 0'}}>
+                                                {item.submenu.map((opt: string) => {
+                                                  const getPresetDates = (label: string): [string,string] => {
+                                                    const now = new Date()
+                                                    const fmt = (d: Date) => d.toISOString().split('T')[0]
+                                                    const d = (n: number) => new Date(Date.now() - n*86400000)
+                                                    if (label==='Last 7 days') return [fmt(d(7)),fmt(d(1))]
+                                                    if (label==='Last 14 days') return [fmt(d(14)),fmt(d(1))]
+                                                    if (label==='Last 28 days') return [fmt(d(28)),fmt(d(1))]
+                                                    if (label==='Last 30 days') return [fmt(d(30)),fmt(d(1))]
+                                                    if (label==='Last month') { const f=new Date(now.getFullYear(),now.getMonth()-1,1),l=new Date(now.getFullYear(),now.getMonth(),0); return [fmt(f),fmt(l)] }
+                                                    if (label==='Last quarter') { const q=Math.floor(now.getMonth()/3),qs=new Date(now.getFullYear(),q*3-3,1),qe=new Date(now.getFullYear(),q*3,0); return [fmt(qs),fmt(qe)] }
+                                                    if (label==='Last year') return [fmt(new Date(now.getFullYear()-1,0,1)),fmt(new Date(now.getFullYear()-1,11,31))]
+                                                    if (label==='This month') { return [fmt(new Date(now.getFullYear(),now.getMonth(),1)),fmt(new Date(now.getFullYear(),now.getMonth()+1,0))] }
+                                                    if (label==='This month to date') return [fmt(new Date(now.getFullYear(),now.getMonth(),1)),fmt(now)]
+                                                    if (label==='This quarter') { const q=Math.floor(now.getMonth()/3); return [fmt(new Date(now.getFullYear(),q*3,1)),fmt(new Date(now.getFullYear(),q*3+3,0))] }
+                                                    if (label==='This quarter to date') { const q=Math.floor(now.getMonth()/3); return [fmt(new Date(now.getFullYear(),q*3,1)),fmt(now)] }
+                                                    if (label==='This year') return [fmt(new Date(now.getFullYear(),0,1)),fmt(new Date(now.getFullYear(),11,31))]
+                                                    if (label==='This year to date') return [fmt(new Date(now.getFullYear(),0,1)),fmt(now)]
+                                                    if (label.includes('Last week')) { const day=now.getDay(),offset=label.includes('Monday')?day===0?6:day-1:day; const s=new Date(now.getTime()-(offset+7)*86400000),e=new Date(now.getTime()-(offset+1)*86400000); return [fmt(s),fmt(e)] }
+                                                    if (label.includes('This week')) { const day=now.getDay(),offset=label.includes('Monday')?day===0?6:day-1:day; const s=new Date(now.getTime()-offset*86400000); return [fmt(s),label.includes('to date')?fmt(now):fmt(new Date(s.getTime()+6*86400000))] }
+                                                    return [fmt(d(30)),fmt(d(1))]
+                                                  }
+                                                  return (
+                                                    <div key={opt} onClick={()=>{
+                                                      const [s,e]=getPresetDates(opt)
+                                                      setCalTempStart(s); setCalTempEnd(e); setCalClickCount(2)
+                                                      updateMulti({dateStart:s,dateEnd:e})
+                                                      setActiveFetchStart(s); setActiveFetchEnd(e)
+                                                      try{localStorage.setItem(LS_DATE_KEY,JSON.stringify({start:s,end:e}))}catch{}
+                                                      fetchGA4(undefined,s,e)
+                                                      setShowCalendarPicker(false); setDateTypeDropdown(false); setDateTypeSubmenu(null)
+                                                    }}
+                                                      style={{padding:'10px 16px',fontSize:14,fontFamily:ALLOY.fontBody,color:ALLOY.ink,cursor:'pointer'}}
+                                                      onMouseEnter={e=>(e.currentTarget as HTMLDivElement).style.background=ALLOY.paper}
+                                                      onMouseLeave={e=>(e.currentTarget as HTMLDivElement).style.background='transparent'}>
+                                                      {opt}
+                                                    </div>
+                                                  )
+                                                })}
+                                              </div>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
                                 <p style={{fontFamily:ALLOY.fontBody,fontSize:11,color:ALLOY.mute,textAlign:'center' as const,marginBottom:12}}>{calClickCount===0?'Click a start date':calClickCount===1?'Now click an end date':`${fmtLbl(calTempStart)} — ${fmtLbl(calTempEnd)}`}</p>
                                 <div style={{display:'flex',gap:8}}>{renderMon(calStartView,'Start Date')}<div style={{width:1,background:ALLOY.line,flexShrink:0}}/>{renderMon(calEndView,'End Date')}</div>
                                 <div style={{display:'flex',justifyContent:'flex-end',alignItems:'center',gap:14,borderTop:`1px solid ${ALLOY.line}`,paddingTop:14,marginTop:16}}>
-                                  <button onClick={()=>{setShowCalendarPicker(false);setCalTempStart(cs);setCalTempEnd(ce)}} style={{background:'none',border:'none',color:ALLOY.blue1,cursor:'pointer',fontFamily:ALLOY.fontBody,fontSize:14,fontWeight:600,padding:'6px 12px'}}>Cancel</button>
-                                  <button disabled={calClickCount<2} onClick={()=>{const fs=calTempStart||cs,fe=calTempEnd||ce;updateMulti({dateStart:fs,dateEnd:fe});setActiveFetchStart(fs);setActiveFetchEnd(fe);try{localStorage.setItem(LS_DATE_KEY,JSON.stringify({start:fs,end:fe}))}catch{};setShowCalendarPicker(false);fetchGA4(undefined,fs,fe)}} style={{background:calClickCount<2?ALLOY.line:ALLOY.blue1,border:'none',borderRadius:999,color:calClickCount<2?ALLOY.mute:ALLOY.white,cursor:calClickCount<2?'not-allowed':'pointer',fontFamily:ALLOY.fontBody,fontSize:14,fontWeight:600,padding:'10px 28px',transition:'background 0.15s'}}>Apply</button>
+                                  <button onClick={()=>{setShowCalendarPicker(false);setCalTempStart(cs);setCalTempEnd(ce);setDateTypeDropdown(false);setDateTypeSubmenu(null)}} style={{background:'none',border:'none',color:ALLOY.blue1,cursor:'pointer',fontFamily:ALLOY.fontBody,fontSize:14,fontWeight:600,padding:'6px 12px'}}>Cancel</button>
+                                  <button disabled={calClickCount<2} onClick={()=>{const fs=calTempStart||cs,fe=calTempEnd||ce;updateMulti({dateStart:fs,dateEnd:fe});setActiveFetchStart(fs);setActiveFetchEnd(fe);try{localStorage.setItem(LS_DATE_KEY,JSON.stringify({start:fs,end:fe}))}catch{};setShowCalendarPicker(false);setDateTypeDropdown(false);setDateTypeSubmenu(null);fetchGA4(undefined,fs,fe)}} style={{background:calClickCount<2?ALLOY.line:ALLOY.blue1,border:'none',borderRadius:999,color:calClickCount<2?ALLOY.mute:ALLOY.white,cursor:calClickCount<2?'not-allowed':'pointer',fontFamily:ALLOY.fontBody,fontSize:14,fontWeight:600,padding:'10px 28px',transition:'background 0.15s'}}>Apply</button>
                                 </div>
                               </div></>)}
                             </div>)
@@ -3442,20 +3537,22 @@ Alloy Intelligence`)
                                       <p style={{fontFamily:ALLOY.fontLabel,fontSize:9,fontWeight:600,color:ALLOY.mute,marginBottom:6,textTransform:'uppercase' as const,letterSpacing:'0.08em'}}>Comparison range</p>
                                       <button onClick={e=>{
                                         e.stopPropagation()
+                                        setShowCalendarPicker(false)
                                         setCalTempStart(cs2); setCalTempEnd(ce2); setCalClickCount(0)
                                         const[sy,sm]=cs2.split('-').map(Number)
                                         const[ey,em]=ce2.split('-').map(Number)
                                         setCalStartView(new Date(sy,sm-1,1)); setCalEndView(new Date(ey,em-1,1))
                                         const r=(e.currentTarget as HTMLButtonElement).getBoundingClientRect()
-                                        setCalAnchorRef({top:r.bottom+8,left:r.left})
-                                        setShowCalendarPicker(v=>!v)
+                                        setCompCalAnchorRef({top:r.bottom+8,left:r.left})
+                                        setShowCompCalendar(v=>!v)
                                       }} style={{width:'100%',display:'flex',alignItems:'center',gap:8,background:ALLOY.white,border:`1px solid ${ALLOY.line}`,borderRadius:2,padding:'8px 12px',cursor:'pointer',fontFamily:ALLOY.fontBody,fontSize:12,color:ALLOY.ink}}>
                                         <span style={{fontSize:14}}>📅</span>
                                         <span style={{flex:1,textAlign:'left' as const}}>{fmtLbl2(cs2)} — {fmtLbl2(ce2)}</span>
                                         <ChevronDown size={12} style={{color:ALLOY.mute}}/>
                                       </button>
-                                      {showCalendarPicker && (<>
-                                        <div style={{position:'fixed' as const,inset:0,zIndex:1000}} onClick={()=>{setShowCalendarPicker(false)}}/>
+                                      {showCompCalendar && (<>
+                                        <div style={{position:'fixed' as const,inset:0,zIndex:1000}} onClick={()=>{setShowCompCalendar(false)}}/>
+                                        <div className="alloy-calendar" style={{position:'fixed' as const,top:compCalAnchorRef?Math.min(compCalAnchorRef.top,window.innerHeight-540):200,left:compCalAnchorRef?Math.max(10,Math.min(compCalAnchorRef.left,window.innerWidth-640)):200,zIndex:1001,background:ALLOY.white,border:`1px solid ${ALLOY.line}`,borderRadius:4,boxShadow:'0 12px 40px rgba(0,0,0,0.18)',padding:20,width:620}} onClick={e=>e.stopPropagation()}>
                                         <div className="alloy-calendar" style={{position:'fixed' as const,top:calAnchorRef?Math.min(calAnchorRef.top,window.innerHeight-540):200,left:calAnchorRef?Math.max(10,Math.min(calAnchorRef.left,window.innerWidth-640)):200,zIndex:1001,background:ALLOY.white,border:`1px solid ${ALLOY.line}`,borderRadius:4,boxShadow:'0 12px 40px rgba(0,0,0,0.18)',padding:20,width:620}} onClick={e=>e.stopPropagation()}>
                                           <p style={{fontFamily:ALLOY.fontBody,fontSize:11,color:ALLOY.mute,textAlign:'center' as const,marginBottom:12}}>{calClickCount===0?'Click a start date':calClickCount===1?'Now click an end date':`${fmtLbl2(calTempStart)} — ${fmtLbl2(calTempEnd)}`}</p>
                                           <div style={{display:'flex',gap:8}}>
@@ -3479,11 +3576,11 @@ Alloy Intelligence`)
                                             })()}
                                           </div>
                                           <div style={{display:'flex',justifyContent:'flex-end',alignItems:'center',gap:14,borderTop:`1px solid ${ALLOY.line}`,paddingTop:14,marginTop:16}}>
-                                            <button onClick={()=>setShowCalendarPicker(false)} style={{background:'none',border:'none',color:ALLOY.blue1,cursor:'pointer',fontFamily:ALLOY.fontBody,fontSize:14,fontWeight:600,padding:'6px 12px'}}>Cancel</button>
+                                            <button onClick={()=>setShowCompCalendar(false)} style={{background:'none',border:'none',color:ALLOY.blue1,cursor:'pointer',fontFamily:ALLOY.fontBody,fontSize:14,fontWeight:600,padding:'6px 12px'}}>Cancel</button>
                                             <button disabled={calClickCount<2} onClick={()=>{
                                               const fs=calTempStart||cs2, fe=calTempEnd||ce2
                                               updateMulti({compStart:fs,compEnd:fe})
-                                              setShowCalendarPicker(false)
+                                              setShowCompCalendar(false)
                                             }} style={{background:calClickCount<2?ALLOY.line:ALLOY.blue1,border:'none',borderRadius:999,color:calClickCount<2?ALLOY.mute:ALLOY.white,cursor:calClickCount<2?'not-allowed':'pointer',fontFamily:ALLOY.fontBody,fontSize:14,fontWeight:600,padding:'10px 28px'}}>Apply</button>
                                           </div>
                                         </div>
@@ -3492,11 +3589,48 @@ Alloy Intelligence`)
                                   )
                                 })()}
                                 {/* Show computed comparison label for non-custom types */}
-                                {(widgetData as any).comparisonType && (widgetData as any).comparisonType !== 'none' && (widgetData as any).comparisonType !== 'custom' && (
-                                  <div style={{padding:'8px 14px',fontFamily:ALLOY.fontBody,fontSize:11,color:ALLOY.mute}}>
-                                    {(widgetData as any).comparisonType === 'previous_period' ? '↩ Previous period (auto)' : '↩ Same period last year'}
-                                  </div>
-                                )}
+                                {(widgetData as any).comparisonType && (widgetData as any).comparisonType !== 'none' && (widgetData as any).comparisonType !== 'custom' && (() => {
+                                  // Compute and display the actual comparison dates
+                                  const mainStart = activeFetchStart || dateRange
+                                  const mainEnd = activeFetchEnd || 'today'
+                                  const fmtD = (s: string) => {
+                                    if (!s) return ''
+                                    if (s.endsWith('daysAgo')) {
+                                      const d = new Date(Date.now() - parseInt(s) * 86400000)
+                                      return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear()
+                                    }
+                                    if (s === 'today') { const d = new Date(); return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear() }
+                                    const [y,m,dd] = s.split('-')
+                                    return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(m)-1] + ' ' + parseInt(dd) + ', ' + y
+                                  }
+                                  const endDate = mainEnd === 'today' ? new Date() : new Date(mainEnd)
+                                  const startDate = mainStart.endsWith('daysAgo') ? new Date(Date.now() - parseInt(mainStart) * 86400000) : new Date(mainStart)
+                                  const duration = Math.round((endDate.getTime() - startDate.getTime()) / 86400000)
+                                  let compLabel = ''
+                                  if ((widgetData as any).comparisonType === 'previous_period') {
+                                    const prevEnd = new Date(startDate.getTime() - 86400000)
+                                    const prevStart = new Date(prevEnd.getTime() - duration * 86400000)
+                                    compLabel = fmtD(prevStart.toISOString().split('T')[0]) + ' — ' + fmtD(prevEnd.toISOString().split('T')[0])
+                                  } else {
+                                    const pyStart = new Date(startDate.getFullYear()-1, startDate.getMonth(), startDate.getDate())
+                                    const pyEnd = new Date(endDate.getFullYear()-1, endDate.getMonth(), endDate.getDate())
+                                    compLabel = fmtD(pyStart.toISOString().split('T')[0]) + ' — ' + fmtD(pyEnd.toISOString().split('T')[0])
+                                  }
+                                  return (
+                                    <div style={{padding:'10px 14px', background:ALLOY.blue4, borderTop:`1px solid ${ALLOY.line}`}}>
+                                      <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:4}}>
+                                        <div style={{width:18,height:3,background:ALLOY.blue1,borderRadius:2,flexShrink:0}}/>
+                                        <span style={{fontFamily:ALLOY.fontLabel,fontSize:9,fontWeight:700,color:ALLOY.blue1,textTransform:'uppercase' as const,letterSpacing:'0.08em'}}>Main range</span>
+                                        <span style={{fontFamily:ALLOY.fontBody,fontSize:11,color:ALLOY.ink,marginLeft:4}}>{fmtD(mainStart === dateRange ? mainStart : mainStart)} — {fmtD(mainEnd)}</span>
+                                      </div>
+                                      <div style={{display:'flex',alignItems:'center',gap:6}}>
+                                        <div style={{width:18,height:2,background:ALLOY.blue1,borderRadius:2,flexShrink:0,opacity:0.5,borderTop:'2px dashed '+ALLOY.blue1,height:0}}/>
+                                        <span style={{fontFamily:ALLOY.fontLabel,fontSize:9,fontWeight:700,color:ALLOY.mute,textTransform:'uppercase' as const,letterSpacing:'0.08em'}}>Comparison</span>
+                                        <span style={{fontFamily:ALLOY.fontBody,fontSize:11,color:ALLOY.mute,marginLeft:4}}>{compLabel}</span>
+                                      </div>
+                                    </div>
+                                  )
+                                })()}
                               </div>
                             )}
                           </div>
