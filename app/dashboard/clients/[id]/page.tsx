@@ -3622,7 +3622,7 @@ Alloy Intelligence`)
                                         <span style={{fontFamily:ALLOY.fontBody,fontSize:11,color:ALLOY.ink,marginLeft:4}}>{fmtD(mainStart === dateRange ? mainStart : mainStart)} — {fmtD(mainEnd)}</span>
                                       </div>
                                       <div style={{display:'flex',alignItems:'center',gap:6}}>
-                                        <div style={{width:18,height:2,background:ALLOY.blue1,borderRadius:2,flexShrink:0,opacity:0.5,borderTop:'2px dashed '+ALLOY.blue1,height:0}}/>
+                                        <div style={{width:18,height:0,borderTop:'2px dashed '+ALLOY.blue1,borderRadius:2,flexShrink:0,opacity:0.5}}/>
                                         <span style={{fontFamily:ALLOY.fontLabel,fontSize:9,fontWeight:700,color:ALLOY.mute,textTransform:'uppercase' as const,letterSpacing:'0.08em'}}>Comparison</span>
                                         <span style={{fontFamily:ALLOY.fontBody,fontSize:11,color:ALLOY.mute,marginLeft:4}}>{compLabel}</span>
                                       </div>
