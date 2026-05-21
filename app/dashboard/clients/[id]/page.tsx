@@ -273,10 +273,20 @@ function DynamicChart({ chartType, data, height = 80, dimensions = ['Date'], met
     const cellBorder = opts.tableCellBorder || ALLOY.line
     const missing    = opts.tableMissingData || 'Show "null"'
     const dimAligns  = (opts.dimAlign as string[]) || dimensions.map(() => 'left')
-    const fmtVal     = (v: any) => {
+    const showSummary = opts.showSummaryRow === true
+    const rowsType   = opts.rowsType || 'pagination'
+    const perPage    = parseInt(opts.rowsPerPage || '100')
+    const topN       = opts.topNRows || 25
+    const maxRows    = rowsType === 'topn' ? topN : Math.min(perPage, Math.floor(height/22) || 6)
+
+    const fmtVal = (v: any) => {
       if (v == null || v === '') return missing === 'Show "0"' ? '0' : missing === 'Hide row' ? null : 'null'
       return typeof v === 'number' ? v.toLocaleString() : String(v)
     }
+
+    const visibleRows = data.slice(0, maxRows)
+    const totalVal = data.reduce((sum: number, d: any) => sum + (typeof d.v === 'number' ? d.v : 0), 0)
+
     return (
       <div style={{ height, overflowY:'auto' as const }}>
         <table style={{ width:'100%', fontSize:tFontSize, borderCollapse:'collapse', fontFamily:tFontFam }}>
@@ -290,7 +300,7 @@ function DynamicChart({ chartType, data, height = 80, dimensions = ['Date'], met
             </thead>
           )}
           <tbody>
-            {data.slice(0, Math.floor(height/22) || 6).map((d:any, i:number) => {
+            {visibleRows.map((d:any, i:number) => {
               const fv = fmtVal(d.v)
               if (fv === null) return null
               return (
@@ -302,7 +312,29 @@ function DynamicChart({ chartType, data, height = 80, dimensions = ['Date'], met
               )
             })}
           </tbody>
+          {/* Summary row */}
+          {showSummary && (
+            <tfoot>
+              <tr style={{ background:headerBg, borderTop:`2px solid ${cellBorder}` }}>
+                {showRowNum && <td style={{ padding:'4px 6px' }}/>}
+                <td style={{ padding:'5px 8px', fontWeight:700, color:ALLOY.ink, fontFamily:tFontFam, fontSize:tFontSize }}>Total</td>
+                {metrics.map((_, mi) => (
+                  <td key={mi} style={{ padding:'5px 8px', textAlign:'right', fontWeight:700, color:ALLOY.ink, fontFamily:tFontFam, fontSize:tFontSize }}>
+                    {totalVal.toLocaleString()}
+                  </td>
+                ))}
+              </tr>
+            </tfoot>
+          )}
         </table>
+        {/* Pagination controls for pagination mode */}
+        {rowsType === 'pagination' && data.length > maxRows && (
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'flex-end', gap:6, padding:'4px 8px', borderTop:`1px solid ${cellBorder}`, fontSize:9, color:ALLOY.mute, fontFamily:ALLOY.fontLabel }}>
+            <span>1–{maxRows} of {data.length}</span>
+            <button style={{ background:ALLOY.paper, border:`1px solid ${cellBorder}`, borderRadius:2, padding:'2px 6px', cursor:'pointer', fontSize:10 }}>‹</button>
+            <button style={{ background:ALLOY.paper, border:`1px solid ${cellBorder}`, borderRadius:2, padding:'2px 6px', cursor:'pointer', fontSize:10 }}>›</button>
+          </div>
+        )}
       </div>
     )
   }
@@ -1395,19 +1427,36 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     const wid = (w as Widget).id
     const filtered = wid ? widgetFilteredData[wid] : null
     if (filtered && !filtered.loading && filtered.rows.length > 0) {
-      return filtered.rows
+      return applyRowSettings(filtered.rows, w)
     }
     const ds = (w.dataSource || '').toLowerCase()
     const dims: string[] = (w as any).dimensions || []
     const mets: string[] = (w as any).metrics || []
-    if (!ga4Data) return sessionData
-    if (ds.includes('device') || dims.includes('Device Category') || dims.includes('deviceCategory')) return deviceData
-    if (ds.includes('source') || ds.includes('channel') || dims.includes('Session Default Channel Group')) return sourceData
-    if (ds.includes('city') || dims.includes('City')) return cityData.map((c: any) => ({ d: c.city, v: c.val }))
-    if (ds.includes('event') || dims.includes('Event Name') || dims.includes('eventName')) return ga4EventRows
-    // For custom widgets with GA4 data
-    if (ga4Data?.timeSeries?.rows) return sessionData
-    return sessionData
+    if (!ga4Data) return applyRowSettings(sessionData, w)
+    if (ds.includes('device') || dims.includes('Device Category') || dims.includes('deviceCategory')) return applyRowSettings(deviceData, w)
+    if (ds.includes('source') || ds.includes('channel') || dims.includes('Session Default Channel Group')) return applyRowSettings(sourceData.map((s: any) => ({d:s.name, v:s.value})), w)
+    if (ds.includes('city') || dims.includes('City')) return applyRowSettings(cityData.map((c: any) => ({ d: c.city, v: c.val })), w)
+    if (ds.includes('event') || dims.includes('Event Name') || dims.includes('eventName')) return applyRowSettings(ga4EventRows, w)
+    if (ga4Data?.timeSeries?.rows) return applyRowSettings(sessionData, w)
+    return applyRowSettings(sessionData, w)
+  }
+
+  // Apply Top N / Pagination row limits + "Others" grouping to any data array
+  function applyRowSettings(rows: any[], w: Partial<Widget>): any[] {
+    if (!rows || rows.length === 0) return rows
+    const rowsType = (w as any).rowsType || 'pagination'
+    if (rowsType === 'topn') {
+      const n = (w as any).topNRows || 25
+      const top = rows.slice(0, n)
+      if ((w as any).groupOthers && rows.length > n) {
+        const othersVal = rows.slice(n).reduce((sum: number, r: any) => sum + (r.v || r.value || 0), 0)
+        return [...top, { d: 'Others', v: othersVal, name: 'Others', value: othersVal }]
+      }
+      return top
+    }
+    // Pagination — limit by rowsPerPage for chart preview
+    const perPage = parseInt((w as any).rowsPerPage || '100')
+    return rows.slice(0, perPage)
   }
   // Fetch comparison period data for a widget
   async function fetchComparisonData(widget: Widget) {
@@ -2013,7 +2062,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
               </div>
             </div>
           )}
-          <DynamicChart chartType={w.chartType} data={getWidgetData(w)} height={activeFilters.length > 0 ? 80 : 90} dimensions={(w as any).dimensions} metrics={(w as any).metrics} compData={getComparisonData(w)}/>
+          <DynamicChart chartType={w.chartType} data={getWidgetData(w)} height={activeFilters.length > 0 ? 80 : 90} dimensions={(w as any).dimensions} metrics={(w as any).metrics} opts={{showSummaryRow:(w as any).showSummaryRow, rowsType:(w as any).rowsType, rowsPerPage:(w as any).rowsPerPage, topNRows:(w as any).topNRows, groupOthers:(w as any).groupOthers, tableShowHeader:(w as any).tableShowHeader, tableRowNumbers:(w as any).tableRowNumbers, tableFontSize:(w as any).tableFontSize, tableFontFamily:(w as any).tableFontFamily, tableHeaderBg:(w as any).tableHeaderBg, tableOddRow:(w as any).tableOddRow, tableEvenRow:(w as any).tableEvenRow, tableCellBorder:(w as any).tableCellBorder, tableMissingData:(w as any).tableMissingData, dimAlign:(w as any).dimAlign}} compData={getComparisonData(w)}/>
         </div>
       )
     }
@@ -2819,7 +2868,7 @@ Alloy Intelligence`)
                       <span style={{ fontSize:12, fontWeight:600, color:ALLOY.ink, fontFamily:ALLOY.fontBody }}>{w.title}</span>
                       {connection?.connected && <span style={{ fontSize:9, color:ALLOY.green1, fontWeight:600, fontFamily:ALLOY.fontLabel }}>● Live</span>}
                     </div>
-                    <DynamicChart chartType={w.chartType} data={getWidgetData(w)} height={100} dimensions={(w as any).dimensions} metrics={(w as any).metrics} compData={getComparisonData(w)}/>
+                    <DynamicChart chartType={w.chartType} data={getWidgetData(w)} height={100} dimensions={(w as any).dimensions} metrics={(w as any).metrics} opts={{showSummaryRow:(w as any).showSummaryRow, rowsType:(w as any).rowsType, rowsPerPage:(w as any).rowsPerPage, topNRows:(w as any).topNRows, groupOthers:(w as any).groupOthers, tableShowHeader:(w as any).tableShowHeader, tableRowNumbers:(w as any).tableRowNumbers}} compData={getComparisonData(w)}/>
                   </div>
                 )})}
               </div>
@@ -3637,21 +3686,89 @@ Alloy Intelligence`)
                         {/* Number of rows */}
                         <div style={{ padding:'14px 0', borderBottom:`1px solid ${ALLOY.line}` }}>
                           <p style={{ fontFamily:ALLOY.fontBody, fontSize:13, fontWeight:700, color:ALLOY.ink, marginBottom:10 }}>Number of rows</p>
+
+                          {/* Pagination / Top N radio */}
                           {[{val:'pagination',label:'Pagination'},{val:'topn',label:'Top N'}].map(opt => (
-                            <label key={opt.val} style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8, cursor:'pointer' }}>
-                              <div style={{ width:18, height:18, borderRadius:'50%', border:`2px solid ${(widgetData.rowsType||'pagination')===opt.val?ALLOY.blue1:ALLOY.line}`, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                            <label key={opt.val} onClick={() => updateField('rowsType', opt.val)}
+                              style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8, cursor:'pointer' }}>
+                              <div style={{ width:18, height:18, borderRadius:'50%', border:`2px solid ${(widgetData.rowsType||'pagination')===opt.val?ALLOY.blue1:ALLOY.line}`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
                                 {(widgetData.rowsType||'pagination')===opt.val && <div style={{ width:8, height:8, borderRadius:'50%', background:ALLOY.blue1 }}/>}
                               </div>
                               <span style={{ fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink }}>{opt.label}</span>
                             </label>
                           ))}
-                          <div style={{ display:'flex', alignItems:'center', gap:8, background:ALLOY.white, border:'1px solid #e0e0e0', borderRadius:2, padding:'6px 12px', marginTop:4 }}>
-                            <span style={{ fontFamily:ALLOY.fontBody, fontSize:11, color:ALLOY.ink }}>Rows per page</span>
-                            <select style={{ flex:1, border:'none', outline:'none', fontFamily:ALLOY.fontBody, fontSize:12, color:ALLOY.ink, background:'transparent' }}>
-                              <option>10</option><option>25</option><option selected>100</option><option>500</option>
-                            </select>
-                          </div>
+
+                          {/* Pagination mode — rows per page selector */}
+                          {(widgetData.rowsType||'pagination') === 'pagination' && (
+                            <div style={{ marginTop:8, position:'relative' as const }}>
+                              <p style={{ fontFamily:ALLOY.fontLabel, fontSize:9, fontWeight:600, color:ALLOY.mute, marginBottom:6, textTransform:'uppercase' as const, letterSpacing:'0.08em' }}>Rows per page</p>
+                              <div style={{ position:'relative' as const }}>
+                                <select
+                                  value={(widgetData as any).rowsPerPage || '100'}
+                                  onChange={e => updateField('rowsPerPage', e.target.value)}
+                                  style={{ width:'100%', border:`1px solid ${ALLOY.line}`, borderRadius:2, padding:'9px 12px', fontFamily:ALLOY.fontBody, fontSize:13, color:ALLOY.ink, background:ALLOY.white, cursor:'pointer', outline:'none', appearance:'none' as const }}>
+                                  {['1','5','10','20','25','50','100','250','500'].map(v => (
+                                    <option key={v} value={v}>{v}</option>
+                                  ))}
+                                </select>
+                                <div style={{ position:'absolute' as const, right:10, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' as const, display:'flex', flexDirection:'column' as const, gap:2 }}>
+                                  <span style={{ fontSize:8, color:ALLOY.mute, lineHeight:1 }}>▲</span>
+                                  <span style={{ fontSize:8, color:ALLOY.mute, lineHeight:1 }}>▼</span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Top N mode — top rows input + extras */}
+                          {(widgetData.rowsType||'pagination') === 'topn' && (
+                            <div style={{ marginTop:8 }}>
+                              {/* Top rows labeled input */}
+                              <div style={{ position:'relative' as const, border:`1px solid ${ALLOY.blue1}`, borderRadius:4, padding:'14px 12px 8px', marginBottom:10 }}>
+                                <span style={{ position:'absolute' as const, top:-8, left:10, background:ALLOY.white, padding:'0 4px', fontFamily:ALLOY.fontBody, fontSize:11, color:ALLOY.mute }}>Top rows</span>
+                                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                                  <div style={{ width:28, height:28, border:`1px solid ${ALLOY.line}`, borderRadius:2, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                      <rect x="1" y="1" width="12" height="2" fill="#888"/>
+                                      <rect x="1" y="5" width="12" height="2" fill="#888"/>
+                                      <rect x="1" y="9" width="12" height="2" fill="#888"/>
+                                    </svg>
+                                  </div>
+                                  <input
+                                    type="number"
+                                    min={1}
+                                    value={(widgetData as any).topNRows || 25}
+                                    onChange={e => updateField('topNRows', parseInt(e.target.value) || 25)}
+                                    style={{ flex:1, border:'none', outline:'none', fontFamily:ALLOY.fontBody, fontSize:16, fontWeight:500, color:ALLOY.ink, background:'transparent' }}
+                                  />
+                                  <div style={{ display:'flex', flexDirection:'column' as const, gap:2 }}>
+                                    <button onClick={() => updateField('topNRows', ((widgetData as any).topNRows || 25) + 1)}
+                                      style={{ border:`1px solid ${ALLOY.line}`, borderRadius:2, background:ALLOY.paper, cursor:'pointer', padding:'2px 6px', lineHeight:1, fontSize:10 }}>▲</button>
+                                    <button onClick={() => updateField('topNRows', Math.max(1, ((widgetData as any).topNRows || 25) - 1))}
+                                      style={{ border:`1px solid ${ALLOY.line}`, borderRadius:2, background:ALLOY.paper, cursor:'pointer', padding:'2px 6px', lineHeight:1, fontSize:10 }}>▼</button>
+                                  </div>
+                                </div>
+                              </div>
+                              {/* Top N dropdown picker (1,5,10,20,25,50) */}
+                              <div style={{ border:`1px solid ${ALLOY.line}`, borderRadius:2, marginBottom:10, overflow:'hidden' }}>
+                                {[1,5,10,20,25,50].map(n => (
+                                  <div key={n}
+                                    onClick={() => updateField('topNRows', n)}
+                                    style={{ padding:'10px 14px', fontFamily:ALLOY.fontBody, fontSize:14, color:ALLOY.ink, cursor:'pointer', background:(widgetData as any).topNRows===n?ALLOY.blue4:'transparent', borderLeft:(widgetData as any).topNRows===n?`3px solid ${ALLOY.blue1}`:'3px solid transparent' }}
+                                    onMouseEnter={e=>(e.currentTarget as HTMLDivElement).style.background=(widgetData as any).topNRows===n?ALLOY.blue4:ALLOY.paper}
+                                    onMouseLeave={e=>(e.currentTarget as HTMLDivElement).style.background=(widgetData as any).topNRows===n?ALLOY.blue4:'transparent'}>
+                                    {n}
+                                  </div>
+                                ))}
+                              </div>
+                              <Toggle label='Group the rest as "Others"' on={!!(widgetData as any).groupOthers} onChange={v => updateField('groupOthers', v)}/>
+                            </div>
+                          )}
+
+                          {/* Show summary row + ignore canvas filters (shown in both modes) */}
                           <Toggle label="Show summary row" on={!!(widgetData as any).showSummaryRow} onChange={v => updateField('showSummaryRow', v)}/>
+                          {!!(widgetData as any).showSummaryRow && (
+                            <Toggle label="Ignore canvas filters for summary row" on={!!(widgetData as any).ignoreFiltersForSummary} onChange={v => updateField('ignoreFiltersForSummary', v)}/>
+                          )}
                         </div>
 
                         {/* Sort */}
