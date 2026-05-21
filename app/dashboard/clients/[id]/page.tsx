@@ -170,32 +170,44 @@ function formatNum(n: number) {
 }
 
 // ── DynamicChart: renders the right chart based on widget.chartType ────────────
-function DynamicChart({ chartType, data, height = 80, dimensions = ['Date'], metrics = ['Sessions'], opts = {} }: { chartType: string; data: any[]; height?: number; dimensions?: string[]; metrics?: string[]; opts?: any }) {
+function DynamicChart({ chartType, data, height = 80, dimensions = ['Date'], metrics = ['Sessions'], opts = {}, compData }: { chartType: string; data: any[]; height?: number; dimensions?: string[]; metrics?: string[]; opts?: any; compData?: any[] }) {
   const colors = ['#4285f4','#ea8600','#a142f4','#34a853','#ea4335','#24c1e0']
   const c = colors[0]
   if (!data || data.length === 0) return null
 
   if (chartType === 'line' || chartType === 'timeseries' || chartType === 'sparkline' || chartType === 'smoothline') {
     const metLabel = metrics[0] || 'Sessions'
+    // Merge comparison data into same array keyed by index
+    const merged = data.map((d: any, i: number) => ({ ...d, comp: compData?.[i]?.v ?? null }))
     return (
       <ResponsiveContainer width="100%" height={height}>
-        <LineChart data={data}>
+        <LineChart data={merged}>
           <XAxis dataKey="d" hide={chartType === 'sparkline'} axisLine={false} tickLine={false} tick={{ fontSize:9, fill:ALLOY.mute, fontFamily:ALLOY.fontBody }}/>
           <Line type="monotone" dataKey="v" stroke={c} strokeWidth={2} dot={false} name={metLabel}/>
-          <Tooltip contentStyle={{ fontSize:10, borderRadius:2, fontFamily:ALLOY.fontBody }} formatter={(v:number) => [v.toLocaleString(), metLabel]}/>
+          {compData && compData.length > 0 && (
+            <Line type="monotone" dataKey="comp" stroke={c} strokeWidth={1.5} strokeDasharray="4 3" dot={false} name={`${metLabel} (prev)`} strokeOpacity={0.5}/>
+          )}
+          <Tooltip contentStyle={{ fontSize:10, borderRadius:2, fontFamily:ALLOY.fontBody }} formatter={(v:number, name:string) => [v?.toLocaleString(), name]}/>
         </LineChart>
       </ResponsiveContainer>
     )
   }
   if (chartType === 'area' || chartType === 'stackarea' || chartType === 'steparea') {
     const metLabel = metrics[0] || 'Sessions'
+    const merged = data.map((d: any, i: number) => ({ ...d, comp: compData?.[i]?.v ?? null }))
     return (
       <ResponsiveContainer width="100%" height={height}>
-        <AreaChart data={data}>
-          <defs><linearGradient id="dcg" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={c} stopOpacity={0.3}/><stop offset="95%" stopColor={c} stopOpacity={0}/></linearGradient></defs>
+        <AreaChart data={merged}>
+          <defs>
+            <linearGradient id="dcg" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={c} stopOpacity={0.3}/><stop offset="95%" stopColor={c} stopOpacity={0}/></linearGradient>
+            <linearGradient id="dcg2" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={c} stopOpacity={0.15}/><stop offset="95%" stopColor={c} stopOpacity={0}/></linearGradient>
+          </defs>
           <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{ fontSize:9, fill:ALLOY.mute, fontFamily:ALLOY.fontBody }}/>
           <Area type={chartType === 'steparea' ? 'step' : 'monotone'} dataKey="v" stroke={c} fill="url(#dcg)" strokeWidth={2} dot={false} name={metLabel}/>
-          <Tooltip contentStyle={{ fontSize:10, borderRadius:2, fontFamily:ALLOY.fontBody }} formatter={(v:number) => [v.toLocaleString(), metLabel]}/>
+          {compData && compData.length > 0 && (
+            <Area type="monotone" dataKey="comp" stroke={c} fill="url(#dcg2)" strokeWidth={1.5} strokeDasharray="4 3" dot={false} name={`${metLabel} (prev)`} strokeOpacity={0.5}/>
+          )}
+          <Tooltip contentStyle={{ fontSize:10, borderRadius:2, fontFamily:ALLOY.fontBody }} formatter={(v:number, name:string) => [v?.toLocaleString(), name]}/>
         </AreaChart>
       </ResponsiveContainer>
     )
@@ -1383,7 +1395,22 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     if (ga4Data?.timeSeries?.rows) return sessionData
     return sessionData
   }
-  const dynamicWidgets = widgets.filter(w => !STATIC_IDS.includes(w.id))
+  function getComparisonData(w: Partial<Widget>): any[] | undefined {
+    if (!(w as any).comparisonEnabled || !(w as any).comparisonType || (w as any).comparisonType === 'none') return undefined
+    if (!ga4Data?.timeSeries?.rows) return undefined
+    const rows = ga4Data.timeSeries.rows
+    const type = (w as any).comparisonType
+    const offset = type === 'previous_year' ? 365 : rows.length // previous period = shift by data length
+    // Return shifted data (same shape, offset by period)
+    return rows.map((r: any, i: number) => {
+      const srcIdx = i - offset
+      const srcRow = srcIdx >= 0 ? rows[srcIdx] : null
+      return {
+        d: r.dimensionValues?.[0]?.value?.slice(4) || String(i),
+        v: srcRow ? parseInt(srcRow.metricValues?.[0]?.value || '0') : 0,
+      }
+    })
+  }
   const cloningRef = React.useRef(false)
 
   function startEdit(w: Widget) {
@@ -1895,7 +1922,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
               ))}
             </div>
           )}
-          <DynamicChart chartType={w.chartType} data={getWidgetData(w)} height={activeFilters.length > 0 ? 80 : 90} dimensions={(w as any).dimensions} metrics={(w as any).metrics}/>
+          <DynamicChart chartType={w.chartType} data={getWidgetData(w)} height={activeFilters.length > 0 ? 80 : 90} dimensions={(w as any).dimensions} metrics={(w as any).metrics} compData={getComparisonData(w)}/>
         </div>
       )
     }
@@ -1934,7 +1961,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
         {connection?.connected && <p style={{ fontSize:9, color:isWhite?ALLOY.green1:'rgba(255,255,255,0.7)', marginTop:4, fontFamily:ALLOY.fontLabel }}>● Live</p>}
         {w.chartType === 'sparkline' && (
           <div style={{ marginTop:6 }}>
-            <DynamicChart chartType="sparkline" data={getWidgetData(w)} height={35} dimensions={(w as any).dimensions} metrics={(w as any).metrics}/>
+            <DynamicChart chartType="sparkline" data={getWidgetData(w)} height={35} dimensions={(w as any).dimensions} metrics={(w as any).metrics} compData={getComparisonData(w)}/>
           </div>
         )}
       </div>
@@ -2593,7 +2620,7 @@ Alloy Intelligence`)
                     <span style={{ fontSize:11, color:ALLOY.mute, fontWeight:500, fontFamily:ALLOY.fontBody }}>{widgets.find(x=>x.id==='c1')?.title || 'Sessions Over Time'}</span>
                     {connection?.connected && <span style={{ fontSize:9, color:ALLOY.green1, fontWeight:600, fontFamily:ALLOY.fontLabel }}>● Live</span>}
                   </div>
-                  <DynamicChart chartType={widgets.find(x=>x.id==='c1')?.chartType || 'line'} data={getWidgetData(widgets.find(x=>x.id==='c1') || {})} height={80} dimensions={(widgets.find(x=>x.id==='c1') as any)?.dimensions} metrics={(widgets.find(x=>x.id==='c1') as any)?.metrics}/>
+                  <DynamicChart chartType={widgets.find(x=>x.id==='c1')?.chartType || 'line'} data={getWidgetData(widgets.find(x=>x.id==='c1') || {})} height={80} dimensions={(widgets.find(x=>x.id==='c1') as any)?.dimensions} metrics={(widgets.find(x=>x.id==='c1') as any)?.metrics} compData={getComparisonData(widgets.find(x=>x.id==='c1') || {})}/>
                 </ChartCard>}
                 {!isWidgetRemoved('c2') && <ChartCard id="c2">
                   <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:110 }}>
@@ -2634,7 +2661,7 @@ Alloy Intelligence`)
                     <span style={{ fontSize:11, fontWeight:600, fontFamily:ALLOY.fontBody }}>{widgets.find(x=>x.id==='d1')?.title || 'Users By Device'}</span>
                     {connection?.connected && <span style={{ fontSize:9, color:ALLOY.green1, fontWeight:600, fontFamily:ALLOY.fontLabel }}>● Live</span>}
                   </div>
-                  <DynamicChart chartType={widgets.find(x=>x.id==='d1')?.chartType || 'column'} data={getWidgetData(widgets.find(x=>x.id==='d1') || {})} height={110} dimensions={(widgets.find(x=>x.id==='d1') as any)?.dimensions} metrics={(widgets.find(x=>x.id==='d1') as any)?.metrics}/>
+                  <DynamicChart chartType={widgets.find(x=>x.id==='d1')?.chartType || 'column'} data={getWidgetData(widgets.find(x=>x.id==='d1') || {})} height={110} dimensions={(widgets.find(x=>x.id==='d1') as any)?.dimensions} metrics={(widgets.find(x=>x.id==='d1') as any)?.metrics} compData={getComparisonData(widgets.find(x=>x.id==='d1') || {})}/>
                 </ChartCard>}
                 {!isWidgetRemoved('d2') && <ChartCard id="d2">
                   <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
@@ -2667,7 +2694,7 @@ Alloy Intelligence`)
                   <span style={{ fontSize:12, fontWeight:600, fontFamily:ALLOY.fontBody }}>{widgets.find(x=>x.id==='v1')?.title || 'Website Views'}</span>
                   {connection?.connected && <span style={{ fontSize:9, color:ALLOY.green1, fontWeight:600, fontFamily:ALLOY.fontLabel }}>● Live GA4</span>}
                 </div>
-                <DynamicChart chartType={widgets.find(x=>x.id==='v1')?.chartType || 'area'} data={getWidgetData(widgets.find(x=>x.id==='v1') || {})} height={130} dimensions={(widgets.find(x=>x.id==='v1') as any)?.dimensions} metrics={(widgets.find(x=>x.id==='v1') as any)?.metrics}/>
+                <DynamicChart chartType={widgets.find(x=>x.id==='v1')?.chartType || 'area'} data={getWidgetData(widgets.find(x=>x.id==='v1') || {})} height={130} dimensions={(widgets.find(x=>x.id==='v1') as any)?.dimensions} metrics={(widgets.find(x=>x.id==='v1') as any)?.metrics} compData={getComparisonData(widgets.find(x=>x.id==='v1') || {})}/>
               </ChartCard>}
 
             {/* Dynamically added / cloned widgets */}
@@ -2701,7 +2728,7 @@ Alloy Intelligence`)
                       <span style={{ fontSize:12, fontWeight:600, color:ALLOY.ink, fontFamily:ALLOY.fontBody }}>{w.title}</span>
                       {connection?.connected && <span style={{ fontSize:9, color:ALLOY.green1, fontWeight:600, fontFamily:ALLOY.fontLabel }}>● Live</span>}
                     </div>
-                    <DynamicChart chartType={w.chartType} data={getWidgetData(w)} height={100} dimensions={(w as any).dimensions} metrics={(w as any).metrics}/>
+                    <DynamicChart chartType={w.chartType} data={getWidgetData(w)} height={100} dimensions={(w as any).dimensions} metrics={(w as any).metrics} compData={getComparisonData(w)}/>
                   </div>
                 )})}
               </div>
@@ -3082,30 +3109,57 @@ Alloy Intelligence`)
                             </>
                           )}
                           {/* Optional metrics — when on, show metric picker inline */}
-                          <Toggle label="Optional metrics" on={!!(widgetData as any).optionalMetrics} onChange={v => updateField('optionalMetrics', v)}/>
+                          <Toggle label="Optional metrics" on={!!(widgetData as any).optionalMetrics} onChange={v => { updateField('optionalMetrics', v); if (!v) setShowMetDropdown(false) }}/>
                           {!!(widgetData as any).optionalMetrics && (
-                            <div style={{ marginTop:10, padding:'10px 12px', background:ALLOY.paper, border:`1px solid ${ALLOY.line}`, borderRadius:2 }}>
-                              <p style={{ fontFamily:ALLOY.fontLabel, fontSize:9, fontWeight:600, color:ALLOY.mute, marginBottom:8, textTransform:'uppercase' as const, letterSpacing:'0.08em' }}>Optional metrics shown to viewers</p>
-                              <div style={{ display:'flex', flexDirection:'column' as const, gap:4, maxHeight:160, overflowY:'auto' as const }}>
-                                {ALL_GA4_METRICS.slice(0,20).map((m:string) => {
-                                  const optMets: string[] = (widgetData as any).optionalMetricsList || []
-                                  const checked = optMets.includes(m)
-                                  return (
-                                    <div key={m} onClick={() => {
+                            <div style={{ marginTop:8, position:'relative' as const }}>
+                              {/* Show selected optional metrics */}
+                              <div style={{ display:'flex', flexDirection:'column' as const, gap:4, marginBottom:6 }}>
+                                {((widgetData as any).optionalMetricsList || []).map((m: string, i: number) => (
+                                  <div key={i} style={{ display:'flex', alignItems:'center', gap:8, background:ALLOY.blue4, border:`1px solid ${ALLOY.blue1}`, borderRadius:2, padding:'6px 12px' }}>
+                                    <span style={{ fontSize:10, fontWeight:700, color:ALLOY.blue1, background:ALLOY.blue4, borderRadius:2, padding:'1px 5px', fontFamily:ALLOY.fontLabel }}>123</span>
+                                    <span style={{ flex:1, fontSize:12, color:ALLOY.ink, fontFamily:ALLOY.fontBody }}>{m}</span>
+                                    <button onClick={() => {
                                       const cur: string[] = (widgetData as any).optionalMetricsList || []
-                                      updateField('optionalMetricsList', checked ? cur.filter((x:string)=>x!==m) : [...cur, m])
-                                    }} style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 8px', cursor:'pointer', borderRadius:2 }}
-                                      onMouseEnter={e=>(e.currentTarget as HTMLDivElement).style.background=ALLOY.blue4}
-                                      onMouseLeave={e=>(e.currentTarget as HTMLDivElement).style.background='transparent'}>
-                                      <div style={{ width:15, height:15, border:`2px solid ${checked?ALLOY.blue1:ALLOY.line}`, borderRadius:3, background:checked?ALLOY.blue1:ALLOY.white, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                                        {checked && <span style={{ color:ALLOY.white, fontSize:9, fontWeight:700 }}>✓</span>}
-                                      </div>
-                                      <span style={{ fontSize:10, fontFamily:ALLOY.fontLabel, fontWeight:700, color:ALLOY.blue1, background:ALLOY.blue4, borderRadius:2, padding:'1px 5px' }}>123</span>
-                                      <span style={{ fontSize:12, color:ALLOY.ink, fontFamily:ALLOY.fontBody }}>{m}</span>
-                                    </div>
-                                  )
-                                })}
+                                      updateField('optionalMetricsList', cur.filter((_:string, j:number) => j !== i))
+                                    }} style={{ background:'none', border:'none', cursor:'pointer', color:ALLOY.mute, padding:0 }}><X size={11}/></button>
+                                  </div>
+                                ))}
                               </div>
+                              {/* Add optional metric button — same style as Add Metric */}
+                              <button onClick={() => { setShowMetDropdown(!showMetDropdown); setMetSearch('') }}
+                                style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:`1px dashed ${ALLOY.line}`, borderRadius:2, padding:'6px 12px', cursor:'pointer', color:ALLOY.green1, fontSize:9, fontWeight:700, fontFamily:ALLOY.fontLabel, letterSpacing:'0.06em', textTransform:'uppercase' as const }}>
+                                <Plus size={13}/> Add optional metric
+                              </button>
+                              {/* Reuse same metric dropdown */}
+                              {showMetDropdown && (
+                                <>
+                                  <div style={{ position:'fixed' as const, inset:0, zIndex:199 }} onClick={() => setShowMetDropdown(false)}/>
+                                  <div style={{ position:'absolute' as const, top:'100%', left:0, right:0, background:ALLOY.white, border:'1px solid #e0e0e0', borderRadius:2, boxShadow:'0 8px 24px rgba(0,0,0,0.14)', zIndex:200, overflow:'hidden', maxHeight:300 }}>
+                                    <div style={{ padding:'10px 12px', borderBottom:`1px solid ${ALLOY.line}`, position:'sticky' as const, top:0, background:ALLOY.white }}>
+                                      <div style={{ display:'flex', alignItems:'center', gap:8, background:ALLOY.paper, borderRadius:2, padding:'7px 12px', border:`1px solid ${ALLOY.line}` }}>
+                                        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4.5" stroke="#999" strokeWidth="1.5"/><path d="M9.5 9.5 L12 12" stroke="#999" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                                        <input autoFocus value={metSearch} onChange={e=>setMetSearch(e.target.value)} placeholder="Search" style={{ background:'transparent', border:'none', outline:'none', fontSize:12, color:ALLOY.ink, fontFamily:ALLOY.fontBody, width:'100%' }}/>
+                                      </div>
+                                    </div>
+                                    <div style={{ overflowY:'auto' as const, maxHeight:220 }}>
+                                      <p style={{ fontFamily:ALLOY.fontLabel, fontSize:9, color:ALLOY.mute, padding:'8px 14px 4px', fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'0.08em' }}>Default group</p>
+                                      {ALL_GA4_METRICS.filter((m:string) => m.toLowerCase().includes(metSearch.toLowerCase()) && !((widgetData as any).optionalMetricsList||[]).includes(m)).map((met:string) => (
+                                        <div key={met} onClick={() => {
+                                          const cur: string[] = (widgetData as any).optionalMetricsList || []
+                                          updateField('optionalMetricsList', [...cur, met])
+                                          setShowMetDropdown(false); setMetSearch('')
+                                        }}
+                                          style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 14px', cursor:'pointer' }}
+                                          onMouseEnter={e=>(e.currentTarget as HTMLDivElement).style.background=ALLOY.blue4}
+                                          onMouseLeave={e=>(e.currentTarget as HTMLDivElement).style.background='transparent'}>
+                                          <span style={{ fontSize:10, fontWeight:700, color:ALLOY.blue1, background:ALLOY.blue4, borderRadius:2, padding:'1px 5px', flexShrink:0, fontFamily:ALLOY.fontLabel }}>123</span>
+                                          <span style={{ fontSize:12, color:ALLOY.ink, fontFamily:ALLOY.fontBody }}>{met}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </>
+                              )}
                             </div>
                           )}
                           <Toggle label="Metric sliders" on={!!(widgetData as any).metricSliders} onChange={v => updateField('metricSliders', v)}/>
