@@ -274,6 +274,7 @@ function DynamicChart({ chartType, data, height = 80, dimensions = ['Date'], met
     const missing    = opts.tableMissingData || 'Show "null"'
     const dimAligns  = (opts.dimAlign as string[]) || dimensions.map(() => 'left')
     const showSummary = opts.showSummaryRow === true
+    const ignoreFilters = opts.ignoreFiltersForSummary === true
     const rowsType   = opts.rowsType || 'pagination'
     const perPage    = parseInt(opts.rowsPerPage || '100')
     const topN       = opts.topNRows || 25
@@ -285,7 +286,11 @@ function DynamicChart({ chartType, data, height = 80, dimensions = ['Date'], met
     }
 
     const visibleRows = data.slice(0, maxRows)
-    const totalVal = data.reduce((sum: number, d: any) => sum + (typeof d.v === 'number' ? d.v : 0), 0)
+    // Summary total: if ignoreFilters is on, sum ALL data (not just visible rows)
+    const summaryRows = ignoreFilters ? data : visibleRows
+    const totalVal = summaryRows
+      .filter((d: any) => !d.isOthers) // exclude "Others" grouped row from total
+      .reduce((sum: number, d: any) => sum + (typeof d.v === 'number' ? d.v : 0), 0)
 
     return (
       <div style={{ height, overflowY:'auto' as const }}>
@@ -869,6 +874,7 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
   const [showDimDropdown, setShowDimDropdown] = useState(false)
   const [showMetDropdown, setShowMetDropdown] = useState(false)
   const [showOptMetDropdown, setShowOptMetDropdown] = useState(false)
+  const [showTopNDropdown, setShowTopNDropdown] = useState(false)
   const [comparisonData, setComparisonData] = useState<{[wid:string]: any[]}>({}) 
   const [dsSearch, setDsSearch] = useState('')
   const [dimSearch, setDimSearch] = useState('')
@@ -1447,10 +1453,11 @@ export default function ClientWorkspace({ params }: { params: { id: string } }) 
     const rowsType = (w as any).rowsType || 'pagination'
     if (rowsType === 'topn') {
       const n = (w as any).topNRows || 25
-      const top = rows.slice(0, n)
-      if ((w as any).groupOthers && rows.length > n) {
-        const othersVal = rows.slice(n).reduce((sum: number, r: any) => sum + (r.v || r.value || 0), 0)
-        return [...top, { d: 'Others', v: othersVal, name: 'Others', value: othersVal }]
+      const sorted = [...rows].sort((a, b) => (b.v || 0) - (a.v || 0))
+      const top = sorted.slice(0, n)
+      if ((w as any).groupOthers && sorted.length > n) {
+        const othersVal = sorted.slice(n).reduce((sum: number, r: any) => sum + (r.v || r.value || 0), 0)
+        return [...top, { d: 'Others', v: othersVal, name: 'Others', value: othersVal, isOthers: true }]
       }
       return top
     }
@@ -3722,53 +3729,79 @@ Alloy Intelligence`)
                           {/* Top N mode — top rows input + extras */}
                           {(widgetData.rowsType||'pagination') === 'topn' && (
                             <div style={{ marginTop:8 }}>
-                              {/* Top rows labeled input */}
-                              <div style={{ position:'relative' as const, border:`1px solid ${ALLOY.blue1}`, borderRadius:4, padding:'14px 12px 8px', marginBottom:10 }}>
-                                <span style={{ position:'absolute' as const, top:-8, left:10, background:ALLOY.white, padding:'0 4px', fontFamily:ALLOY.fontBody, fontSize:11, color:ALLOY.mute }}>Top rows</span>
-                                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                                  <div style={{ width:28, height:28, border:`1px solid ${ALLOY.line}`, borderRadius:2, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                      <rect x="1" y="1" width="12" height="2" fill="#888"/>
-                                      <rect x="1" y="5" width="12" height="2" fill="#888"/>
-                                      <rect x="1" y="9" width="12" height="2" fill="#888"/>
-                                    </svg>
-                                  </div>
-                                  <input
-                                    type="number"
-                                    min={1}
-                                    value={(widgetData as any).topNRows || 25}
-                                    onChange={e => updateField('topNRows', parseInt(e.target.value) || 25)}
-                                    style={{ flex:1, border:'none', outline:'none', fontFamily:ALLOY.fontBody, fontSize:16, fontWeight:500, color:ALLOY.ink, background:'transparent' }}
-                                  />
-                                  <div style={{ display:'flex', flexDirection:'column' as const, gap:2 }}>
-                                    <button onClick={() => updateField('topNRows', ((widgetData as any).topNRows || 25) + 1)}
-                                      style={{ border:`1px solid ${ALLOY.line}`, borderRadius:2, background:ALLOY.paper, cursor:'pointer', padding:'2px 6px', lineHeight:1, fontSize:10 }}>▲</button>
-                                    <button onClick={() => updateField('topNRows', Math.max(1, ((widgetData as any).topNRows || 25) - 1))}
-                                      style={{ border:`1px solid ${ALLOY.line}`, borderRadius:2, background:ALLOY.paper, cursor:'pointer', padding:'2px 6px', lineHeight:1, fontSize:10 }}>▼</button>
+                              {/* Top rows labeled input — click to toggle dropdown */}
+                              <div style={{ position:'relative' as const }}>
+                                <div style={{ border:`1px solid ${ALLOY.blue1}`, borderRadius:4, padding:'14px 12px 8px', marginBottom:0, cursor:'pointer' }}
+                                  onClick={() => setShowTopNDropdown(v => !v)}>
+                                  <span style={{ position:'absolute' as const, top:-8, left:10, background:ALLOY.white, padding:'0 4px', fontFamily:ALLOY.fontBody, fontSize:11, color:ALLOY.mute }}>Top rows</span>
+                                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                                    <div style={{ width:28, height:28, border:`1px solid ${ALLOY.line}`, borderRadius:2, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                        <rect x="1" y="1" width="12" height="2" fill="#888"/>
+                                        <rect x="1" y="5" width="12" height="2" fill="#888"/>
+                                        <rect x="1" y="9" width="12" height="2" fill="#888"/>
+                                      </svg>
+                                    </div>
+                                    <input
+                                      type="number"
+                                      min={1}
+                                      value={(widgetData as any).topNRows || 25}
+                                      onClick={e => e.stopPropagation()}
+                                      onChange={e => { updateField('topNRows', parseInt(e.target.value) || 25); setShowTopNDropdown(false) }}
+                                      style={{ flex:1, border:'none', outline:'none', fontFamily:ALLOY.fontBody, fontSize:16, fontWeight:500, color:ALLOY.ink, background:'transparent' }}
+                                    />
+                                    <div style={{ display:'flex', flexDirection:'column' as const, gap:2 }} onClick={e => e.stopPropagation()}>
+                                      <button onClick={() => { updateField('topNRows', ((widgetData as any).topNRows || 25) + 1); setShowTopNDropdown(false) }}
+                                        style={{ border:`1px solid ${ALLOY.line}`, borderRadius:2, background:ALLOY.paper, cursor:'pointer', padding:'2px 6px', lineHeight:1, fontSize:10 }}>▲</button>
+                                      <button onClick={() => { updateField('topNRows', Math.max(1, ((widgetData as any).topNRows || 25) - 1)); setShowTopNDropdown(false) }}
+                                        style={{ border:`1px solid ${ALLOY.line}`, borderRadius:2, background:ALLOY.paper, cursor:'pointer', padding:'2px 6px', lineHeight:1, fontSize:10 }}>▼</button>
+                                    </div>
                                   </div>
                                 </div>
+
+                                {/* Dropdown list — closes on outside click or selection */}
+                                {showTopNDropdown && (
+                                  <>
+                                    <div style={{ position:'fixed' as const, inset:0, zIndex:199 }} onClick={() => setShowTopNDropdown(false)}/>
+                                    <div style={{ position:'absolute' as const, top:'100%', left:0, right:0, background:ALLOY.white, border:`1px solid ${ALLOY.line}`, borderRadius:2, boxShadow:'0 8px 24px rgba(0,0,0,0.12)', zIndex:200, overflow:'hidden' }}>
+                                      {[1,5,10,20,25,50].map(n => (
+                                        <div key={n}
+                                          onClick={() => { updateField('topNRows', n); setShowTopNDropdown(false) }}
+                                          style={{ padding:'10px 14px', fontFamily:ALLOY.fontBody, fontSize:14, color:ALLOY.ink, cursor:'pointer', background:(widgetData as any).topNRows===n?ALLOY.blue4:'transparent', borderLeft:(widgetData as any).topNRows===n?`3px solid ${ALLOY.blue1}`:'3px solid transparent' }}
+                                          onMouseEnter={e=>(e.currentTarget as HTMLDivElement).style.background=(widgetData as any).topNRows===n?ALLOY.blue4:ALLOY.paper}
+                                          onMouseLeave={e=>(e.currentTarget as HTMLDivElement).style.background=(widgetData as any).topNRows===n?ALLOY.blue4:'transparent'}>
+                                          {n}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </>
+                                )}
                               </div>
-                              {/* Top N dropdown picker (1,5,10,20,25,50) */}
-                              <div style={{ border:`1px solid ${ALLOY.line}`, borderRadius:2, marginBottom:10, overflow:'hidden' }}>
-                                {[1,5,10,20,25,50].map(n => (
-                                  <div key={n}
-                                    onClick={() => updateField('topNRows', n)}
-                                    style={{ padding:'10px 14px', fontFamily:ALLOY.fontBody, fontSize:14, color:ALLOY.ink, cursor:'pointer', background:(widgetData as any).topNRows===n?ALLOY.blue4:'transparent', borderLeft:(widgetData as any).topNRows===n?`3px solid ${ALLOY.blue1}`:'3px solid transparent' }}
-                                    onMouseEnter={e=>(e.currentTarget as HTMLDivElement).style.background=(widgetData as any).topNRows===n?ALLOY.blue4:ALLOY.paper}
-                                    onMouseLeave={e=>(e.currentTarget as HTMLDivElement).style.background=(widgetData as any).topNRows===n?ALLOY.blue4:'transparent'}>
-                                    {n}
-                                  </div>
-                                ))}
+
+                              {/* Group the rest as "Others" — only meaningful when Top N < total rows */}
+                              <div style={{ marginTop:10 }}>
+                                <Toggle label='Group the rest as "Others"' on={!!(widgetData as any).groupOthers} onChange={v => updateField('groupOthers', v)}/>
+                                {!!(widgetData as any).groupOthers && (
+                                  <p style={{ fontSize:10, color:ALLOY.mute, fontFamily:ALLOY.fontBody, marginTop:4, paddingLeft:2 }}>
+                                    Rows beyond top {(widgetData as any).topNRows || 25} are grouped into a single "Others" row
+                                  </p>
+                                )}
                               </div>
-                              <Toggle label='Group the rest as "Others"' on={!!(widgetData as any).groupOthers} onChange={v => updateField('groupOthers', v)}/>
                             </div>
                           )}
 
-                          {/* Show summary row + ignore canvas filters (shown in both modes) */}
-                          <Toggle label="Show summary row" on={!!(widgetData as any).showSummaryRow} onChange={v => updateField('showSummaryRow', v)}/>
-                          {!!(widgetData as any).showSummaryRow && (
-                            <Toggle label="Ignore canvas filters for summary row" on={!!(widgetData as any).ignoreFiltersForSummary} onChange={v => updateField('ignoreFiltersForSummary', v)}/>
-                          )}
+                          {/* Show summary row + ignore canvas filters */}
+                          <div style={{ marginTop:10 }}>
+                            <Toggle label="Show summary row" on={!!(widgetData as any).showSummaryRow} onChange={v => updateField('showSummaryRow', v)}/>
+                            {!!(widgetData as any).showSummaryRow && (
+                              <>
+                                <p style={{ fontSize:10, color:ALLOY.mute, fontFamily:ALLOY.fontBody, marginTop:2, paddingLeft:2, marginBottom:6 }}>
+                                  Adds a totals row {(widgetData.rowsType||'pagination') === 'topn' ? 'below the top ' + ((widgetData as any).topNRows || 25) + ' rows' : 'at the bottom of the table'}
+                                </p>
+                                <Toggle label="Ignore canvas filters for summary row" on={!!(widgetData as any).ignoreFiltersForSummary} onChange={v => updateField('ignoreFiltersForSummary', v)}/>
+                              </>
+                            )}
+                          </div>
                         </div>
 
                         {/* Sort */}
